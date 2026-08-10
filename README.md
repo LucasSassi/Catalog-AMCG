@@ -39,7 +39,7 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ---
 
-## 🛠️ Tecnologias Recomendadas / Utilizadas
+## 🛠️ Tecnologias Utilizadas
 
 - **Frontend:** Em processo de decisão
 - **Backend:** Em processo de decisão
