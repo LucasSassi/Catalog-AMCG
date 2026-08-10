@@ -4,9 +4,19 @@ Plataforma web voltada ao fortalecimento da economia local nos Campos Gerais do 
 
 ---
 
+## 🏛️ Realização e Apoio
+
+Este projeto é uma iniciativa desenvolvida dentro do projeto de extensão/pesquisa:
+
+* **Projeto:** *Tecnologias no Campo e Capacitação de Pequenos Produtores* — **UEPG** (Universidade Estadual de Ponta Grossa)
+* **Professora Coordenadora:** Maria Salete M. Gomes
+* **Parceria:** Associação dos Municípios dos Campos Gerais (AMCG)
+
+---
+
 ## 📌 Sobre o Projeto
 
-O objetivo do projeto é encurtar a distância entre os pequenos produtores e os consumidores regionais, eliminando intermediários e promovendo os produtos típicos dos municípios da AMCG.
+O objetivo do projeto é encurtar a distância entre os pequenos produtores e os consumidores regionais, eliminando intermediários, promovendo os produtos típicos dos municípios da AMCG e capacitando os produtores para o uso de tecnologias digitais.
 
 ### **Como funciona:**
 1. **Produtor:** Cadastra seu perfil e seus produtos no sistema.
@@ -31,9 +41,9 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ## 🛠️ Tecnologias Recomendadas / Utilizadas
 
-- **Frontend:** - Em processo de decisão
-- **Backend:** - Em processo de decisão
-- **Banco de Dados:** - Em processo de decisão
+- **Frontend:** Em processo de decisão
+- **Backend:** Em processo de decisão
+- **Banco de Dados:** Em processo de decisão
 - **Integração:** API do WhatsApp (`https://wa.me/`)
 
 ---
