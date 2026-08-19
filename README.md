@@ -48,6 +48,6 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ---
 
-## 📂 Estrutura de Pastas (Sugestão)
+## 📂 Estrutura de Pastas
 
 - Em processo de decisão
