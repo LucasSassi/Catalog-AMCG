@@ -41,13 +41,91 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend:** Em processo de decisão
-- **Backend:** Em processo de decisão
-- **Banco de Dados:** Em processo de decisão
+- **Frontend:** React
+- **Backend:** TypeScript (Node)
+- **Banco de Dados:** Mongo DB
 - **Integração:** API do WhatsApp (`https://wa.me/`)
 
 ---
 
 ## 📂 Estrutura de Pastas
 
-- Em processo de decisão
+Backend em camadas (`application` → `domain` → `infraestructure`). Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`.
+
+```text
+src/
+├── app.ts
+├── application/
+│   └── controllers/              usuario, produtor, produto
+├── configuration/
+│   ├── dotenv.ts
+│   ├── env-constants/
+│   └── factory/
+├── contracts/
+│   └── service.yaml
+├── domain/
+│   ├── common/
+│   ├── server/
+│   ├── usuario/
+│   ├── produtor/
+│   └── produto/
+├── infraestructure/
+│   ├── db/mongo/
+│   │   ├── schema/
+│   │   └── models/
+│   ├── repository/
+│   │   ├── usuario/
+│   │   ├── produtor/
+│   │   └── produto/
+│   ├── external/services/
+│   └── export/
+└── tests/
+    ├── mocks/
+    ├── unit/
+    └── integration/
+```
+
+Cada contexto de domínio (exemplo `usuario`; o mesmo padrão vale para `produtor` e `produto`):
+
+```text
+src/domain/usuario/
+├── entity/
+│   ├── usuario.entity.ts
+│   ├── usuario.constants.ts
+│   └── interfaces/
+│       ├── usuario.interface.ts
+│       └── usuario.service.interface.ts
+├── service/
+│   └── usuario.service.ts
+├── repository/                    contratos read/write (sem Mongo)
+│   ├── usuario.repository.read.ts
+│   └── usuario.repository.write.ts
+└── export/
+```
+
+Implementação Mongo do repository:
+
+```text
+src/infraestructure/repository/usuario/
+├── usuario.repository.read.ts
+├── usuario.repository.write.ts
+└── adapters/
+    └── usuario.adapter.ts
+```
+
+```text
+src/infraestructure/db/mongo/
+├── schema/                       usuario, produtor, produto
+└── models/
+```
+
+```text
+src/tests/
+├── mocks/
+├── unit/
+│   └── usuario/service/
+└── integration/
+    ├── controller/
+    ├── service/
+    └── repository/
+```
