@@ -41,19 +41,103 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend:** React
+- **Frontend:** React (Vite)
 - **Backend:** TypeScript (Node)
 - **Banco de Dados:** Mongo DB
 - **Integração:** API do WhatsApp (`https://wa.me/`)
+- **Containers:** Docker Compose (frontend, backend, MongoDB)
+
+---
+
+## Como rodar
+
+**Pré-requisito:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e aberto. Não é preciso instalar Node nem Mongo na máquina.
+
+Há dois arquivos Compose. **Não suba os dois ao mesmo tempo** (eles usam as mesmas portas e nomes de container).
+
+| Arquivo | Para que serve | Catálogo |
+| -------- | -------------- | -------- |
+| `docker-compose.dev.yml` | Programar: `npm run dev` nos containers, o código recarrega ao salvar | http://localhost:5173 |
+| `docker-compose.yml` | Empacotado: build + Nginx, como o sistema sobe “de verdade” | http://localhost |
+
+### Primeira vez
+
+1. Clone o repositório e entre na pasta:
+
+```bash
+git clone https://github.com/LucasSassi/Catalog-AMCG.git
+cd Catalog-AMCG
+```
+
+2. Crie o `.env` a partir do exemplo (valores locais já vêm preenchidos; altere a senha se quiser):
+
+```bash
+cp .env.example .env
+```
+
+No Windows (PowerShell): `Copy-Item .env.example .env`
+
+3. Suba no modo **desenvolvimento** (recomendado para o time):
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+4. Confira no navegador:
+
+| Serviço | URL |
+| -------- | --- |
+| Catálogo (Vite) | http://localhost:5173 |
+| API (health) | http://localhost:3000/api/health |
+| MongoDB | localhost:27017 |
+
+Edite os arquivos em `frontend/` e `backend/` no VS Code. Os containers recarregam sozinhos. O Vite encaminha `/api` para o serviço `backend`. Dentro da rede Docker, o Mongo usa o hostname `mongo` (veja `MONGO_URI` no `.env`).
+
+### Já rodei antes (desenvolver)
+
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+Use `--build` de novo só se mudou `package.json`, Dockerfile ou lockfile.
+
+Para parar:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+Os dados do Mongo ficam no volume `mongo_data`.
+
+### Empacotado (build + Nginx)
+
+Primeira vez ou depois de mudar código que entra na imagem:
+
+```bash
+docker compose up --build
+```
+
+Já rodei (sem mudar código da imagem):
+
+```bash
+docker compose up
+```
+
+| Serviço | URL |
+| -------- | --- |
+| Catálogo | http://localhost |
+| API (health) | http://localhost:3000/api/health |
+
+Para parar: `docker compose down`.
 
 ---
 
 ## 📂 Estrutura de Pastas
 
-Backend em camadas (`application` → `domain` → `infraestructure`). Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`.
+O backend vive em `backend/` e o frontend em `frontend/`. Backend em camadas (`application` → `domain` → `infraestructure`). Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`.
 
 ```text
-src/
+backend/src/
 ├── app.ts
 ├── application/
 │   └── controllers/              usuario, produtor, produto
@@ -88,7 +172,7 @@ src/
 Cada contexto de domínio (exemplo `usuario`; o mesmo padrão vale para `produtor` e `produto`):
 
 ```text
-src/domain/usuario/
+backend/src/domain/usuario/
 ├── entity/
 │   ├── usuario.entity.ts
 │   ├── usuario.constants.ts
@@ -106,7 +190,7 @@ src/domain/usuario/
 Implementação Mongo do repository:
 
 ```text
-src/infraestructure/repository/usuario/
+backend/src/infraestructure/repository/usuario/
 ├── usuario.repository.read.ts
 ├── usuario.repository.write.ts
 └── adapters/
@@ -114,13 +198,13 @@ src/infraestructure/repository/usuario/
 ```
 
 ```text
-src/infraestructure/db/mongo/
+backend/src/infraestructure/db/mongo/
 ├── schema/                       usuario, produtor, produto
 └── models/
 ```
 
 ```text
-src/tests/
+backend/src/tests/
 ├── mocks/
 ├── unit/
 │   └── usuario/service/
