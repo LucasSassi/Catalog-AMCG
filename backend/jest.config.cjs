@@ -5,5 +5,4 @@ module.exports = {
   roots: ['<rootDir>/src/tests'],
   testMatch: ['**/*.test.ts'],
   clearMocks: true,
-  passWithNoTests: true,
 };

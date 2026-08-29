@@ -1,0 +1,27 @@
+---
+description: Padrão Quando/Deve para describe e it em testes
+globs: **/*.{test, spec}.{ts, tsx, js, jsx}
+alwaysApply: false
+---
+
+# describeCerto
+
+Ao criar ou editar testes:
+
+1. Todo `describe` deve começar com **"Quando"** (contexto/cenário).
+2. Todo `it` deve começar com **"Deve"** (comportamento esperado).
+3. Ao alterar testes existentes, reescrever títulos que não sigam o padrão.
+
+```typescript
+// ❌ BAD
+describe("cadastrar", () => {
+  it("cria usuário com senha hasheada", async () => {});
+});
+
+// ✅ GOOD
+describe("Quando cadastrar um usuário", () => {
+  it("Deve criar o usuário com senha hasheada", async () => {});
+
+  it("Deve lançar conflito quando o e-mail já existe", async () => {});
+});
+```

@@ -2,11 +2,11 @@
   "name": "catalog-amcg-backend",
   "version": "1.0.0",
   "private": true,
-  "main": "dist/app.js",
+  "main": "dist/domain/server/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/app.js",
-    "dev": "tsx watch src/app.ts",
+    "start": "node dist/domain/server/server.js",
+    "dev": "tsx watch src/domain/server/server.ts",
     "test": "jest"
   },
   "keywords": [],

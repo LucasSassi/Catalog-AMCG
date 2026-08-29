@@ -1,21 +1,36 @@
 import cors from "cors";
-import dotenv from "dotenv";
-import express from "express";
-import path from "path";
+import express, { type Express } from "express";
+import { createUsuarioController } from "./application/controllers/usuario.controller";
+import { errorHandler } from "./application/middleware/error-handler.middleware";
+import { createUsuarioService } from "./configuration/factory/usuario.factory";
+import type { IUsuarioService } from "./domain/usuario/entity/interfaces/usuario.service.interface";
 
-dotenv.config();
-dotenv.config({ path: path.resolve(process.cwd(), "..", ".env") });
+export interface CreateAppOptions {
+  jwtSecret: string;
+  usuarioService?: IUsuarioService;
+}
 
-const port = Number(process.env.PORT) || 3000;
-const app = express();
+export function createApp(options: CreateAppOptions): Express {
+  const app = express();
+  const usuarioService =
+    options.usuarioService ?? createUsuarioService(options.jwtSecret);
 
-app.use(cors());
-app.use(express.json());
+  app.use(cors());
+  app.use(express.json());
 
-app.get("/api/health", (_request, response) => {
-  response.json({ status: "ok" });
-});
+  app.get("/api/health", (_request, response) => {
+    response.json({ status: "ok" });
+  });
 
-app.listen(port, () => {
-  console.log(`API listening on port ${port}`);
-});
+  app.use(
+    "/api/usuarios",
+    createUsuarioController({
+      usuarioService,
+      jwtSecret: options.jwtSecret,
+    }),
+  );
+
+  app.use(errorHandler);
+
+  return app;
+}
