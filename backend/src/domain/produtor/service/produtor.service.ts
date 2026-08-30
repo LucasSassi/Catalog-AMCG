@@ -90,7 +90,9 @@ export class ProdutorService implements IProdutorService {
       input.documento === undefined &&
       input.registros === undefined &&
       input.contato === undefined &&
-      input.endereco === undefined
+      input.endereco === undefined &&
+      input.status === undefined &&
+      input.motivoRejeicao === undefined
     ) {
       throw new ValidationError("Nenhum campo para atualizar");
     }
@@ -108,6 +110,8 @@ export class ProdutorService implements IProdutorService {
       registros?: RegistroProdutor[];
       contato?: Contato;
       endereco?: Endereco;
+      status?: StatusProdutor;
+      motivoRejeicao?: string | null;
     } = {};
 
     if (input.nomeEmpresa !== undefined) {
@@ -142,6 +146,26 @@ export class ProdutorService implements IProdutorService {
 
     if (input.endereco !== undefined) {
       data.endereco = this.normalizeEndereco(input.endereco);
+    }
+
+    if (input.status !== undefined) {
+      this.assertStatus(input.status);
+      data.status = input.status;
+
+      if (input.status === "REJEITADO") {
+        const motivo =
+          input.motivoRejeicao?.trim() ?? atual.motivoRejeicao?.trim();
+        if (!motivo) {
+          throw new ValidationError("Motivo da rejeição é obrigatório");
+        }
+        data.motivoRejeicao = motivo;
+      } else {
+        data.motivoRejeicao = null;
+      }
+    } else if (input.motivoRejeicao !== undefined) {
+      throw new ValidationError(
+        "Motivo da rejeição só pode ser informado quando o status for REJEITADO",
+      );
     }
 
     const atualizado = await this.writeRepository.update(id, data);

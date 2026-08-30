@@ -173,6 +173,35 @@ describe("Quando usar o ProdutorService", () => {
       expect(atualizado.status).toBe("PENDENTE");
     });
 
+    it("Deve aprovar o produtor via status APROVADO", async () => {
+      const criado = await service.create(buildInput());
+      const aprovado = await service.update(criado.id, {
+        status: "APROVADO",
+      });
+
+      expect(aprovado.status).toBe("APROVADO");
+      expect(aprovado.motivoRejeicao).toBeUndefined();
+    });
+
+    it("Deve rejeitar o produtor com motivo via status REJEITADO", async () => {
+      const criado = await service.create(buildInput());
+      const rejeitado = await service.update(criado.id, {
+        status: "REJEITADO",
+        motivoRejeicao: "Documentação incompleta",
+      });
+
+      expect(rejeitado.status).toBe("REJEITADO");
+      expect(rejeitado.motivoRejeicao).toBe("Documentação incompleta");
+    });
+
+    it("Deve exigir motivo quando o status for REJEITADO", async () => {
+      const criado = await service.create(buildInput());
+
+      await expect(
+        service.update(criado.id, { status: "REJEITADO" }),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
     it("Deve impedir atualizar para documento já usado", async () => {
       const primeiro = await service.create(buildInput());
       await service.create(

@@ -35,6 +35,11 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
       };
     }
 
+    if (data.motivoRejeicao === null) {
+      payload.$unset = { motivoRejeicao: "" };
+      delete payload.motivoRejeicao;
+    }
+
     const document = await ProdutorModel.findByIdAndUpdate(id, payload, {
       new: true,
       runValidators: true,

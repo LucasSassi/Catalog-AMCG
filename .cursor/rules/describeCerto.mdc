@@ -1,6 +1,6 @@
 ---
-description: Padrão Quando/Deve para describe e it em testes
-globs: **/*.{test, spec}.{ts, tsx, js, jsx}
+description: describeCerto — nomenclatura BDD em português (describe/it)
+globs: "**/*.{test,spec}.{ts,tsx,js,jsx}"
 alwaysApply: false
 ---
 

@@ -74,6 +74,17 @@ const atualizarSchema = z
       .optional(),
     contato: contatoSchema.optional(),
     endereco: enderecoSchema.optional(),
+    status: z.enum(STATUS_PRODUTOR).optional(),
+    motivoRejeicao: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === "REJEITADO" && !data.motivoRejeicao?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Motivo da rejeição é obrigatório quando o status for REJEITADO",
+        path: ["motivoRejeicao"],
+      });
+    }
   })
   .refine(
     (data) =>
@@ -82,7 +93,9 @@ const atualizarSchema = z
       data.documento !== undefined ||
       data.registros !== undefined ||
       data.contato !== undefined ||
-      data.endereco !== undefined,
+      data.endereco !== undefined ||
+      data.status !== undefined ||
+      data.motivoRejeicao !== undefined,
     { message: "Nenhum campo para atualizar" },
   );
 

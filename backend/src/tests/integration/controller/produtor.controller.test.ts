@@ -161,4 +161,33 @@ describe("Quando usar o ProdutorController (integration)", () => {
     expect(inativos.status).toBe(200);
     expect(inativos.body).toHaveLength(1);
   });
+
+  it("Deve aprovar e rejeitar produtor via PUT", async () => {
+    const auth = authHeader();
+
+    const cadastrar = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", auth)
+      .send(payloadBase);
+
+    const aprovar = await request(app)
+      .put(`/api/produtores/${cadastrar.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    expect(aprovar.status).toBe(200);
+    expect(aprovar.body.status).toBe("APROVADO");
+
+    const rejeitar = await request(app)
+      .put(`/api/produtores/${cadastrar.body.id}`)
+      .set("Authorization", auth)
+      .send({
+        status: "REJEITADO",
+        motivoRejeicao: "Documentação incompleta",
+      });
+
+    expect(rejeitar.status).toBe(200);
+    expect(rejeitar.body.status).toBe("REJEITADO");
+    expect(rejeitar.body.motivoRejeicao).toBe("Documentação incompleta");
+  });
 });

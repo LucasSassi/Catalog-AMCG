@@ -95,8 +95,15 @@ export class InMemoryProdutorRepository
         : atual.contato,
       endereco: data.endereco ?? atual.endereco,
       ativo: data.ativo ?? atual.ativo,
+      status: data.status ?? atual.status,
       updatedAt: new Date(),
     };
+
+    if (data.motivoRejeicao === null) {
+      delete atualizado.motivoRejeicao;
+    } else if (data.motivoRejeicao !== undefined) {
+      atualizado.motivoRejeicao = data.motivoRejeicao;
+    }
     this.items.set(id, atualizado);
     return atualizado;
   }

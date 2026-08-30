@@ -26,6 +26,8 @@ export interface UpdateProdutorData {
   contato?: Contato;
   endereco?: Endereco;
   ativo?: boolean;
+  status?: StatusProdutor;
+  motivoRejeicao?: string | null;
 }
 
 export interface IProdutorRepositoryWrite {

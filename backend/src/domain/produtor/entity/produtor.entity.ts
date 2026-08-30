@@ -61,6 +61,8 @@ export interface AtualizarProdutorInput {
   registros?: RegistroProdutor[];
   contato?: Contato;
   endereco?: Endereco;
+  status?: StatusProdutor;
+  motivoRejeicao?: string;
 }
 
 export interface ListarProdutoresFiltros {
