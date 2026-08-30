@@ -199,6 +199,38 @@ describe("Quando usar o ProdutoService", () => {
     });
   });
 
+  describe("Quando listar o catálogo público", () => {
+    it("Deve retornar apenas produtos publicáveis com dados do produtor", async () => {
+      const produto = await service.create(buildInput(produtorAprovadoId));
+      await service.update(produto.id, { status: "APROVADO" });
+      await service.create(
+        buildInput(produtorAprovadoId, {
+          nome: "Queijo pendente",
+          categoria: "QUEIJO",
+          registros: [{ tipo: "MAPA", numero: "REG-PROD-002" }],
+        }),
+      );
+
+      const catalogo = await service.listCatalog({
+        busca: "fazenda",
+        categoria: "MEL",
+        municipio: "Ponta Grossa",
+      });
+
+      expect(catalogo.produtos).toHaveLength(1);
+      expect(catalogo.produtos[0]).toMatchObject({
+        nome: "Mel Artesanal",
+        produtor: {
+          nome: "Fazenda Campos Gerais",
+          municipio: "Ponta Grossa",
+          telefone: "+5542999999999",
+        },
+      });
+      expect(catalogo.categorias).toContain("MEL");
+      expect(catalogo.municipios).toEqual(["Ponta Grossa"]);
+    });
+  });
+
   describe("Quando listar produtos", () => {
     it("Deve filtrar por produtorId e categoria", async () => {
       await service.create(buildInput(produtorAprovadoId));

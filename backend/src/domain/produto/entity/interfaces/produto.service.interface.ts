@@ -1,5 +1,7 @@
 import type {
   AtualizarProdutoInput,
+  CatalogoFiltros,
+  CatalogoProdutos,
   CadastrarProdutoInput,
   ListarProdutosFiltros,
   Produto,
@@ -7,6 +9,7 @@ import type {
 
 export interface IProdutoService {
   create(input: CadastrarProdutoInput): Promise<Produto>;
+  listCatalog(filtros?: CatalogoFiltros): Promise<CatalogoProdutos>;
   list(filtros?: ListarProdutosFiltros): Promise<Produto[]>;
   getById(id: string): Promise<Produto>;
   update(id: string, input: AtualizarProdutoInput): Promise<Produto>;

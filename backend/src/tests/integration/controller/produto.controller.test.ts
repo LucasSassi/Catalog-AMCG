@@ -101,6 +101,34 @@ describe("Quando usar o ProdutoController (integration)", () => {
     expect(criarSemToken.status).toBe(401);
   });
 
+  it("Deve disponibilizar o catálogo sem exigir JWT", async () => {
+    const auth = authHeader();
+    const cadastrar = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    await request(app)
+      .put(`/api/produtos/${cadastrar.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    const response = await request(app).get(
+      "/api/produtos/catalogo?categoria=MEL&municipio=Ponta%20Grossa",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.produtos).toHaveLength(1);
+    expect(response.body.produtos[0]).toMatchObject({
+      nome: "Mel Artesanal",
+      produtor: {
+        nome: "Fazenda Campos Gerais",
+        municipio: "Ponta Grossa",
+      },
+    });
+    expect(response.body.produtos[0].fotosAvaliacao).toBeUndefined();
+  });
+
   it("Deve retornar a lista de categorias", async () => {
     const response = await request(app)
       .get("/api/produtos/categorias")

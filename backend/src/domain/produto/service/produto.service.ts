@@ -18,6 +18,7 @@ import {
   UNIDADE_MEDIDA,
   isCategoriaProduto,
   isUnidadeMedida,
+  listCategoriasProduto,
   type CategoriaProduto,
   type RegistroProdutoTipo,
   type StatusProduto,
@@ -27,6 +28,8 @@ import type { IProdutoService } from "../entity/interfaces/produto.service.inter
 import type {
   Arquivo,
   AtualizarProdutoInput,
+  CatalogoFiltros,
+  CatalogoProdutos,
   CadastrarProdutoInput,
   ListarProdutosFiltros,
   Premiacao,
@@ -91,6 +94,82 @@ export class ProdutoService implements IProdutoService {
       ativo: true,
       status: "PENDENTE",
     });
+  }
+
+  async listCatalog(filtros: CatalogoFiltros = {}): Promise<CatalogoProdutos> {
+    const categoria =
+      filtros.categoria !== undefined
+        ? this.assertCategoria(filtros.categoria)
+        : undefined;
+    const produtos = await this.readRepository.list({
+      ativo: true,
+      status: "APROVADO",
+      ...(categoria !== undefined ? { categoria } : {}),
+    });
+    const produtores = await this.produtorReadRepository.list({
+      ativo: true,
+      status: "APROVADO",
+    });
+    const produtoresPorId = new Map(
+      produtores.map((produtor) => [produtor.id, produtor]),
+    );
+    const busca = this.normalizeCatalogText(filtros.busca);
+    const municipio = filtros.municipio?.trim();
+
+    const produtosCatalogo = produtos.flatMap((produto) => {
+      const produtor = produtoresPorId.get(produto.produtorId);
+      const fotoDivulgacao = produto.fotosDivulgacao[0];
+
+      if (!produtor || !fotoDivulgacao) {
+        return [];
+      }
+
+      if (municipio && produtor.endereco.cidade !== municipio) {
+        return [];
+      }
+
+      if (busca) {
+        const conteudo = this.normalizeCatalogText(
+          `${produto.nome} ${produto.descricao} ${produtor.nomeEmpresa}`,
+        );
+
+        if (!conteudo.includes(busca)) {
+          return [];
+        }
+      }
+
+      return [
+        {
+          id: produto.id,
+          nome: produto.nome,
+          descricao: produto.descricao,
+          categoria: produto.categoria,
+          unidadeMedida: produto.unidadeMedida,
+          valorCentavos: produto.valorCentavos,
+          fotoDivulgacao,
+          produtor: {
+            id: produtor.id,
+            nome: produtor.nomeEmpresa,
+            municipio: produtor.endereco.cidade,
+            telefone: produtor.contato.telefone,
+          },
+        },
+      ];
+    });
+
+    const municipios = [
+      ...new Set(
+        produtores
+          .map((produtor) => produtor.endereco.cidade)
+          .filter((cidade) => cidade.length > 0),
+      ),
+    ].sort((cidadeA, cidadeB) => cidadeA.localeCompare(cidadeB, "pt-BR"));
+
+    return {
+      produtos: produtosCatalogo,
+      categorias: [...listCategoriasProduto()],
+      municipios,
+    };
   }
 
   async list(filtros?: ListarProdutosFiltros): Promise<Produto[]> {
@@ -308,6 +387,18 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Produtor é obrigatório");
     }
     return trimmed;
+  }
+
+  private normalizeCatalogText(value?: string): string {
+    if (!value) {
+      return "";
+    }
+
+    return value
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR");
   }
 
   private assertNome(nome: string): string {

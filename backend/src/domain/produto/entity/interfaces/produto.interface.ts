@@ -6,4 +6,7 @@ export type {
   CadastrarProdutoInput,
   AtualizarProdutoInput,
   ListarProdutosFiltros,
+  CatalogoFiltros,
+  ProdutoCatalogo,
+  CatalogoProdutos,
 } from "../produto.entity";

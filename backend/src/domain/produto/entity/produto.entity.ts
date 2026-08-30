@@ -82,3 +82,31 @@ export interface ListarProdutosFiltros {
   ativo?: boolean;
   status?: StatusProduto;
 }
+
+export interface CatalogoFiltros {
+  busca?: string;
+  categoria?: CategoriaProduto;
+  municipio?: string;
+}
+
+export interface ProdutoCatalogo {
+  id: string;
+  nome: string;
+  descricao: string;
+  categoria: CategoriaProduto;
+  unidadeMedida: UnidadeMedida;
+  valorCentavos: number;
+  fotoDivulgacao: Arquivo;
+  produtor: {
+    id: string;
+    nome: string;
+    municipio: string;
+    telefone: string;
+  };
+}
+
+export interface CatalogoProdutos {
+  produtos: ProdutoCatalogo[];
+  categorias: CategoriaProduto[];
+  municipios: string[];
+}

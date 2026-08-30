@@ -141,6 +141,12 @@ const listQuerySchema = z.object({
   status: z.enum(STATUS_PRODUTO).optional(),
 });
 
+const catalogQuerySchema = z.object({
+  busca: z.string().trim().optional(),
+  categoria: z.enum(CATEGORIA_PRODUTO).optional(),
+  municipio: z.string().trim().optional(),
+});
+
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
@@ -168,6 +174,19 @@ export function createProdutoController(
   const router = Router();
   const { produtoService, jwtSecret } = options;
   const requireAuth = createAuthMiddleware(jwtSecret);
+
+  router.get(
+    "/catalogo",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const filtros = parseOrThrow(catalogQuerySchema, request.query);
+        const catalogo = await produtoService.listCatalog(filtros);
+        response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.post(
     "/",

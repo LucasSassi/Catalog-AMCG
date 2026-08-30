@@ -91,7 +91,9 @@ docker compose -f docker-compose.dev.yml up --build
 | Serviço | URL |
 | -------- | --- |
 | Catálogo (Vite) | http://localhost:5173 |
+| Backoffice (login) | http://localhost:5173/backoffice/login |
 | API (health) | http://localhost:3000/api/health |
+| Catálogo público (API) | http://localhost:3000/api/produtos/catalogo |
 | MongoDB | localhost:27017 |
 
 Edite os arquivos em `frontend/` e `backend/` no VS Code. Os containers recarregam sozinhos. O Vite encaminha `/api` para o serviço `backend`. Dentro da rede Docker, o Mongo usa o hostname `mongo` (veja `MONGO_URI` no `.env`).
@@ -129,7 +131,9 @@ docker compose up
 | Serviço | URL |
 | -------- | --- |
 | Catálogo | http://localhost |
+| Backoffice (login) | http://localhost/backoffice/login |
 | API (health) | http://localhost:3000/api/health |
+| Catálogo público (API) | http://localhost:3000/api/produtos/catalogo |
 
 Para parar: `docker compose down`.
 
@@ -138,6 +142,24 @@ Para parar: `docker compose down`.
 ## 📂 Estrutura de Pastas
 
 O backend vive em `backend/` e o frontend em `frontend/`. Backend em camadas (`application` → `domain` → `infraestructure`). Frontend Feature-based + Tailwind. Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`. Ver [`docs/BACKEND_ARCHITECTURE.md`](docs/BACKEND_ARCHITECTURE.md) e [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+
+### Frontend (`frontend/src/`)
+
+```text
+frontend/src/
+├── app/                        router, layouts
+├── pages/
+│   ├── catalog/                vitrine pública
+│   └── backoffice/             login e curadoria
+├── features/
+│   ├── auth/                   login JWT
+│   ├── produto/                catálogo e curadoria de produtos
+│   └── produtor/               curadoria de produtores
+├── shared/                     api client, componentes genéricos, lib
+└── styles/                     Tailwind + tokens de marca
+```
+
+Rotas principais: `/` (catálogo público), `/backoffice/login`, `/backoffice` (painel autenticado).
 
 ```text
 backend/src/
@@ -227,9 +249,11 @@ backend/src/tests/
 
 ---
 
-## 🧪 Testes (Jest)
+## 🧪 Testes e qualidade
 
-O backend usa **Jest** (`ts-jest`) para testes. Os arquivos ficam em `backend/src/tests/`:
+### Backend (Jest)
+
+Os arquivos ficam em `backend/src/tests/`:
 
 | Pasta | Uso |
 |-------|-----|
@@ -241,3 +265,13 @@ O backend usa **Jest** (`ts-jest`) para testes. Os arquivos ficam em `backend/sr
 cd backend
 npm test
 ```
+
+### Frontend (Oxlint + TypeScript)
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+> **Dica:** com Docker em desenvolvimento, as dependências ficam nos volumes `backend_node_modules` e `frontend_node_modules`. Para editar fora do container com autocomplete no editor, rode `npm ci` dentro de `backend/` e `frontend/` na máquina local.

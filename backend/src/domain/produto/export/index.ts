@@ -7,6 +7,9 @@ export type {
   CadastrarProdutoInput,
   AtualizarProdutoInput,
   ListarProdutosFiltros,
+  CatalogoFiltros,
+  ProdutoCatalogo,
+  CatalogoProdutos,
 } from "../entity/produto.entity";
 export type { IProdutoService } from "../entity/interfaces/produto.service.interface";
 export type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
