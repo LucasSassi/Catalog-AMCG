@@ -1,10 +1,24 @@
 import { apiRequest } from '../../../shared/api/client'
-import type { Producer, ProducerStatus } from '../types'
+import type { CreateProducerInput, Producer, ProducerStatus } from '../types'
 
-export function listProducersByStatus(
-  status: ProducerStatus,
-): Promise<Producer[]> {
-  return apiRequest<Producer[]>(`/api/produtores?status=${status}`, {
+export type ProducerListFilter = ProducerStatus | 'TODOS'
+
+export function createProducer(input: CreateProducerInput): Promise<Producer> {
+  return apiRequest<Producer>('/api/produtores', {
+    method: 'POST',
+    authenticated: true,
+    body: input,
+  })
+}
+
+export function listProducers(filter: ProducerListFilter): Promise<Producer[]> {
+  if (filter === 'TODOS') {
+    return apiRequest<Producer[]>('/api/produtores', {
+      authenticated: true,
+    })
+  }
+
+  return apiRequest<Producer[]>(`/api/produtores?status=${filter}`, {
     authenticated: true,
   })
 }

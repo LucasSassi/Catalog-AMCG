@@ -6,6 +6,8 @@ import type {
   ProductStatus,
 } from '../types'
 
+export type ProductListFilter = ProductStatus | 'TODOS'
+
 export function listCatalogProducts(
   filters: CatalogFilters,
 ): Promise<ProductCatalog> {
@@ -33,10 +35,14 @@ export function listCatalogProducts(
   return apiRequest<ProductCatalog>(path)
 }
 
-export function listProductsByStatus(
-  status: ProductStatus,
-): Promise<Product[]> {
-  return apiRequest<Product[]>(`/api/produtos?status=${status}`, {
+export function listProducts(filter: ProductListFilter): Promise<Product[]> {
+  if (filter === 'TODOS') {
+    return apiRequest<Product[]>('/api/produtos', {
+      authenticated: true,
+    })
+  }
+
+  return apiRequest<Product[]>(`/api/produtos?status=${filter}`, {
     authenticated: true,
   })
 }

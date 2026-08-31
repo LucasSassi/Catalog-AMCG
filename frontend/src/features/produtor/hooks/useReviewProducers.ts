@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   approveProducer,
-  listProducersByStatus,
+  listProducers,
   rejectProducer,
+  type ProducerListFilter,
 } from '../api/producers'
-import type { Producer, ProducerStatus } from '../types'
+import type { Producer } from '../types'
 
-export type ProducerReviewStatus = Extract<
-  ProducerStatus,
-  'PENDENTE' | 'REJEITADO'
->
-
-export function useReviewProducers(status: ProducerReviewStatus) {
+export function useReviewProducers(status: ProducerListFilter) {
   const [producers, setProducers] = useState<Producer[]>([])
-  const [loadedStatus, setLoadedStatus] =
-    useState<ProducerReviewStatus | null>(null)
+  const [loadedStatus, setLoadedStatus] = useState<ProducerListFilter | null>(
+    null,
+  )
   const [reloadKey, setReloadKey] = useState(0)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +19,7 @@ export function useReviewProducers(status: ProducerReviewStatus) {
   useEffect(() => {
     let isCurrent = true
 
-    listProducersByStatus(status)
+    listProducers(status)
       .then((response) => {
         if (isCurrent) {
           setProducers(response)

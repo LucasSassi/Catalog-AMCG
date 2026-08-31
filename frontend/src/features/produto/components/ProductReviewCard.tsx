@@ -19,6 +19,11 @@ export function ProductReviewCard({
     statusLabel = 'Rejeitado'
   }
 
+  if (product.status === 'APROVADO') {
+    statusClasses = 'bg-green-100 text-green-800'
+    statusLabel = 'Aprovado'
+  }
+
   return (
     <button
       type="button"

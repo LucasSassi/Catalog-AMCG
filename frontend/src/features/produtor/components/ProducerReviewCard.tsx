@@ -17,6 +17,11 @@ export function ProducerReviewCard({
     statusLabel = 'Rejeitado'
   }
 
+  if (producer.status === 'APROVADO') {
+    statusClasses = 'bg-green-100 text-green-800'
+    statusLabel = 'Aprovado'
+  }
+
   return (
     <button
       type="button"

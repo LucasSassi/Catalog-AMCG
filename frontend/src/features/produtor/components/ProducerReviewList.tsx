@@ -1,10 +1,11 @@
 import { Feedback } from '../../../shared/components/Feedback'
+import type { ProducerListFilter } from '../api/producers'
 import type { Producer } from '../types'
 import { ProducerReviewCard } from './ProducerReviewCard'
 
 interface ProducerReviewListProps {
   producers: Producer[]
-  status: 'PENDENTE' | 'REJEITADO'
+  status: ProducerListFilter
   isLoading: boolean
   error: string
   onSelect: (producer: Producer) => void
@@ -37,6 +38,16 @@ export function ProducerReviewList({
   if (status === 'REJEITADO') {
     title = 'Produtores rejeitados'
     emptyMessage = 'Nenhum produtor rejeitado'
+  }
+
+  if (status === 'APROVADO') {
+    title = 'Produtores aprovados'
+    emptyMessage = 'Nenhum produtor aprovado'
+  }
+
+  if (status === 'TODOS') {
+    title = 'Todos os produtores'
+    emptyMessage = 'Nenhum produtor cadastrado'
   }
 
   if (producers.length === 0) {

@@ -40,3 +40,12 @@ export interface Producer {
   updatedAt: string
 }
 
+export interface CreateProducerInput {
+  nomeEmpresa: string
+  municipioId: string
+  documento: ProducerDocument
+  registros: ProducerRegistration[]
+  contato: ProducerContact
+  endereco: ProducerAddress
+}
+

@@ -1,6 +1,11 @@
+import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
+import { ProducerRegistrationDrawer } from '../features/produtor/components/ProducerRegistrationDrawer'
+import { Button } from '../shared/components/Button'
 
 export function CatalogLayout() {
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -8,12 +13,20 @@ export function CatalogLayout() {
           <Link to="/" className="font-bold text-brand-900">
             Catálogo Regional AMCG
           </Link>
-          <Link
-            to="/backoffice"
-            className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
-          >
-            Acessar painel
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setIsRegistrationOpen(true)}
+            >
+              Cadastre-se como produtor
+            </Button>
+            <Link
+              to="/backoffice"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+            >
+              Acessar painel
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -27,6 +40,11 @@ export function CatalogLayout() {
           </p>
         </div>
       </footer>
+
+      <ProducerRegistrationDrawer
+        isOpen={isRegistrationOpen}
+        onClose={() => setIsRegistrationOpen(false)}
+      />
     </div>
   )
 }

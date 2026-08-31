@@ -19,6 +19,7 @@ export function ProducerReviewModal({
   onReject,
 }: ProducerReviewModalProps) {
   const isRejected = producer.status === 'REJEITADO'
+  const isApproved = producer.status === 'APROVADO'
 
   async function handleApprove() {
     const didApprove = await onApprove(producer.id)
@@ -42,11 +43,19 @@ export function ProducerReviewModal({
         <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
           Rejeitado
         </span>
-      ) : (
+      ) : null}
+
+      {isApproved ? (
+        <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+          Aprovado
+        </span>
+      ) : null}
+
+      {!isRejected && !isApproved ? (
         <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
           Pendente
         </span>
-      )}
+      ) : null}
 
       {producer.motivoRejeicao ? (
         <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4">
@@ -89,19 +98,21 @@ export function ProducerReviewModal({
         </div>
       </div>
 
-      {!isRejected ? (
+      {!isRejected && !isApproved ? (
         <ReviewActions
           disabled={disabled}
           onApprove={handleApprove}
           onReject={handleReject}
         />
-      ) : (
+      ) : null}
+
+      {isRejected ? (
         <div className="mt-5 border-t border-slate-200 pt-4">
           <Button disabled={disabled} onClick={handleApprove}>
             Reconsiderar e aprovar
           </Button>
         </div>
-      )}
+      ) : null}
     </Modal>
   )
 }

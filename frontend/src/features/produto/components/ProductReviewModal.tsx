@@ -20,6 +20,7 @@ export function ProductReviewModal({
   onReject,
 }: ProductReviewModalProps) {
   const isRejected = product.status === 'REJEITADO'
+  const isApproved = product.status === 'APROVADO'
 
   async function handleApprove() {
     const didApprove = await onApprove(product.id)
@@ -59,11 +60,19 @@ export function ProductReviewModal({
           <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
             Rejeitado
           </span>
-        ) : (
+        ) : null}
+
+        {isApproved ? (
+          <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+            Aprovado
+          </span>
+        ) : null}
+
+        {!isRejected && !isApproved ? (
           <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
             Pendente
           </span>
-        )}
+        ) : null}
         <p className="mt-4 leading-7 text-slate-700">{product.descricao}</p>
 
         {product.motivoRejeicao ? (
@@ -113,19 +122,21 @@ export function ProductReviewModal({
         ) : null}
       </div>
 
-      {!isRejected ? (
+      {!isRejected && !isApproved ? (
         <ReviewActions
           disabled={disabled}
           onApprove={handleApprove}
           onReject={handleReject}
         />
-      ) : (
+      ) : null}
+
+      {isRejected ? (
         <div className="mt-5 border-t border-slate-200 pt-4">
           <Button disabled={disabled} onClick={handleApprove}>
             Reconsiderar e aprovar
           </Button>
         </div>
-      )}
+      ) : null}
     </Modal>
   )
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export type ReviewTab = 'producers' | 'products'
-export type ReviewStatus = 'PENDENTE' | 'REJEITADO'
+export type ReviewStatus = 'PENDENTE' | 'REJEITADO' | 'APROVADO' | 'TODOS'
 
 interface BackofficeNavigationProps {
   activeTab: ReviewTab
@@ -48,7 +48,7 @@ export function BackofficeNavigation({
       </aside>
 
       <div
-        className="inline-flex self-start rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:hidden"
+        className="inline-flex self-start overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:hidden"
         role="tablist"
         aria-label="Status dos cadastros"
       >
@@ -67,7 +67,7 @@ export function DesktopStatusTabs({
 }) {
   return (
     <div
-      className="hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:inline-flex"
+      className="hidden max-w-full overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:inline-flex"
       role="tablist"
       aria-label="Status dos cadastros"
     >
@@ -91,9 +91,19 @@ function StatusTabs({
         onClick={() => onChange('PENDENTE')}
       />
       <StatusTab
+        label="Aprovados"
+        active={status === 'APROVADO'}
+        onClick={() => onChange('APROVADO')}
+      />
+      <StatusTab
         label="Rejeitados"
         active={status === 'REJEITADO'}
         onClick={() => onChange('REJEITADO')}
+      />
+      <StatusTab
+        label="Todos"
+        active={status === 'TODOS'}
+        onClick={() => onChange('TODOS')}
       />
     </>
   )

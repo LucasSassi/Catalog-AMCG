@@ -1,10 +1,11 @@
 import { Feedback } from '../../../shared/components/Feedback'
+import type { ProductListFilter } from '../api/products'
 import type { Product } from '../types'
 import { ProductReviewCard } from './ProductReviewCard'
 
 interface ProductReviewListProps {
   products: Product[]
-  status: 'PENDENTE' | 'REJEITADO'
+  status: ProductListFilter
   isLoading: boolean
   error: string
   onSelect: (product: Product) => void
@@ -37,6 +38,16 @@ export function ProductReviewList({
   if (status === 'REJEITADO') {
     title = 'Produtos rejeitados'
     emptyMessage = 'Nenhum produto rejeitado'
+  }
+
+  if (status === 'APROVADO') {
+    title = 'Produtos aprovados'
+    emptyMessage = 'Nenhum produto aprovado'
+  }
+
+  if (status === 'TODOS') {
+    title = 'Todos os produtos'
+    emptyMessage = 'Nenhum produto cadastrado'
   }
 
   if (products.length === 0) {

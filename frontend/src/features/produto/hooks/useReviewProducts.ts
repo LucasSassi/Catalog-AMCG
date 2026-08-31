@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   approveProduct,
-  listProductsByStatus,
+  listProducts,
   rejectProduct,
+  type ProductListFilter,
 } from '../api/products'
-import type { Product, ProductStatus } from '../types'
+import type { Product } from '../types'
 
-export type ProductReviewStatus = Extract<
-  ProductStatus,
-  'PENDENTE' | 'REJEITADO'
->
-
-export function useReviewProducts(status: ProductReviewStatus) {
+export function useReviewProducts(status: ProductListFilter) {
   const [products, setProducts] = useState<Product[]>([])
-  const [loadedStatus, setLoadedStatus] =
-    useState<ProductReviewStatus | null>(null)
+  const [loadedStatus, setLoadedStatus] = useState<ProductListFilter | null>(
+    null,
+  )
   const [reloadKey, setReloadKey] = useState(0)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +19,7 @@ export function useReviewProducts(status: ProductReviewStatus) {
   useEffect(() => {
     let isCurrent = true
 
-    listProductsByStatus(status)
+    listProducts(status)
       .then((response) => {
         if (isCurrent) {
           setProducts(response)
