@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { CatalogFilters } from '../../features/produto/components/CatalogFilters'
+import { useState, type ReactNode } from 'react'
+import { CatalogSidebar } from '../../features/produto/components/CatalogSidebar'
+import { CategoryNav } from '../../features/produto/components/CategoryNav'
 import { ProductCard } from '../../features/produto/components/ProductCard'
 import { ProductDetailModal } from '../../features/produto/components/ProductDetailModal'
 import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
@@ -18,10 +19,83 @@ const initialFilters: CatalogFiltersValue = {
   municipio: '',
 }
 
-const trustBadges = [
-  'Produtores verificados — seleção por edital',
-  'Compra direta — sem intermediários',
-  'Qualidade regional — AMCG + Sebrae',
+const iconClassName = 'h-8 w-8 shrink-0 text-brand-600'
+
+const trustBadges: Array<{
+  title: string
+  subtitle: string
+  icon: ReactNode
+}> = [
+  {
+    title: 'Produtores verificados',
+    subtitle: 'Seleção por edital AMCG + Sebrae',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3l7 3v5c0 4.5-2.9 7.8-7 9-4.1-1.2-7-4.5-7-9V6l7-3z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9.5 12l1.8 1.8L15 10"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: 'Compra direta',
+    subtitle: 'Sem intermediários, fale com quem produz',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 10h8M8 14h5"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3v-3H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: 'Qualidade regional',
+    subtitle: 'Agricultura familiar dos Campos Gerais',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3l1.8 4.6L19 9l-3.8 3.2L16.5 17 12 14.6 7.5 17l1.3-4.8L5 9l5.2-1.4L12 3z"
+        />
+      </svg>
+    ),
+  },
 ]
 
 const whyBuyItems = [
@@ -86,101 +160,86 @@ export function CatalogPage() {
       </h1>
 
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-4 sm:grid-cols-3 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:grid-cols-3 sm:px-6 lg:px-8">
           {trustBadges.map((badge) => (
-            <p
-              key={badge}
-              className="rounded-lg bg-brand-50 px-3 py-2 text-center text-xs font-semibold text-brand-800 sm:text-sm"
-            >
-              {badge}
-            </p>
+            <div key={badge.title} className="flex items-center gap-3">
+              {badge.icon}
+              <div>
+                <p className="text-sm font-bold text-brand-700">{badge.title}</p>
+                <p className="text-xs text-slate-600">{badge.subtitle}</p>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            onClick={() => selectCategory('')}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              filters.categoria === ''
-                ? 'bg-brand-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700'
-            }`}
-          >
-            Todas
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => selectCategory(category)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                filters.categoria === category
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <main
-        id="produtos"
-        className="mx-auto max-w-7xl scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8"
-      >
-        <CatalogFilters
-          filters={filters}
-          cities={cities}
-          onChange={setFilters}
+      <div>
+        <CategoryNav
+          categories={categories}
+          selected={filters.categoria}
+          onSelect={selectCategory}
         />
 
-        <div className="mb-5 mt-10 text-center">
-          <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
-            Produtos disponíveis
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-brand-700">
-            Seleção Especial
-          </p>
-          <p className="mt-2 text-sm text-slate-500">
-            {products.length} resultado(s)
-          </p>
-        </div>
-
-        {isLoading ? (
-          <Feedback title="Carregando produtos..." />
-        ) : null}
-
-        {!isLoading && error ? (
-          <Feedback
-            tone="error"
-            title="Não foi possível carregar o catálogo"
-            description={error}
-          />
-        ) : null}
-
-        {!isLoading && !error && products.length === 0 ? (
-          <Feedback
-            title="Nenhum produto encontrado"
-            description="Altere os filtros para visualizar outras opções."
-          />
-        ) : null}
-
-        {!isLoading && !error && products.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onSelect={openProduct}
+        <main
+          id="produtos"
+          className="scroll-mt-32 py-8 pl-2 pr-4 sm:pl-3 sm:pr-6 lg:pl-4 lg:pr-8"
+        >
+          <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+            <aside className="lg:sticky lg:top-32 lg:self-start">
+              <CatalogSidebar
+                filters={filters}
+                cities={cities}
+                onChange={setFilters}
               />
-            ))}
+            </aside>
+
+            <div className="min-w-0 max-w-5xl xl:max-w-6xl">
+              <div className="mb-5 text-center">
+                <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
+                  Produtos disponíveis
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-brand-700">
+                  Seleção Especial
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {products.length} resultado(s)
+                </p>
+              </div>
+
+              {isLoading ? (
+                <Feedback title="Carregando produtos..." />
+              ) : null}
+
+              {!isLoading && error ? (
+                <Feedback
+                  tone="error"
+                  title="Não foi possível carregar o catálogo"
+                  description={error}
+                />
+              ) : null}
+
+              {!isLoading && !error && products.length === 0 ? (
+                <Feedback
+                  title="Nenhum produto encontrado"
+                  description="Altere os filtros para visualizar outras opções."
+                />
+              ) : null}
+
+              {!isLoading && !error && products.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 lg:ml-8">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onSelect={openProduct}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
-        ) : null}
-      </main>
+        </main>
+      </div>
 
       <section className="bg-white py-14">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
