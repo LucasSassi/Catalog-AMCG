@@ -41,19 +41,128 @@ O objetivo do projeto é encurtar a distância entre os pequenos produtores e os
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend:** React
-- **Backend:** TypeScript (Node)
-- **Banco de Dados:** Mongo DB
+- **Frontend:** React (Vite) · Tailwind CSS
+- **Backend:** TypeScript (Node / Express) · bcrypt · JWT
+- **Banco de Dados:** MongoDB (Mongoose)
+- **Testes:** Jest (backend)
 - **Integração:** API do WhatsApp (`https://wa.me/`)
+- **Containers:** Docker Compose (frontend, backend, MongoDB)
+
+Arquitetura: [`docs/BACKEND_ARCHITECTURE.md`](docs/BACKEND_ARCHITECTURE.md) · [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+
+---
+
+## Como rodar
+
+**Pré-requisito:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e aberto. Não é preciso instalar Node nem Mongo na máquina.
+
+Há dois arquivos Compose. **Não suba os dois ao mesmo tempo** (eles usam as mesmas portas e nomes de container).
+
+| Arquivo | Para que serve | Catálogo |
+| -------- | -------------- | -------- |
+| `docker-compose.dev.yml` | Programar: `npm run dev` nos containers, o código recarrega ao salvar | http://localhost:5173 |
+| `docker-compose.yml` | Empacotado: build + Nginx, como o sistema sobe “de verdade” | http://localhost |
+
+### Primeira vez
+
+1. Clone o repositório e entre na pasta:
+
+```bash
+git clone https://github.com/LucasSassi/Catalog-AMCG.git
+cd Catalog-AMCG
+```
+
+2. Crie o `.env` a partir do exemplo (valores locais já vêm preenchidos; altere a senha se quiser):
+
+```bash
+cp .env.example .env
+```
+
+No Windows (PowerShell): `Copy-Item .env.example .env`
+
+3. Suba no modo **desenvolvimento** (recomendado para o time):
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+4. Confira no navegador:
+
+| Serviço | URL |
+| -------- | --- |
+| Catálogo (Vite) | http://localhost:5173 |
+| Backoffice (login) | http://localhost:5173/backoffice/login |
+| API (health) | http://localhost:3000/api/health |
+| Catálogo público (API) | http://localhost:3000/api/produtos/catalogo |
+| MongoDB | localhost:27017 |
+
+Edite os arquivos em `frontend/` e `backend/` no VS Code. Os containers recarregam sozinhos. O Vite encaminha `/api` para o serviço `backend`. Dentro da rede Docker, o Mongo usa o hostname `mongo` (veja `MONGO_URI` no `.env`).
+
+### Já rodei antes (desenvolver)
+
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+Use `--build` de novo só se mudou `package.json`, Dockerfile ou lockfile.
+
+Para parar:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+Os dados do Mongo ficam no volume `mongo_data`.
+
+### Empacotado (build + Nginx)
+
+Primeira vez ou depois de mudar código que entra na imagem:
+
+```bash
+docker compose up --build
+```
+
+Já rodei (sem mudar código da imagem):
+
+```bash
+docker compose up
+```
+
+| Serviço | URL |
+| -------- | --- |
+| Catálogo | http://localhost |
+| Backoffice (login) | http://localhost/backoffice/login |
+| API (health) | http://localhost:3000/api/health |
+| Catálogo público (API) | http://localhost:3000/api/produtos/catalogo |
+
+Para parar: `docker compose down`.
 
 ---
 
 ## 📂 Estrutura de Pastas
 
-Backend em camadas (`application` → `domain` → `infraestructure`). Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`.
+O backend vive em `backend/` e o frontend em `frontend/`. Backend em camadas (`application` → `domain` → `infraestructure`). Frontend Feature-based + Tailwind. Sem workers e sem Kafka. A pasta de persistência usa a grafia `infraestructure`. Ver [`docs/BACKEND_ARCHITECTURE.md`](docs/BACKEND_ARCHITECTURE.md) e [`docs/FRONTEND_ARCHITECTURE.md`](docs/FRONTEND_ARCHITECTURE.md).
+
+### Frontend (`frontend/src/`)
 
 ```text
-src/
+frontend/src/
+├── app/                        router, layouts
+├── pages/
+│   ├── catalog/                vitrine pública
+│   └── backoffice/             login e curadoria
+├── features/
+│   ├── auth/                   login JWT
+│   ├── produto/                catálogo e curadoria de produtos
+│   └── produtor/               curadoria de produtores
+├── shared/                     api client, componentes genéricos, lib
+└── styles/                     Tailwind + tokens de marca
+```
+
+Rotas principais: `/` (catálogo público), `/backoffice/login`, `/backoffice` (painel autenticado).
+
+```text
+backend/src/
 ├── app.ts
 ├── application/
 │   └── controllers/              usuario, produtor, produto
@@ -61,8 +170,6 @@ src/
 │   ├── dotenv.ts
 │   ├── env-constants/
 │   └── factory/
-├── contracts/
-│   └── service.yaml
 ├── domain/
 │   ├── common/
 │   ├── server/
@@ -88,7 +195,7 @@ src/
 Cada contexto de domínio (exemplo `usuario`; o mesmo padrão vale para `produtor` e `produto`):
 
 ```text
-src/domain/usuario/
+backend/src/domain/usuario/
 ├── entity/
 │   ├── usuario.entity.ts
 │   ├── usuario.constants.ts
@@ -106,7 +213,7 @@ src/domain/usuario/
 Implementação Mongo do repository:
 
 ```text
-src/infraestructure/repository/usuario/
+backend/src/infraestructure/repository/usuario/
 ├── usuario.repository.read.ts
 ├── usuario.repository.write.ts
 └── adapters/
@@ -114,13 +221,13 @@ src/infraestructure/repository/usuario/
 ```
 
 ```text
-src/infraestructure/db/mongo/
+backend/src/infraestructure/db/mongo/
 ├── schema/                       usuario, produtor, produto
 └── models/
 ```
 
 ```text
-src/tests/
+backend/src/tests/
 ├── mocks/
 ├── unit/
 │   └── usuario/service/
@@ -129,3 +236,42 @@ src/tests/
     ├── service/
     └── repository/
 ```
+
+### Camadas (resumo)
+
+| Camada | Pasta | Responsabilidade |
+|--------|--------|------------------|
+| Controller | `application/controllers/` | HTTP, validação de request, chama o service |
+| Service | `domain/<contexto>/service/` | Regras de negócio |
+| Repository (contrato) | `domain/<contexto>/repository/` | Interfaces read/write |
+| Repository (Mongo) | `infraestructure/repository/<contexto>/` | Persistência Mongoose + adapters |
+| Entity | `domain/<contexto>/entity/` | Tipos e constantes do domínio |
+
+---
+
+## 🧪 Testes e qualidade
+
+### Backend (Jest)
+
+Os arquivos ficam em `backend/src/tests/`:
+
+| Pasta | Uso |
+|-------|-----|
+| `unit/` | Services com repository mockado (prioridade) |
+| `integration/` | Controller (HTTP via Supertest), service e repository (Mongo de teste) |
+| `mocks/` | Doubles compartilhados |
+
+```bash
+cd backend
+npm test
+```
+
+### Frontend (Oxlint + TypeScript)
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+> **Dica:** com Docker em desenvolvimento, as dependências ficam nos volumes `backend_node_modules` e `frontend_node_modules`. Para editar fora do container com autocomplete no editor, rode `npm ci` dentro de `backend/` e `frontend/` na máquina local.
