@@ -1,4 +1,5 @@
 import { Modal } from '../../../shared/components/Modal'
+import amcgLogo from '../../../shared/assets/amcg-catalogo.jpeg'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 import type { CatalogProduct } from '../types'
@@ -12,6 +13,10 @@ interface ProducerInfoModalProps {
   onSelectProduct: (product: CatalogProduct) => void
 }
 
+// TODO: substituir pela descrição vinda do backend
+const PLACEHOLDER_DESCRIPTION =
+  'Produtor da agricultura familiar dos Campos Gerais, selecionado por edital da AMCG em parceria com o Sebrae. Produz com dedicação e qualidade, valorizando a tradição e a identidade produtiva da região.'
+
 export function ProducerInfoModal({
   producer,
   products,
@@ -24,15 +29,25 @@ export function ProducerInfoModal({
   })
 
   return (
-    <Modal title={producer.nome} onClose={onClose}>
+    <Modal title="Informações do produtor" onClose={onClose}>
       <div className="space-y-6">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Município
-          </p>
-          <p className="mt-1 text-base font-semibold text-brand-900">
-            {producer.municipio}
-          </p>
+          <div className="flex items-center gap-4">
+            <img
+              src={amcgLogo}
+              alt={`Logo de ${producer.nome}`}
+              className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-cover"
+            />
+            <div className="min-w-0">
+              <h3 className="text-xl font-bold text-brand-900">
+                {producer.nome}
+              </h3>
+              <p className="mt-0.5 text-sm text-slate-600">
+                {producer.municipio}
+              </p>
+            </div>
+          </div>
+
           <a
             href={whatsappUrl}
             target="_blank"
@@ -41,6 +56,15 @@ export function ProducerInfoModal({
           >
             Falar no WhatsApp
           </a>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Sobre o produtor
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {PLACEHOLDER_DESCRIPTION}
+          </p>
         </div>
 
         <div>

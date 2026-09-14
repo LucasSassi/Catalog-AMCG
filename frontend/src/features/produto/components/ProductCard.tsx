@@ -14,7 +14,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
       <button
         type="button"
         onClick={() => onSelect(product)}
-        className="group flex h-full w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+        className="group flex h-full w-full flex-col overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
       >
         <div className="relative aspect-square overflow-hidden bg-slate-100">
           <img

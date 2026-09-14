@@ -92,20 +92,6 @@ export function CatalogLayout() {
                 </Link>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => setIsRegistrationOpen(true)}
-                  className="transition hover:text-white"
-                >
-                  Cadastro de produtor
-                </button>
-              </li>
-              <li>
-                <Link to="/backoffice" className="transition hover:text-white">
-                  Painel de curadoria
-                </Link>
-              </li>
-              <li>
                 <a
                   href="https://www.amcg.com.br"
                   target="_blank"

@@ -193,49 +193,51 @@ export function CatalogPage() {
               />
             </aside>
 
-            <div className="min-w-0 max-w-5xl xl:max-w-6xl">
-              <div className="mb-5 text-center">
-                <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
-                  Produtos disponíveis
-                </h2>
-                <p className="mt-1 text-sm font-semibold text-brand-700">
-                  Seleção Especial
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  {products.length} resultado(s)
-                </p>
-              </div>
-
-              {isLoading ? (
-                <Feedback title="Carregando produtos..." />
-              ) : null}
-
-              {!isLoading && error ? (
-                <Feedback
-                  tone="error"
-                  title="Não foi possível carregar o catálogo"
-                  description={error}
-                />
-              ) : null}
-
-              {!isLoading && !error && products.length === 0 ? (
-                <Feedback
-                  title="Nenhum produto encontrado"
-                  description="Altere os filtros para visualizar outras opções."
-                />
-              ) : null}
-
-              {!isLoading && !error && products.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 lg:ml-8">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onSelect={openProduct}
-                    />
-                  ))}
+            <div className="min-w-0">
+              <div className="mx-auto w-full max-w-4xl ml-16 xl:max-w-6xl">
+                <div className="mb-5 text-center">
+                  <h2 className="text-2xl font-bold uppercase tracking-wide text-brand-700 sm:text-3xl">
+                    Produtos disponíveis
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-slate-700">
+                    Seleção Especial
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {products.length} resultado(s)
+                  </p>
                 </div>
-              ) : null}
+
+                {isLoading ? (
+                  <Feedback title="Carregando produtos..." />
+                ) : null}
+
+                {!isLoading && error ? (
+                  <Feedback
+                    tone="error"
+                    title="Não foi possível carregar o catálogo"
+                    description={error}
+                  />
+                ) : null}
+
+                {!isLoading && !error && products.length === 0 ? (
+                  <Feedback
+                    title="Nenhum produto encontrado"
+                    description="Altere os filtros para visualizar outras opções."
+                  />
+                ) : null}
+
+                {!isLoading && !error && products.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+                    {products.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onSelect={openProduct}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </main>
