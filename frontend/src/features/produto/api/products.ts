@@ -1,6 +1,7 @@
 import { apiRequest } from '../../../shared/api/client'
 import type {
   CatalogFilters,
+  CreateProductInput,
   Product,
   ProductCatalog,
   ProductStatus,
@@ -44,6 +45,14 @@ export function listProducts(filter: ProductListFilter): Promise<Product[]> {
 
   return apiRequest<Product[]>(`/api/produtos?status=${filter}`, {
     authenticated: true,
+  })
+}
+
+export function createProduct(input: CreateProductInput): Promise<Product> {
+  return apiRequest<Product>('/api/produtos', {
+    method: 'POST',
+    authenticated: true,
+    body: input,
   })
 }
 

@@ -10,6 +10,7 @@ import type { CreateProducerInput, ProducerRegistration } from '../types'
 
 interface ProducerRegistrationFormProps {
   onSuccess: () => void
+  approveAfterCreate?: boolean
 }
 
 const emptyRegistration: ProducerRegistration = {
@@ -31,9 +32,12 @@ const inputClassName =
 
 export function ProducerRegistrationForm({
   onSuccess,
+  approveAfterCreate = false,
 }: ProducerRegistrationFormProps) {
   const [form, setForm] = useState<CreateProducerInput>(initialForm)
-  const { submit, error, isLoading } = useRegisterProducer()
+  const { submit, error, isLoading } = useRegisterProducer({
+    approveAfterCreate,
+  })
 
   function updateField<K extends keyof CreateProducerInput>(
     field: K,

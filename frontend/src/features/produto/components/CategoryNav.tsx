@@ -1,15 +1,5 @@
 import type { ProductCategory } from '../types'
-
-const categoryLabels: Record<ProductCategory, string> = {
-  MEL: 'Méis',
-  QUEIJO: 'Queijos',
-  GELEIA: 'Geleias',
-  CARNE: 'Carnes',
-  BEBIDAS: 'Bebidas',
-  BOLACHAS: 'Bolachas',
-  PAES: 'Pães',
-  OUTROS: 'Outros',
-}
+import { PRODUCT_CATEGORY_LABELS } from '../constants'
 
 interface CategoryNavProps {
   categories: ProductCategory[]
@@ -51,7 +41,7 @@ export function CategoryNav({
             onClick={() => onSelect(category)}
             className={itemClass(selected === category)}
           >
-            {categoryLabels[category] ?? category}
+            {PRODUCT_CATEGORY_LABELS[category] ?? category}
           </button>
         ))}
       </nav>

@@ -88,3 +88,17 @@ export interface ProductCatalog {
   categorias: ProductCategory[]
   municipios: string[]
 }
+
+export interface CreateProductInput {
+  produtorId: string
+  nome: string
+  descricao: string
+  categoria: ProductCategory
+  unidadeMedida: MeasurementUnit
+  registros: ProductRegistration[]
+  fotosAvaliacao: ProductFile[]
+  fotosDivulgacao: ProductFile[]
+  premiacoes: ProductAward[]
+  valorCentavos: number
+  observacoes?: string
+}

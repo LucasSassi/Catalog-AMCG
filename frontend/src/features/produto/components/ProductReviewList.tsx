@@ -56,9 +56,15 @@ export function ProductReviewList({
 
   return (
     <section aria-labelledby="product-list-title">
-      <h2 id="product-list-title" className="mb-4 text-xl font-bold">
+      <h2
+        id="product-list-title"
+        className="mb-1 text-2xl font-bold uppercase tracking-wide text-slate-900"
+      >
         {title}
       </h2>
+      <p className="mb-5 text-sm font-semibold text-brand-700">
+        Curadoria de produtos
+      </p>
       <div className="space-y-4">
         {products.map((product) => (
           <ProductReviewCard
