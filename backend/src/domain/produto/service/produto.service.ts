@@ -6,20 +6,21 @@ import {
 import type { IProdutorRepositoryRead } from "../../produtor/repository/produtor.repository.read";
 import {
   ANO_MIN,
-  CATEGORIA_PRODUTO,
+  CERTIFICACAO_CATALOGO,
   CONTENT_TYPES_COMPROVANTE,
   CONTENT_TYPES_IMAGEM,
+  MAX_DESTAQUES,
   MAX_FOTOS,
   MAX_REGISTROS,
   MIN_FOTOS,
   MIN_REGISTROS,
   REGISTRO_PRODUTO_TIPO,
   STATUS_PRODUTO,
-  UNIDADE_MEDIDA,
   isCategoriaProduto,
   isUnidadeMedida,
   listCategoriasProduto,
   type CategoriaProduto,
+  type CertificacaoCatalogo,
   type RegistroProdutoTipo,
   type StatusProduto,
   type UnidadeMedida,
@@ -34,6 +35,8 @@ import type {
   ListarProdutosFiltros,
   Premiacao,
   Produto,
+  ProdutoCatalogo,
+  ProdutoCatalogoDetalhe,
   RegistroProduto,
 } from "../entity/produto.entity";
 import type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
@@ -93,6 +96,7 @@ export class ProdutoService implements IProdutoService {
       ...(observacoes !== undefined ? { observacoes } : {}),
       ativo: true,
       status: "PENDENTE",
+      destaque: false,
     });
   }
 
@@ -100,6 +104,10 @@ export class ProdutoService implements IProdutoService {
     const categoria =
       filtros.categoria !== undefined
         ? this.assertCategoria(filtros.categoria)
+        : undefined;
+    const certificacao =
+      filtros.certificacao !== undefined
+        ? this.assertCertificacao(filtros.certificacao)
         : undefined;
     const produtos = await this.readRepository.list({
       ativo: true,
@@ -138,22 +146,26 @@ export class ProdutoService implements IProdutoService {
         }
       }
 
+      if (certificacao) {
+        if (certificacao === "SIM") {
+          const temSim = produtor.registros.some(
+            (registro) => registro.tipo === "SIM",
+          );
+          if (!temSim) {
+            return [];
+          }
+        } else {
+          const temCertificacao = produto.registros.some(
+            (registro) => registro.tipo === certificacao,
+          );
+          if (!temCertificacao) {
+            return [];
+          }
+        }
+      }
+
       return [
-        {
-          id: produto.id,
-          nome: produto.nome,
-          descricao: produto.descricao,
-          categoria: produto.categoria,
-          unidadeMedida: produto.unidadeMedida,
-          valorCentavos: produto.valorCentavos,
-          fotoDivulgacao,
-          produtor: {
-            id: produtor.id,
-            nome: produtor.nomeEmpresa,
-            municipio: produtor.endereco.cidade,
-            telefone: produtor.contato.telefone,
-          },
-        },
+        this.toProdutoCatalogo(produto, produtor, fotoDivulgacao),
       ];
     });
 
@@ -169,7 +181,86 @@ export class ProdutoService implements IProdutoService {
       produtos: produtosCatalogo,
       categorias: [...listCategoriasProduto()],
       municipios,
+      certificacoes: [...CERTIFICACAO_CATALOGO],
     };
+  }
+
+  async getCatalogById(id: string): Promise<ProdutoCatalogoDetalhe> {
+    const produto = await this.readRepository.findById(id);
+
+    if (!produto || !produto.ativo || produto.status !== "APROVADO") {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const produtor = await this.produtorReadRepository.findById(
+      produto.produtorId,
+    );
+
+    if (!produtor || !produtor.ativo || produtor.status !== "APROVADO") {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const fotoDivulgacao = produto.fotosDivulgacao[0];
+
+    if (!fotoDivulgacao) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const base = this.toProdutoCatalogo(produto, produtor, fotoDivulgacao);
+
+    return {
+      ...base,
+      fotosDivulgacao: produto.fotosDivulgacao,
+      registros: produto.registros.map((registro) => ({ tipo: registro.tipo })),
+      premiacoes: produto.premiacoes.map((premiacao) => ({
+        nome: premiacao.nome,
+        ano: premiacao.ano,
+      })),
+      ...(produto.observacoes !== undefined
+        ? { observacoes: produto.observacoes }
+        : {}),
+      produtor: {
+        ...base.produtor,
+        temRegistroSim: produtor.registros.some(
+          (registro) => registro.tipo === "SIM",
+        ),
+      },
+    };
+  }
+
+  async setDestaque(id: string, destaque: boolean): Promise<Produto> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    if (!atual.ativo) {
+      throw new ValidationError("Produto inativo não pode ser destacado");
+    }
+
+    if (atual.status !== "APROVADO") {
+      throw new ValidationError(
+        "Somente produtos aprovados podem ser destacados",
+      );
+    }
+
+    if (destaque && !atual.destaque) {
+      const total = await this.readRepository.countDestaques();
+      if (total >= MAX_DESTAQUES) {
+        throw new ValidationError(
+          "Limite de 3 destaques atingido — remova um destaque antes",
+        );
+      }
+    }
+
+    const atualizado = await this.writeRepository.update(id, { destaque });
+
+    if (!atualizado) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    return atualizado;
   }
 
   async list(filtros?: ListarProdutosFiltros): Promise<Produto[]> {
@@ -422,6 +513,44 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Categoria inválida");
     }
     return categoria;
+  }
+
+  private assertCertificacao(certificacao: string): CertificacaoCatalogo {
+    if (
+      !(CERTIFICACAO_CATALOGO as readonly string[]).includes(certificacao)
+    ) {
+      throw new ValidationError("Certificação inválida");
+    }
+    return certificacao as CertificacaoCatalogo;
+  }
+
+  private toProdutoCatalogo(
+    produto: Produto,
+    produtor: {
+      id: string;
+      nomeEmpresa: string;
+      endereco: { cidade: string };
+      contato: { telefone: string };
+    },
+    fotoDivulgacao: Arquivo,
+  ): ProdutoCatalogo {
+    return {
+      id: produto.id,
+      nome: produto.nome,
+      descricao: produto.descricao,
+      categoria: produto.categoria,
+      unidadeMedida: produto.unidadeMedida,
+      valorCentavos: produto.valorCentavos,
+      fotoDivulgacao,
+      destaque: produto.destaque,
+      premiado: produto.premiacoes.length > 0,
+      produtor: {
+        id: produtor.id,
+        nome: produtor.nomeEmpresa,
+        municipio: produtor.endereco.cidade,
+        telefone: produtor.contato.telefone,
+      },
+    };
   }
 
   private assertUnidadeMedida(unidadeMedida: string): UnidadeMedida {

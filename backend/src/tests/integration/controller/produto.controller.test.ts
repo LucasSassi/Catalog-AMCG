@@ -41,7 +41,7 @@ function buildProdutoPayload(produtorId: string) {
     produtorId,
     nome: "Mel Artesanal",
     descricao: "Mel puro de Campos Gerais",
-    categoria: "MEL",
+    categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",
     registros: [{ tipo: "SELO ARTE", numero: "REG-PROD-001" }],
     fotosAvaliacao: [arquivoValido],
@@ -114,7 +114,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .send({ status: "APROVADO" });
 
     const response = await request(app).get(
-      "/api/produtos/catalogo?categoria=MEL&municipio=Ponta%20Grossa",
+      "/api/produtos/catalogo?categoria=MEL_E_DERIVADOS&municipio=Ponta%20Grossa",
     );
 
     expect(response.status).toBe(200);
@@ -137,7 +137,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     expect(response.status).toBe(200);
     expect(response.body).toHaveLength(8);
     expect(response.body).toEqual(
-      expect.arrayContaining(["MEL", "QUEIJO", "OUTROS"]),
+      expect.arrayContaining(["MEL_E_DERIVADOS", "QUEIJOS_E_LACTEOS", "OUTROS"]),
     );
   });
 
@@ -241,18 +241,18 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .send({
         ...buildProdutoPayload(produtorAprovadoId),
         nome: "Queijo Artesanal",
-        categoria: "QUEIJO",
+        categoria: "QUEIJOS_E_LACTEOS",
         registros: [{ tipo: "MAPA", numero: "REG-PROD-002" }],
       });
 
     const porCategoria = await request(app)
       .get("/api/produtos")
-      .query({ categoria: "MEL" })
+      .query({ categoria: "MEL_E_DERIVADOS" })
       .set("Authorization", auth);
 
     expect(porCategoria.status).toBe(200);
     expect(porCategoria.body).toHaveLength(1);
-    expect(porCategoria.body[0].categoria).toBe("MEL");
+    expect(porCategoria.body[0].categoria).toBe("MEL_E_DERIVADOS");
 
     const porProdutor = await request(app)
       .get("/api/produtos")

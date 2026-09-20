@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   CATEGORIA_PRODUTO,
+  CERTIFICACAO_CATALOGO,
   MAX_FOTOS,
   MAX_REGISTROS,
   MIN_FOTOS,
@@ -145,6 +146,11 @@ const catalogQuerySchema = z.object({
   busca: z.string().trim().optional(),
   categoria: z.enum(CATEGORIA_PRODUTO).optional(),
   municipio: z.string().trim().optional(),
+  certificacao: z.enum(CERTIFICACAO_CATALOGO).optional(),
+});
+
+const destaqueSchema = z.object({
+  destaque: z.boolean(),
 });
 
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -182,6 +188,18 @@ export function createProdutoController(
         const filtros = parseOrThrow(catalogQuerySchema, request.query);
         const catalogo = await produtoService.listCatalog(filtros);
         response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/:id",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const produto = await produtoService.getCatalogById(getRouteId(request));
+        response.status(200).json(produto);
       } catch (error) {
         next(error);
       }
@@ -260,6 +278,23 @@ export function createProdutoController(
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
         const produto = await produtoService.update(getRouteId(request), body);
+        response.status(200).json(produto);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.patch(
+    "/:id/destaque",
+    requireAuth,
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const body = parseOrThrow(destaqueSchema, request.body);
+        const produto = await produtoService.setDestaque(
+          getRouteId(request),
+          body.destaque,
+        );
         response.status(200).json(produto);
       } catch (error) {
         next(error);

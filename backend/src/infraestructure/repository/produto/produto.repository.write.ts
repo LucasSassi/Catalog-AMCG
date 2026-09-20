@@ -23,6 +23,7 @@ export class ProdutoRepositoryWrite implements IProdutoRepositoryWrite {
       ...(data.observacoes !== undefined ? { observacoes: data.observacoes } : {}),
       ativo: data.ativo,
       status: data.status,
+      destaque: data.destaque,
     });
     return toProdutoEntity(document);
   }

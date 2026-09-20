@@ -31,6 +31,10 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
       query.status = filtros.status;
     }
 
+    if (filtros?.destaque !== undefined) {
+      query.destaque = filtros.destaque;
+    }
+
     const documents = await ProdutoModel.find(query)
       .sort({ createdAt: -1 })
       .exec();
@@ -42,5 +46,13 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
       "registros.numero": numero,
     }).exec();
     return document ? toProdutoEntity(document) : null;
+  }
+
+  async countDestaques(): Promise<number> {
+    return ProdutoModel.countDocuments({
+      destaque: true,
+      ativo: true,
+      status: "APROVADO",
+    }).exec();
   }
 }

@@ -24,6 +24,7 @@ export interface CreateProdutoData {
   observacoes?: string;
   ativo: boolean;
   status: StatusProduto;
+  destaque: boolean;
 }
 
 export interface UpdateProdutoData {
@@ -40,6 +41,7 @@ export interface UpdateProdutoData {
   observacoes?: string;
   ativo?: boolean;
   status?: StatusProduto;
+  destaque?: boolean;
   motivoRejeicao?: string | null;
 }
 

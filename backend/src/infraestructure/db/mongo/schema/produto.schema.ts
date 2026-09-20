@@ -46,6 +46,7 @@ export interface ProdutoDocument {
   observacoes?: string;
   ativo: boolean;
   status: StatusProduto;
+  destaque: boolean;
   motivoRejeicao?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -101,6 +102,7 @@ export const produtoSchema = new Schema<ProdutoDocument>(
       enum: STATUS_PRODUTO,
       default: "PENDENTE",
     },
+    destaque: { type: Boolean, required: true, default: false },
     motivoRejeicao: { type: String, trim: true },
   },
   {
@@ -112,4 +114,5 @@ export const produtoSchema = new Schema<ProdutoDocument>(
 produtoSchema.index({ produtorId: 1 });
 produtoSchema.index({ produtorId: 1, ativo: 1, status: 1 });
 produtoSchema.index({ categoria: 1, status: 1, ativo: 1 });
+produtoSchema.index({ destaque: 1, status: 1, ativo: 1 });
 produtoSchema.index({ "registros.numero": 1 }, { unique: true, sparse: true });

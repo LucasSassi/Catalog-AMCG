@@ -4,13 +4,13 @@ export const STATUS_PRODUTO = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
 export type StatusProduto = (typeof STATUS_PRODUTO)[number];
 
 export const CATEGORIA_PRODUTO = [
-  "MEL",
-  "QUEIJO",
-  "GELEIA",
-  "CARNE",
-  "BEBIDAS",
-  "BOLACHAS",
-  "PAES",
+  "BEBIDAS_ARTESANAIS",
+  "QUEIJOS_E_LACTEOS",
+  "MEL_E_DERIVADOS",
+  "PANIFICADOS",
+  "CONSERVAS",
+  "EMBUTIDOS_E_DEFUMADOS",
+  "CEREAIS_E_GRAOS",
   "OUTROS",
 ] as const;
 export type CategoriaProduto = (typeof CATEGORIA_PRODUTO)[number];
@@ -27,8 +27,22 @@ export const UNIDADE_MEDIDA = [
 ] as const;
 export type UnidadeMedida = (typeof UNIDADE_MEDIDA)[number];
 
-export const REGISTRO_PRODUTO_TIPO = ["SELO ARTE", "MAPA", "Outro"] as const;
+export const REGISTRO_PRODUTO_TIPO = [
+  "SELO ARTE",
+  "MAPA",
+  "SUSAF",
+  "SIF",
+  "Outro",
+] as const;
 export type RegistroProdutoTipo = (typeof REGISTRO_PRODUTO_TIPO)[number];
+
+export const CERTIFICACAO_CATALOGO = [
+  ...REGISTRO_PRODUTO_TIPO,
+  "SIM",
+] as const;
+export type CertificacaoCatalogo = (typeof CERTIFICACAO_CATALOGO)[number];
+
+export const MAX_DESTAQUES = 3;
 
 export const MIN_REGISTROS = 1;
 export const MAX_REGISTROS = 5;
