@@ -8,7 +8,7 @@ export function CatalogLayout() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-page">
       <CatalogHeader onRegisterClick={() => setIsRegistrationOpen(true)} />
 
       <Outlet />
