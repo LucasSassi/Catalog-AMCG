@@ -6,8 +6,7 @@ export interface ProducerDocument {
 }
 
 export interface ProducerRegistration {
-  tipo: 'SIM' | 'SUSAF' | 'SIF' | 'Outro'
-  tipoOutros?: string
+  tipo: 'SIM'
   numero: string
   dataEmissao?: string
   dataValidade?: string
@@ -35,9 +34,22 @@ export interface Producer {
   endereco: ProducerAddress
   ativo: boolean
   status: ProducerStatus
+  destaque: boolean
   motivoRejeicao?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface CatalogProducer {
+  id: string
+  nome: string
+  municipio: string
+  telefone: string
+  destaque: boolean
+}
+
+export interface ProducerCatalog {
+  produtores: CatalogProducer[]
 }
 
 export interface CreateProducerInput {
@@ -48,4 +60,3 @@ export interface CreateProducerInput {
   contato: ProducerContact
   endereco: ProducerAddress
 }
-

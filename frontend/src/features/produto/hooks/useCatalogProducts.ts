@@ -6,6 +6,7 @@ const emptyCatalog: ProductCatalog = {
   produtos: [],
   categorias: [],
   municipios: [],
+  certificacoes: [],
 }
 
 export function useCatalogProducts(filters: CatalogFilters) {
@@ -50,6 +51,7 @@ export function useCatalogProducts(filters: CatalogFilters) {
     products: catalog.produtos,
     categories: catalog.categorias,
     cities: catalog.municipios,
+    certifications: catalog.certificacoes,
     isLoading: loadedKey !== filterKey,
     error,
   }

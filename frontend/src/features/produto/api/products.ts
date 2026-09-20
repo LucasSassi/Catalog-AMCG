@@ -1,6 +1,7 @@
 import { apiRequest } from '../../../shared/api/client'
 import type {
   CatalogFilters,
+  CatalogProductDetail,
   CreateProductInput,
   Product,
   ProductCatalog,
@@ -26,6 +27,10 @@ export function listCatalogProducts(
     searchParams.set('municipio', filters.municipio)
   }
 
+  if (filters.certificacao) {
+    searchParams.set('certificacao', filters.certificacao)
+  }
+
   const query = searchParams.toString()
   let path = '/api/produtos/catalogo'
 
@@ -34,6 +39,10 @@ export function listCatalogProducts(
   }
 
   return apiRequest<ProductCatalog>(path)
+}
+
+export function getCatalogProduct(id: string): Promise<CatalogProductDetail> {
+  return apiRequest<CatalogProductDetail>(`/api/produtos/catalogo/${id}`)
 }
 
 export function listProducts(filter: ProductListFilter): Promise<Product[]> {
@@ -72,5 +81,16 @@ export function rejectProduct(id: string, reason: string): Promise<Product> {
       status: 'REJEITADO',
       motivoRejeicao: reason,
     },
+  })
+}
+
+export function setProductDestaque(
+  id: string,
+  destaque: boolean,
+): Promise<Product> {
+  return apiRequest<Product>(`/api/produtos/${id}/destaque`, {
+    method: 'PATCH',
+    authenticated: true,
+    body: { destaque },
   })
 }

@@ -48,7 +48,7 @@ export function ProductRegistrationForm({
     produtorId: '',
     nome: '',
     descricao: '',
-    categoria: 'MEL',
+    categoria: 'MEL_E_DERIVADOS',
     unidadeMedida: 'KG',
     registros: [{ ...emptyRegistration }],
     fotosAvaliacao: [{ ...emptyPhoto }],

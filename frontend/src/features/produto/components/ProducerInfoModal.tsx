@@ -1,5 +1,6 @@
+import { Link } from 'react-router-dom'
 import { Modal } from '../../../shared/components/Modal'
-import amcgLogo from '../../../shared/assets/amcg-catalogo.jpeg'
+import logoPlaceholder from '../../../shared/assets/logo-catalogo-campos-gerais.png'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 import type { CatalogProduct } from '../types'
@@ -10,10 +11,8 @@ interface ProducerInfoModalProps {
   producer: CatalogProducer
   products: CatalogProduct[]
   onClose: () => void
-  onSelectProduct: (product: CatalogProduct) => void
 }
 
-// TODO: substituir pela descrição vinda do backend
 const PLACEHOLDER_DESCRIPTION =
   'Produtor da agricultura familiar dos Campos Gerais, selecionado por edital da AMCG em parceria com o Sebrae. Produz com dedicação e qualidade, valorizando a tradição e a identidade produtiva da região.'
 
@@ -21,7 +20,6 @@ export function ProducerInfoModal({
   producer,
   products,
   onClose,
-  onSelectProduct,
 }: ProducerInfoModalProps) {
   const whatsappUrl = buildWhatsAppUrl({
     telefone: producer.telefone,
@@ -34,9 +32,9 @@ export function ProducerInfoModal({
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center gap-4">
             <img
-              src={amcgLogo}
+              src={logoPlaceholder}
               alt={`Logo de ${producer.nome}`}
-              className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-cover"
+              className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-contain p-1"
             />
             <div className="min-w-0">
               <h3 className="text-xl font-bold text-brand-900">
@@ -74,15 +72,15 @@ export function ProducerInfoModal({
 
           {products.length === 0 ? (
             <p className="mt-3 text-sm text-slate-600">
-              Nenhum outro produto deste produtor no catálogo filtrado.
+              Nenhum produto deste produtor no catálogo.
             </p>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {products.map((product) => (
-                <button
+                <Link
                   key={product.id}
-                  type="button"
-                  onClick={() => onSelectProduct(product)}
+                  to={`/produtos/${product.id}`}
+                  onClick={onClose}
                   className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   <img
@@ -98,7 +96,7 @@ export function ProducerInfoModal({
                       {formatCurrency(product.valorCentavos)}
                     </p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           )}

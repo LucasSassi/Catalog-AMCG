@@ -1,19 +1,22 @@
+import { Link } from 'react-router-dom'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
+import { PRODUCT_CATEGORY_LABELS } from '../constants'
 import type { CatalogProduct } from '../types'
+import premiadoBadge from '../../../shared/assets/premiado.png'
 
 interface ProductCardProps {
   product: CatalogProduct
-  onSelect: (product: CatalogProduct) => void
 }
 
-export function ProductCard({ product, onSelect }: ProductCardProps) {
+export function ProductCard({ product }: ProductCardProps) {
   const price = formatCurrency(product.valorCentavos)
+  const categoryLabel =
+    PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
 
   return (
     <article>
-      <button
-        type="button"
-        onClick={() => onSelect(product)}
+      <Link
+        to={`/produtos/${product.id}`}
         className="group flex h-full w-full flex-col overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
       >
         <div className="relative aspect-square overflow-hidden bg-slate-100">
@@ -23,8 +26,15 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
           <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-brand-700 shadow-sm">
-            {product.categoria}
+            {categoryLabel}
           </span>
+          {product.premiado ? (
+            <img
+              src={premiadoBadge}
+              alt="Produto premiado"
+              className="absolute right-2 top-2 h-10 w-10 object-contain drop-shadow"
+            />
+          ) : null}
         </div>
 
         <div className="flex flex-1 flex-col p-4">
@@ -48,7 +58,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
             </span>
           </div>
         </div>
-      </button>
+      </Link>
     </article>
   )
 }

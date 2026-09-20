@@ -10,6 +10,7 @@ interface ProductReviewModalProps {
   onClose: () => void
   onApprove: (id: string) => Promise<boolean>
   onReject: (id: string, reason: string) => Promise<boolean>
+  onToggleDestaque: (id: string, destaque: boolean) => Promise<boolean>
 }
 
 export function ProductReviewModal({
@@ -18,6 +19,7 @@ export function ProductReviewModal({
   onClose,
   onApprove,
   onReject,
+  onToggleDestaque,
 }: ProductReviewModalProps) {
   const isRejected = product.status === 'REJEITADO'
   const isApproved = product.status === 'APROVADO'
@@ -128,6 +130,18 @@ export function ProductReviewModal({
           onApprove={handleApprove}
           onReject={handleReject}
         />
+      ) : null}
+
+      {isApproved ? (
+        <div className="mt-5 border-t border-slate-200 pt-4">
+          <Button
+            variant="secondary"
+            disabled={disabled}
+            onClick={() => onToggleDestaque(product.id, !product.destaque)}
+          >
+            {product.destaque ? 'Remover destaque' : 'Destacar no catálogo'}
+          </Button>
+        </div>
       ) : null}
 
       {isRejected ? (

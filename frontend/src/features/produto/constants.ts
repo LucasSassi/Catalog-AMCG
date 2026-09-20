@@ -1,11 +1,11 @@
 export const PRODUCT_CATEGORIES = [
-  'MEL',
-  'QUEIJO',
-  'GELEIA',
-  'CARNE',
-  'BEBIDAS',
-  'BOLACHAS',
-  'PAES',
+  'BEBIDAS_ARTESANAIS',
+  'QUEIJOS_E_LACTEOS',
+  'MEL_E_DERIVADOS',
+  'PANIFICADOS',
+  'CONSERVAS',
+  'EMBUTIDOS_E_DEFUMADOS',
+  'CEREAIS_E_GRAOS',
   'OUTROS',
 ] as const
 
@@ -13,13 +13,13 @@ export const PRODUCT_CATEGORY_LABELS: Record<
   (typeof PRODUCT_CATEGORIES)[number],
   string
 > = {
-  MEL: 'Méis',
-  QUEIJO: 'Queijos',
-  GELEIA: 'Geleias',
-  CARNE: 'Carnes',
-  BEBIDAS: 'Bebidas',
-  BOLACHAS: 'Bolachas',
-  PAES: 'Pães',
+  BEBIDAS_ARTESANAIS: 'Bebidas Artesanais',
+  QUEIJOS_E_LACTEOS: 'Queijos e Lácteos',
+  MEL_E_DERIVADOS: 'Mel e Derivados',
+  PANIFICADOS: 'Panificados',
+  CONSERVAS: 'Conservas',
+  EMBUTIDOS_E_DEFUMADOS: 'Embutidos e Defumados',
+  CEREAIS_E_GRAOS: 'Cereais e Grãos',
   OUTROS: 'Outros',
 }
 
@@ -37,7 +37,14 @@ export const MEASUREMENT_UNITS = [
 export const PRODUCT_REGISTRATION_TYPES = [
   'SELO ARTE',
   'MAPA',
+  'SUSAF',
+  'SIF',
   'Outro',
+] as const
+
+export const CATALOG_CERTIFICATIONS = [
+  ...PRODUCT_REGISTRATION_TYPES,
+  'SIM',
 ] as const
 
 export const IMAGE_CONTENT_TYPES = [
