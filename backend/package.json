@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/domain/server/server.js",
     "dev": "tsx watch src/domain/server/server.ts",
-    "test": "jest"
+    "test": "jest",
+    "migrate:categorias": "tsx scripts/migrate-categorias.ts",
+    "migrate:registros": "tsx scripts/migrate-registros.ts"
   },
   "keywords": [],
   "author": "",
