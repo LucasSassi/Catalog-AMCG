@@ -3,6 +3,7 @@ import {
   approveProducer,
   listProducers,
   rejectProducer,
+  setProducerDestaque,
   type ProducerListFilter,
 } from '../api/producers'
 import type { Producer } from '../types'
@@ -56,6 +57,33 @@ export function useReviewProducers(status: ProducerListFilter) {
     return updateProducer(() => rejectProducer(id, reason), id)
   }
 
+  async function toggleDestaque(
+    id: string,
+    destaque: boolean,
+  ): Promise<boolean> {
+    setIsUpdating(true)
+    setError('')
+
+    try {
+      const updated = await setProducerDestaque(id, destaque)
+      setProducers((currentProducers) =>
+        currentProducers.map((producer) =>
+          producer.id === id ? updated : producer,
+        ),
+      )
+      return true
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setError(requestError.message)
+      } else {
+        setError('Não foi possível atualizar o destaque.')
+      }
+      return false
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   async function updateProducer(
     request: () => Promise<Producer>,
     id: string,
@@ -93,6 +121,7 @@ export function useReviewProducers(status: ProducerListFilter) {
     error,
     approve,
     reject,
+    toggleDestaque,
     reload,
   }
 }

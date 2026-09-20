@@ -1,13 +1,13 @@
 export type ProductStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 
 export type ProductCategory =
-  | 'MEL'
-  | 'QUEIJO'
-  | 'GELEIA'
-  | 'CARNE'
-  | 'BEBIDAS'
-  | 'BOLACHAS'
-  | 'PAES'
+  | 'BEBIDAS_ARTESANAIS'
+  | 'QUEIJOS_E_LACTEOS'
+  | 'MEL_E_DERIVADOS'
+  | 'PANIFICADOS'
+  | 'CONSERVAS'
+  | 'EMBUTIDOS_E_DEFUMADOS'
+  | 'CEREAIS_E_GRAOS'
   | 'OUTROS'
 
 export type MeasurementUnit =
@@ -27,7 +27,7 @@ export interface ProductFile {
 }
 
 export interface ProductRegistration {
-  tipo: 'SELO ARTE' | 'MAPA' | 'Outro'
+  tipo: 'SELO ARTE' | 'MAPA' | 'SUSAF' | 'SIF' | 'Outro'
   tipoOutros?: string
   numero: string
   dataEmissao?: string
@@ -56,6 +56,7 @@ export interface Product {
   observacoes?: string
   ativo: boolean
   status: ProductStatus
+  destaque: boolean
   motivoRejeicao?: string
   createdAt: string
   updatedAt: string
@@ -69,6 +70,8 @@ export interface CatalogProduct {
   unidadeMedida: MeasurementUnit
   valorCentavos: number
   fotoDivulgacao: ProductFile
+  destaque: boolean
+  premiado: boolean
   produtor: {
     id: string
     nome: string
@@ -77,16 +80,28 @@ export interface CatalogProduct {
   }
 }
 
+export interface CatalogProductDetail extends CatalogProduct {
+  fotosDivulgacao: ProductFile[]
+  registros: Array<{ tipo: ProductRegistration['tipo'] }>
+  premiacoes: Array<{ nome: string; ano: number }>
+  observacoes?: string
+  produtor: CatalogProduct['produtor'] & {
+    temRegistroSim: boolean
+  }
+}
+
 export interface CatalogFilters {
   busca: string
   categoria: string
   municipio: string
+  certificacao: string
 }
 
 export interface ProductCatalog {
   produtos: CatalogProduct[]
   categorias: ProductCategory[]
   municipios: string[]
+  certificacoes: string[]
 }
 
 export interface CreateProductInput {
