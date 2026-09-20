@@ -23,6 +23,10 @@ export class ProdutorRepositoryRead implements IProdutorRepositoryRead {
       query.status = filtros.status;
     }
 
+    if (filtros?.destaque !== undefined) {
+      query.destaque = filtros.destaque;
+    }
+
     const documents = await ProdutorModel.find(query)
       .sort({ createdAt: -1 })
       .exec();
@@ -41,5 +45,13 @@ export class ProdutorRepositoryRead implements IProdutorRepositoryRead {
       "registros.numero": numero,
     }).exec();
     return document ? toProdutorEntity(document) : null;
+  }
+
+  async countDestaques(): Promise<number> {
+    return ProdutorModel.countDocuments({
+      destaque: true,
+      ativo: true,
+      status: "APROVADO",
+    }).exec();
   }
 }

@@ -23,7 +23,6 @@ export interface DocumentoDocument {
 
 export interface RegistroProdutorDocument {
   tipo: RegistroProdutorTipo;
-  tipoOutros?: string;
   numero: string;
   dataEmissao?: Date;
   dataValidade?: Date;
@@ -45,6 +44,7 @@ export interface ProdutorDocument {
   endereco: EnderecoDocument;
   ativo: boolean;
   status: StatusProdutor;
+  destaque: boolean;
   motivoRejeicao?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -69,7 +69,6 @@ const documentoSchema = new Schema<DocumentoDocument>(
 const registroProdutorSchema = new Schema<RegistroProdutorDocument>(
   {
     tipo: { type: String, required: true, enum: REGISTRO_PRODUTOR_TIPO },
-    tipoOutros: { type: String, trim: true },
     numero: { type: String, required: true, trim: true },
     dataEmissao: { type: Date },
     dataValidade: { type: Date },
@@ -102,6 +101,7 @@ export const produtorSchema = new Schema<ProdutorDocument>(
       enum: STATUS_PRODUTOR,
       default: "PENDENTE",
     },
+    destaque: { type: Boolean, required: true, default: false },
     motivoRejeicao: { type: String, trim: true },
   },
   {
@@ -112,3 +112,4 @@ export const produtorSchema = new Schema<ProdutorDocument>(
 
 produtorSchema.index({ "documento.numero": 1 }, { unique: true });
 produtorSchema.index({ "registros.numero": 1 }, { unique: true, sparse: true });
+produtorSchema.index({ destaque: 1, status: 1, ativo: 1 });

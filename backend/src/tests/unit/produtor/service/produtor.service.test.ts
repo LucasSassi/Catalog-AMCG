@@ -55,7 +55,7 @@ describe("Quando usar o ProdutorService", () => {
       await expect(
         service.create(
           buildInput({
-            registros: [{ tipo: "SIF", numero: "REG-002" }],
+            registros: [{ tipo: "SIM", numero: "REG-002" }],
           }),
         ),
       ).rejects.toMatchObject({ statusCode: 409 });
@@ -68,35 +68,20 @@ describe("Quando usar o ProdutorService", () => {
         service.create(
           buildInput({
             documento: { tipo: "CPF", numero: "12345678901" },
-            registros: [{ tipo: "SUSAF", numero: "REG-001" }],
+            registros: [{ tipo: "SIM", numero: "REG-001" }],
           }),
         ),
       ).rejects.toMatchObject({ statusCode: 409 });
     });
 
-    it("Deve exigir tipoOutros quando o tipo for Outro", async () => {
+    it("Deve rejeitar tipo de registro inválido", async () => {
       await expect(
         service.create(
           buildInput({
-            registros: [{ tipo: "Outro", numero: "REG-OUTRO" }],
+            registros: [{ tipo: "SIF" as "SIM", numero: "REG-OUTRO" }],
           }),
         ),
       ).rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    it("Deve criar quando tipo Outro com tipoOutros informado", async () => {
-      const produtor = await service.create(
-        buildInput({
-          registros: [
-            { tipo: "Outro", tipoOutros: "Certificado local", numero: "REG-X" },
-          ],
-        }),
-      );
-
-      expect(produtor.registros[0]).toMatchObject({
-        tipo: "Outro",
-        tipoOutros: "Certificado local",
-      });
     });
 
     it("Deve rejeitar telefone que não está em E.164", async () => {
@@ -134,7 +119,7 @@ describe("Quando usar o ProdutorService", () => {
       await service.create(
         buildInput({
           documento: { tipo: "CPF", numero: "12345678901" },
-          registros: [{ tipo: "SIF", numero: "REG-002" }],
+          registros: [{ tipo: "SIM", numero: "REG-002" }],
         }),
       );
       await service.remove(primeiro.id);
@@ -207,7 +192,7 @@ describe("Quando usar o ProdutorService", () => {
       await service.create(
         buildInput({
           documento: { tipo: "CPF", numero: "12345678901" },
-          registros: [{ tipo: "SIF", numero: "REG-002" }],
+          registros: [{ tipo: "SIM", numero: "REG-002" }],
         }),
       );
 
@@ -232,6 +217,52 @@ describe("Quando usar o ProdutorService", () => {
       const criado = await service.create(buildInput());
       await service.remove(criado.id);
       await expect(service.remove(criado.id)).resolves.toBeUndefined();
+    });
+  });
+
+  describe("Quando destacar um produtor", () => {
+    it("Deve destacar produtor aprovado", async () => {
+      const criado = await service.create(buildInput());
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const destacado = await service.setDestaque(criado.id, true);
+      expect(destacado.destaque).toBe(true);
+    });
+
+    it("Deve rejeitar destaque de produtor pendente", async () => {
+      const criado = await service.create(buildInput());
+
+      await expect(service.setDestaque(criado.id, true)).rejects.toMatchObject({
+        statusCode: 400,
+      });
+    });
+
+    it("Deve limitar a 3 destaques", async () => {
+      for (let index = 0; index < 3; index += 1) {
+        const criado = await service.create(
+          buildInput({
+            documento: {
+              tipo: "CPF",
+              numero: `1234567890${index}`,
+            },
+            registros: [{ tipo: "SIM", numero: `REG-D-${index}` }],
+          }),
+        );
+        await service.update(criado.id, { status: "APROVADO" });
+        await service.setDestaque(criado.id, true);
+      }
+
+      const quarto = await service.create(
+        buildInput({
+          documento: { tipo: "CPF", numero: "12345678909" },
+          registros: [{ tipo: "SIM", numero: "REG-D-3" }],
+        }),
+      );
+      await service.update(quarto.id, { status: "APROVADO" });
+
+      await expect(service.setDestaque(quarto.id, true)).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
   });
 });

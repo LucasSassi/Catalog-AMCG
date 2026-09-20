@@ -8,4 +8,5 @@ export interface IProdutorRepositoryRead {
   list(filtros?: ListarProdutoresFiltros): Promise<Produtor[]>;
   findByDocumentoNumero(numero: string): Promise<Produtor | null>;
   findByRegistroNumero(numero: string): Promise<Produtor | null>;
+  countDestaques(): Promise<number>;
 }

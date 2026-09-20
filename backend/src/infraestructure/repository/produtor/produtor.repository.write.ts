@@ -21,6 +21,7 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
       endereco: data.endereco,
       ativo: data.ativo,
       status: data.status,
+      destaque: data.destaque,
     });
     return toProdutorEntity(document);
   }

@@ -6,8 +6,10 @@ export type StatusProdutor = (typeof STATUS_PRODUTOR)[number];
 export const TIPO_DOCUMENTO = ["CNPJ", "CPF", "CAD_PRO"] as const;
 export type TipoDocumento = (typeof TIPO_DOCUMENTO)[number];
 
-export const REGISTRO_PRODUTOR_TIPO = ["SIM", "SUSAF", "SIF", "Outro"] as const;
+export const REGISTRO_PRODUTOR_TIPO = ["SIM"] as const;
 export type RegistroProdutorTipo = (typeof REGISTRO_PRODUTOR_TIPO)[number];
+
+export const MAX_DESTAQUES = 3;
 
 export const UF_BRASIL = [
   "AC",

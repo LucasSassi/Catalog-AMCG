@@ -30,6 +30,10 @@ export class InMemoryProdutorRepository
       items = items.filter((item) => item.status === filtros.status);
     }
 
+    if (filtros?.destaque !== undefined) {
+      items = items.filter((item) => item.destaque === filtros.destaque);
+    }
+
     return items.sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
@@ -53,6 +57,12 @@ export class InMemoryProdutorRepository
     return null;
   }
 
+  async countDestaques(): Promise<number> {
+    return Array.from(this.items.values()).filter(
+      (item) => item.destaque && item.ativo && item.status === "APROVADO",
+    ).length;
+  }
+
   async create(data: CreateProdutorData): Promise<Produtor> {
     const now = new Date();
     const produtor: Produtor = {
@@ -68,6 +78,7 @@ export class InMemoryProdutorRepository
       endereco: data.endereco,
       ativo: data.ativo,
       status: data.status,
+      destaque: data.destaque,
       createdAt: now,
       updatedAt: now,
     };
@@ -96,6 +107,7 @@ export class InMemoryProdutorRepository
       endereco: data.endereco ?? atual.endereco,
       ativo: data.ativo ?? atual.ativo,
       status: data.status ?? atual.status,
+      destaque: data.destaque ?? atual.destaque,
       updatedAt: new Date(),
     };
 
