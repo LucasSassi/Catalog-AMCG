@@ -1,60 +1,15 @@
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { ProducerRegistrationDrawer } from '../features/produtor/components/ProducerRegistrationDrawer'
-import amcgLogo from '../shared/assets/amcg-catalogo.jpeg'
-import { Button } from '../shared/components/Button'
+import logoFooter from '../shared/assets/logo-catalogo-campos-gerais-branca.png'
+import { CatalogHeader } from './CatalogHeader'
 
 export function CatalogLayout() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-brand-900 px-4 py-2 text-center text-xs font-semibold text-accent-400 sm:text-sm">
-        Mais de 50 produtos da agricultura familiar dos Campos Gerais — AMCG +
-        Sebrae
-      </div>
-
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-3">
-            <img
-              src={amcgLogo}
-              alt="AMCG — Associação dos Municípios dos Campos Gerais"
-              className="h-12 w-auto object-contain sm:h-14"
-            />
-            <span className="min-w-0 hidden sm:block">
-              <span className="block truncate text-sm font-bold text-brand-900 sm:text-base">
-                Catálogo de Produtos dos Campos Gerais
-              </span>
-              <span className="block text-xs font-semibold uppercase tracking-wide text-brand-600">
-                AMCG
-              </span>
-            </span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setIsRegistrationOpen(true)}
-              className="hidden sm:inline-flex"
-            >
-              Cadastre-se como produtor
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setIsRegistrationOpen(true)}
-              className="sm:hidden"
-            >
-              Cadastre-se
-            </Button>
-            <Link
-              to="/backoffice"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
-            >
-              Acessar painel
-            </Link>
-          </div>
-        </div>
-      </header>
+      <CatalogHeader onRegisterClick={() => setIsRegistrationOpen(true)} />
 
       <Outlet />
 
@@ -62,9 +17,9 @@ export function CatalogLayout() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
           <div>
             <img
-              src={amcgLogo}
-              alt="AMCG"
-              className="mb-4 h-12 w-auto rounded-md bg-white object-contain p-1"
+              src={logoFooter}
+              alt="Catálogo de Produtos dos Campos Gerais"
+              className="mb-4 h-14 w-auto object-contain"
             />
             <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
               Quem somos
@@ -92,6 +47,16 @@ export function CatalogLayout() {
                 </Link>
               </li>
               <li>
+                <Link to="/quem-somos" className="transition hover:text-white">
+                  Quem somos
+                </Link>
+              </li>
+              <li>
+                <Link to="/produtores" className="transition hover:text-white">
+                  Produtores
+                </Link>
+              </li>
+              <li>
                 <a
                   href="https://www.amcg.com.br"
                   target="_blank"
@@ -104,7 +69,7 @@ export function CatalogLayout() {
             </ul>
           </div>
 
-          <div>
+          <div id="contato">
             <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
               Contato
             </p>

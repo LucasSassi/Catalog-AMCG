@@ -120,21 +120,30 @@ export function BackofficePage() {
 
       {selectedProducer ? (
         <ProducerReviewModal
-          producer={selectedProducer}
+          producer={
+            producers.producers.find(
+              (item) => item.id === selectedProducer.id,
+            ) ?? selectedProducer
+          }
           disabled={producers.isUpdating}
           onClose={() => setSelectedProducer(null)}
           onApprove={producers.approve}
           onReject={producers.reject}
+          onToggleDestaque={producers.toggleDestaque}
         />
       ) : null}
 
       {selectedProduct ? (
         <ProductReviewModal
-          product={selectedProduct}
+          product={
+            products.products.find((item) => item.id === selectedProduct.id) ??
+            selectedProduct
+          }
           disabled={products.isUpdating}
           onClose={() => setSelectedProduct(null)}
           onApprove={products.approve}
           onReject={products.reject}
+          onToggleDestaque={products.toggleDestaque}
         />
       ) : null}
 
