@@ -22,12 +22,12 @@ export function BackofficeNavigation({
 }: BackofficeNavigationProps) {
   return (
     <>
-      <aside className="shrink-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-6 lg:w-64">
-        <p className="px-3 pb-2 pt-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+      <aside className="shrink-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24 lg:w-64">
+        <p className="pb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">
           Cadastros
         </p>
         <nav
-          className="flex gap-2 overflow-x-auto lg:flex-col"
+          className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1"
           aria-label="Cadastros para análise"
         >
           <SidebarButton
@@ -48,7 +48,7 @@ export function BackofficeNavigation({
       </aside>
 
       <div
-        className="inline-flex self-start overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:hidden"
+        className="w-full overflow-x-auto border-b border-slate-200 bg-white lg:hidden"
         role="tablist"
         aria-label="Status dos cadastros"
       >
@@ -67,7 +67,7 @@ export function DesktopStatusTabs({
 }) {
   return (
     <div
-      className="hidden max-w-full overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm lg:inline-flex"
+      className="hidden w-full overflow-x-auto border-b border-slate-200 bg-white lg:block"
       role="tablist"
       aria-label="Status dos cadastros"
     >
@@ -84,7 +84,7 @@ function StatusTabs({
   onChange: (status: ReviewStatus) => void
 }) {
   return (
-    <>
+    <div className="flex gap-6 overflow-x-auto px-1 py-3 sm:gap-8">
       <StatusTab
         label="Pendentes"
         active={status === 'PENDENTE'}
@@ -105,7 +105,7 @@ function StatusTabs({
         active={status === 'TODOS'}
         onClick={() => onChange('TODOS')}
       />
-    </>
+    </div>
   )
 }
 
@@ -118,10 +118,12 @@ function StatusTab({
   active: boolean
   onClick: () => void
 }) {
-  let classes = 'text-slate-600 hover:bg-slate-50'
+  let classes =
+    'whitespace-nowrap text-sm font-extrabold text-slate-900 transition hover:text-brand-600 sm:text-base'
 
   if (active) {
-    classes = 'bg-brand-700 text-white'
+    classes =
+      'whitespace-nowrap text-sm font-extrabold text-brand-800 underline decoration-2 underline-offset-8 sm:text-base'
   }
 
   return (
@@ -130,7 +132,7 @@ function StatusTab({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`rounded-md px-4 py-2 text-sm font-semibold transition ${classes}`}
+      className={classes}
     >
       {label}
     </button>
@@ -150,23 +152,23 @@ function SidebarButton({
   icon: ReactNode
   onClick: () => void
 }) {
-  let classes = 'text-slate-700 hover:bg-brand-50 hover:text-brand-800'
+  let classes = 'text-slate-800 hover:bg-brand-50 hover:text-brand-800'
 
   if (active) {
-    classes = 'bg-brand-700 text-white'
+    classes = 'bg-brand-50 font-bold text-brand-800'
   }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-max items-center gap-3 rounded-lg px-3 py-3 text-left font-semibold transition lg:w-full ${classes}`}
+      className={`flex min-w-max items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition lg:w-full ${classes}`}
     >
-      <span className="h-5 w-5" aria-hidden="true">
+      <span className="h-5 w-5 shrink-0" aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1">{label}</span>
-      <span className="rounded-full bg-black/10 px-2 py-0.5 text-xs">
+      <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
         {count}
       </span>
     </button>

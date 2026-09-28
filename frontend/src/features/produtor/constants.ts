@@ -30,4 +30,4 @@ export const BRAZILIAN_STATES = [
 
 export const DOCUMENT_TYPES = ['CNPJ', 'CPF', 'CAD_PRO'] as const
 
-export const REGISTRATION_TYPES = ['SIM', 'SUSAF', 'SIF', 'Outro'] as const
+export const REGISTRATION_TYPES = ['SIM'] as const

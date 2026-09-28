@@ -12,9 +12,6 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
     },
     registros: document.registros.map((registro) => ({
       tipo: registro.tipo,
-      ...(registro.tipoOutros !== undefined
-        ? { tipoOutros: registro.tipoOutros }
-        : {}),
       numero: registro.numero,
       ...(registro.dataEmissao !== undefined
         ? { dataEmissao: registro.dataEmissao }
@@ -35,6 +32,7 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
     },
     ativo: document.ativo,
     status: document.status,
+    destaque: document.destaque ?? false,
     ...(document.motivoRejeicao !== undefined
       ? { motivoRejeicao: document.motivoRejeicao }
       : {}),

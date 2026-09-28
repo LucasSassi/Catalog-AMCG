@@ -1,5 +1,10 @@
 import { apiRequest } from '../../../shared/api/client'
-import type { CreateProducerInput, Producer, ProducerStatus } from '../types'
+import type {
+  CreateProducerInput,
+  Producer,
+  ProducerCatalog,
+  ProducerStatus,
+} from '../types'
 
 export type ProducerListFilter = ProducerStatus | 'TODOS'
 
@@ -9,6 +14,10 @@ export function createProducer(input: CreateProducerInput): Promise<Producer> {
     authenticated: true,
     body: input,
   })
+}
+
+export function listCatalogProducers(): Promise<ProducerCatalog> {
+  return apiRequest<ProducerCatalog>('/api/produtores/catalogo')
 }
 
 export function listProducers(filter: ProducerListFilter): Promise<Producer[]> {
@@ -39,5 +48,16 @@ export function rejectProducer(id: string, reason: string): Promise<Producer> {
       status: 'REJEITADO',
       motivoRejeicao: reason,
     },
+  })
+}
+
+export function setProducerDestaque(
+  id: string,
+  destaque: boolean,
+): Promise<Producer> {
+  return apiRequest<Producer>(`/api/produtores/${id}/destaque`, {
+    method: 'PATCH',
+    authenticated: true,
+    body: { destaque },
   })
 }

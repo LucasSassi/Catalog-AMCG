@@ -37,6 +37,11 @@ export function ProducerReviewCard({
         >
           {statusLabel}
         </span>
+        {producer.destaque ? (
+          <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+            Destaque
+          </span>
+        ) : null}
       </div>
 
       <dl className="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">

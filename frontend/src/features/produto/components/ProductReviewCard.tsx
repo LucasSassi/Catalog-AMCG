@@ -46,6 +46,11 @@ export function ProductReviewCard({
             >
               {statusLabel}
             </span>
+            {product.destaque ? (
+              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+                Destaque
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-slate-600">{product.descricao}</p>
           <dl className="mt-3 grid gap-x-5 gap-y-2 text-sm sm:grid-cols-2">

@@ -1,27 +1,120 @@
-import { useState } from 'react'
-import { CatalogFilters } from '../../features/produto/components/CatalogFilters'
+import { useRef, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
+import { CatalogFilterBar } from '../../features/produto/components/CatalogFilterBar'
+import { CatalogPagination } from '../../features/produto/components/CatalogPagination'
+import { FeaturedProductsStrip } from '../../features/produto/components/FeaturedProductsStrip'
 import { ProductCard } from '../../features/produto/components/ProductCard'
-import { ProductDetailModal } from '../../features/produto/components/ProductDetailModal'
-import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
 import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
-import type {
-  CatalogFilters as CatalogFiltersValue,
-  CatalogProduct,
-} from '../../features/produto/types'
+import type { CatalogFilters as CatalogFiltersValue } from '../../features/produto/types'
+import { FeaturedProducersStrip } from '../../features/produtor/components/FeaturedProducersStrip'
+import { useCatalogProducers } from '../../features/produtor/hooks/useCatalogProducers'
 import { bannerImages } from '../../shared/assets/banners'
 import { BannerCarousel } from '../../shared/components/BannerCarousel'
 import { Feedback } from '../../shared/components/Feedback'
+import {
+  TabbedSection,
+  type SectionTab,
+} from '../../shared/components/TabbedSection'
 
 const initialFilters: CatalogFiltersValue = {
   busca: '',
   categoria: '',
   municipio: '',
+  certificacao: '',
 }
 
-const trustBadges = [
-  'Produtores verificados — seleção por edital',
-  'Compra direta — sem intermediários',
-  'Qualidade regional — AMCG + Sebrae',
+const PRODUCTS_PER_PAGE = 12
+const FIRST_PAGE = 1
+
+const HIGHLIGHT_TAB = {
+  products: 'produtos',
+  producers: 'produtores',
+} as const
+
+const HIGHLIGHT_TAB_BY_HASH: Record<string, string> = {
+  '#produtos-destaque': HIGHLIGHT_TAB.products,
+  '#produtores-destaque': HIGHLIGHT_TAB.producers,
+}
+
+const highlightAnchorClassName = 'block scroll-mt-32'
+
+const iconClassName = 'h-8 w-8 shrink-0 text-brand-600'
+
+const trustBadges: Array<{
+  title: string
+  subtitle: string
+  icon: ReactNode
+}> = [
+  {
+    title: 'Produtores verificados',
+    subtitle: 'Seleção por edital AMCG + Sebrae',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3l7 3v5c0 4.5-2.9 7.8-7 9-4.1-1.2-7-4.5-7-9V6l7-3z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9.5 12l1.8 1.8L15 10"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: 'Compra direta',
+    subtitle: 'Sem intermediários, fale com quem produz',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M8 10h8M8 14h5"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3v-3H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: 'Qualidade regional',
+    subtitle: 'Agricultura familiar dos Campos Gerais',
+    icon: (
+      <svg
+        className={iconClassName}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3l1.8 4.6L19 9l-3.8 3.2L16.5 17 12 14.6 7.5 17l1.3-4.8L5 9l5.2-1.4L12 3z"
+        />
+      </svg>
+    ),
+  },
 ]
 
 const whyBuyItems = [
@@ -50,32 +143,69 @@ const whyBuyItems = [
 export function CatalogPage() {
   const [filters, setFilters] =
     useState<CatalogFiltersValue>(initialFilters)
-  const [selectedProduct, setSelectedProduct] =
-    useState<CatalogProduct | null>(null)
-  const [selectedProducer, setSelectedProducer] = useState<
-    CatalogProduct['produtor'] | null
-  >(null)
-  const { products, categories, cities, isLoading, error } =
+  const { products, categories, cities, certifications, isLoading, error } =
     useCatalogProducts(filters)
+  const unfilteredCatalog = useCatalogProducts(initialFilters)
+  const { producers } = useCatalogProducers()
 
-  const producerProducts = selectedProducer
-    ? products.filter(
-        (product) => product.produtor.id === selectedProducer.id,
-      )
-    : []
+  const featuredProducers = producers.filter((producer) => producer.destaque)
+  const featuredProducts = unfilteredCatalog.products.filter(
+    (product) => product.destaque,
+  )
+  const [currentPage, setCurrentPage] = useState(FIRST_PAGE)
+  const productsSectionRef = useRef<HTMLElement>(null)
+  const { hash, key: locationKey } = useLocation()
+  const [highlightSelection, setHighlightSelection] = useState<{
+    locationKey: string
+    tabId: string
+  } | null>(null)
 
-  function selectCategory(categoria: string): void {
-    setFilters({ ...filters, categoria })
+  const activeHighlightTab =
+    highlightSelection?.locationKey === locationKey
+      ? highlightSelection.tabId
+      : (HIGHLIGHT_TAB_BY_HASH[hash] ?? HIGHLIGHT_TAB.products)
+
+  const highlightTabs: SectionTab[] = []
+
+  if (featuredProducts.length > 0) {
+    highlightTabs.push({
+      id: HIGHLIGHT_TAB.products,
+      label: 'Produtos',
+      content: <FeaturedProductsStrip products={featuredProducts} />,
+    })
   }
 
-  function openProduct(product: CatalogProduct): void {
-    setSelectedProducer(null)
-    setSelectedProduct(product)
+  if (featuredProducers.length > 0) {
+    highlightTabs.push({
+      id: HIGHLIGHT_TAB.producers,
+      label: 'Produtores',
+      content: <FeaturedProducersStrip producers={featuredProducers} />,
+    })
   }
 
-  function openProducer(producer: CatalogProduct['produtor']): void {
-    setSelectedProduct(null)
-    setSelectedProducer(producer)
+  function handleHighlightTabChange(tabId: string): void {
+    setHighlightSelection({ locationKey, tabId })
+  }
+
+  const totalPages = Math.max(
+    FIRST_PAGE,
+    Math.ceil(products.length / PRODUCTS_PER_PAGE),
+  )
+  const activePage = Math.min(currentPage, totalPages)
+  const pageStart = (activePage - 1) * PRODUCTS_PER_PAGE
+  const visibleProducts = products.slice(
+    pageStart,
+    pageStart + PRODUCTS_PER_PAGE,
+  )
+
+  function handleFiltersChange(nextFilters: CatalogFiltersValue): void {
+    setFilters(nextFilters)
+    setCurrentPage(FIRST_PAGE)
+  }
+
+  function handlePageChange(page: number): void {
+    setCurrentPage(page)
+    productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
@@ -86,100 +216,95 @@ export function CatalogPage() {
       </h1>
 
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-4 sm:grid-cols-3 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:grid-cols-3 sm:px-6 lg:px-8">
           {trustBadges.map((badge) => (
-            <p
-              key={badge}
-              className="rounded-lg bg-brand-50 px-3 py-2 text-center text-xs font-semibold text-brand-800 sm:text-sm"
-            >
-              {badge}
-            </p>
+            <div key={badge.title} className="flex items-center gap-3">
+              {badge.icon}
+              <div>
+                <p className="text-sm font-bold text-brand-700">{badge.title}</p>
+                <p className="text-xs text-slate-600">{badge.subtitle}</p>
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            onClick={() => selectCategory('')}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              filters.categoria === ''
-                ? 'bg-brand-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700'
-            }`}
-          >
-            Todas
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => selectCategory(category)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                filters.categoria === category
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
+      {highlightTabs.length > 0 ? (
+        <section className="border-b border-slate-200 bg-white py-6">
+          <span id="produtos-destaque" className={highlightAnchorClassName} />
+          <span
+            id="produtores-destaque"
+            className={highlightAnchorClassName}
+          />
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <TabbedSection
+              title="Destaques"
+              tabs={highlightTabs}
+              activeTabId={activeHighlightTab}
+              onTabChange={handleHighlightTabChange}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      <CatalogFilterBar
+        filters={filters}
+        categories={categories}
+        cities={cities}
+        certifications={certifications}
+        onChange={handleFiltersChange}
+      />
 
       <main
+        ref={productsSectionRef}
         id="produtos"
-        className="mx-auto max-w-7xl scroll-mt-24 px-4 py-8 sm:px-6 lg:px-8"
+        className="scroll-mt-48 py-8 px-4 sm:px-6 lg:px-8"
       >
-        <CatalogFilters
-          filters={filters}
-          cities={cities}
-          onChange={setFilters}
-        />
-
-        <div className="mb-5 mt-10 text-center">
-          <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
-            Produtos disponíveis
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-brand-700">
-            Seleção Especial
-          </p>
-          <p className="mt-2 text-sm text-slate-500">
-            {products.length} resultado(s)
-          </p>
-        </div>
-
-        {isLoading ? (
-          <Feedback title="Carregando produtos..." />
-        ) : null}
-
-        {!isLoading && error ? (
-          <Feedback
-            tone="error"
-            title="Não foi possível carregar o catálogo"
-            description={error}
-          />
-        ) : null}
-
-        {!isLoading && !error && products.length === 0 ? (
-          <Feedback
-            title="Nenhum produto encontrado"
-            description="Altere os filtros para visualizar outras opções."
-          />
-        ) : null}
-
-        {!isLoading && !error && products.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onSelect={openProduct}
-              />
-            ))}
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="mb-5 text-center">
+            <h2 className="text-2xl font-bold uppercase tracking-wide text-brand-700 sm:text-3xl">
+              Produtos disponíveis
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-slate-700">
+              Seleção Especial
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              {products.length} resultado(s)
+            </p>
           </div>
-        ) : null}
+
+          {isLoading ? <Feedback title="Carregando produtos..." /> : null}
+
+          {!isLoading && error ? (
+            <Feedback
+              tone="error"
+              title="Não foi possível carregar o catálogo"
+              description={error}
+            />
+          ) : null}
+
+          {!isLoading && !error && products.length === 0 ? (
+            <Feedback
+              title="Nenhum produto encontrado"
+              description="Altere os filtros para visualizar outras opções."
+            />
+          ) : null}
+
+          {!isLoading && !error && products.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+                {visibleProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              <CatalogPagination
+                currentPage={activePage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
+          ) : null}
+        </div>
       </main>
 
       <section className="bg-white py-14">
@@ -209,82 +334,6 @@ export function CatalogPage() {
           </div>
         </div>
       </section>
-
-      <section className="border-t border-slate-200 bg-brand-50 py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
-              Quem somos
-            </h2>
-            <p className="mt-1 text-sm font-semibold text-brand-700">
-              Associação dos Municípios dos Campos Gerais
-            </p>
-          </div>
-
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <p className="text-sm leading-7 text-slate-700 sm:text-base">
-                A AMCG é um órgão de representação municipal e microrregional,
-                constituída sob a forma de sociedade civil sem fins lucrativos.
-                É composta por 19 municípios: Arapoti, Carambeí, Castro,
-                Curiúva, Imbaú, Ipiranga, Ivaí, Jaguariaíva, Ortigueira,
-                Palmeira, Piraí do Sul, Porto Amazonas, Ponta Grossa, Reserva,
-                São João do Triunfo, Sengés, Telêmaco Borba, Tibagi e Ventania.
-              </p>
-              <p className="mt-3 text-sm leading-7 text-slate-700 sm:text-base">
-                Seu principal objetivo é a integração regional, econômica e
-                administrativa, buscando o fortalecimento dos municípios e o
-                desenvolvimento econômico e social. Este catálogo — 1ª edição
-                lançada na ExpoIpiranga, em parceria com o Sebrae e com apoio
-                dos Comitês Territoriais Avança Campos Gerais e Vale do Tibagi —
-                amplia a visibilidade dos empreendedores rurais e fortalece a
-                identidade produtiva da região.
-              </p>
-              <a
-                href="https://www.amcg.com.br"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
-              >
-                Conhecer o site da AMCG
-              </a>
-            </div>
-
-            <aside className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
-                Sobre o catálogo
-              </p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-                <li>Mais de 50 produtos da agricultura familiar</li>
-                <li>25 produtores de 13 municípios</li>
-                <li>Seleção por critérios técnicos de edital</li>
-                <li>Parceria AMCG + Sebrae</li>
-                <li>
-                  Destaques: queijos, mel, embutidos, biscoitos, pães, sucos e
-                  geleias
-                </li>
-              </ul>
-            </aside>
-          </div>
-        </div>
-      </section>
-
-      {selectedProduct ? (
-        <ProductDetailModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onSelectProducer={openProducer}
-        />
-      ) : null}
-
-      {selectedProducer ? (
-        <ProducerInfoModal
-          producer={selectedProducer}
-          products={producerProducts}
-          onClose={() => setSelectedProducer(null)}
-          onSelectProduct={openProduct}
-        />
-      ) : null}
     </>
   )
 }

@@ -17,7 +17,6 @@ export interface Documento {
 
 export interface RegistroProdutor {
   tipo: RegistroProdutorTipo;
-  tipoOutros?: string;
   numero: string;
   dataEmissao?: Date;
   dataValidade?: Date;
@@ -40,9 +39,22 @@ export interface Produtor {
   endereco: Endereco;
   ativo: boolean;
   status: StatusProdutor;
+  destaque: boolean;
   motivoRejeicao?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ProdutorCatalogo {
+  id: string;
+  nome: string;
+  municipio: string;
+  telefone: string;
+  destaque: boolean;
+}
+
+export interface CatalogoProdutores {
+  produtores: ProdutorCatalogo[];
 }
 
 export interface CadastrarProdutorInput {
@@ -68,4 +80,5 @@ export interface AtualizarProdutorInput {
 export interface ListarProdutoresFiltros {
   ativo?: boolean;
   status?: StatusProdutor;
+  destaque?: boolean;
 }

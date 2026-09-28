@@ -1,8 +1,14 @@
 import { useState } from 'react'
-import { createProducer } from '../api/producers'
+import { approveProducer, createProducer } from '../api/producers'
 import type { CreateProducerInput, Producer } from '../types'
 
-export function useRegisterProducer() {
+interface UseRegisterProducerOptions {
+  approveAfterCreate?: boolean
+}
+
+export function useRegisterProducer(
+  options: UseRegisterProducerOptions = {},
+) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [createdProducer, setCreatedProducer] = useState<Producer | null>(null)
@@ -12,7 +18,20 @@ export function useRegisterProducer() {
     setError('')
 
     try {
-      const producer = await createProducer(input)
+      let producer = await createProducer(input)
+
+      if (options.approveAfterCreate) {
+        try {
+          producer = await approveProducer(producer.id)
+        } catch {
+          setCreatedProducer(producer)
+          setError(
+            'Produtor criado, mas não foi possível aprovar automaticamente. Aprove na lista de pendentes.',
+          )
+          return false
+        }
+      }
+
       setCreatedProducer(producer)
       return true
     } catch (requestError) {

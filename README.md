@@ -106,6 +106,22 @@ docker compose -f docker-compose.dev.yml up
 
 Use `--build` de novo só se mudou `package.json`, Dockerfile ou lockfile.
 
+### Migrações de dados (após atualização de categorias/registros)
+
+Com o compose de desenvolvimento no ar:
+
+```bash
+docker compose -f docker-compose.dev.yml exec backend npx tsx scripts/migrate-categorias.ts
+docker compose -f docker-compose.dev.yml exec backend npx tsx scripts/migrate-registros.ts
+```
+
+Ou, de dentro de `backend/` com `MONGO_URI` apontando para o Mongo acessível:
+
+```bash
+npm run migrate:categorias
+npm run migrate:registros
+```
+
 Para parar:
 
 ```bash

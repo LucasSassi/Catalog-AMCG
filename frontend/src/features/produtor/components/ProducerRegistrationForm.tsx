@@ -3,13 +3,13 @@ import { Button } from '../../../shared/components/Button'
 import {
   BRAZILIAN_STATES,
   DOCUMENT_TYPES,
-  REGISTRATION_TYPES,
 } from '../constants'
 import { useRegisterProducer } from '../hooks/useRegisterProducer'
 import type { CreateProducerInput, ProducerRegistration } from '../types'
 
 interface ProducerRegistrationFormProps {
   onSuccess: () => void
+  approveAfterCreate?: boolean
 }
 
 const emptyRegistration: ProducerRegistration = {
@@ -31,9 +31,12 @@ const inputClassName =
 
 export function ProducerRegistrationForm({
   onSuccess,
+  approveAfterCreate = false,
 }: ProducerRegistrationFormProps) {
   const [form, setForm] = useState<CreateProducerInput>(initialForm)
-  const { submit, error, isLoading } = useRegisterProducer()
+  const { submit, error, isLoading } = useRegisterProducer({
+    approveAfterCreate,
+  })
 
   function updateField<K extends keyof CreateProducerInput>(
     field: K,
@@ -198,42 +201,9 @@ export function ProducerRegistrationForm({
               ) : null}
             </div>
 
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Tipo
-              </span>
-              <select
-                required
-                value={registro.tipo}
-                onChange={(event) =>
-                  updateRegistration(index, 'tipo', event.target.value)
-                }
-                className={inputClassName}
-              >
-                {REGISTRATION_TYPES.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {tipo}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {registro.tipo === 'Outro' ? (
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Descreva o tipo
-                </span>
-                <input
-                  required
-                  type="text"
-                  value={registro.tipoOutros ?? ''}
-                  onChange={(event) =>
-                    updateRegistration(index, 'tipoOutros', event.target.value)
-                  }
-                  className={inputClassName}
-                />
-              </label>
-            ) : null}
+            <p className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-800">
+              Tipo: Registro SIM (Inspeção Municipal)
+            </p>
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">

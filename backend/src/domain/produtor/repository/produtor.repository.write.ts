@@ -16,6 +16,7 @@ export interface CreateProdutorData {
   endereco: Endereco;
   ativo: boolean;
   status: StatusProdutor;
+  destaque: boolean;
 }
 
 export interface UpdateProdutorData {
@@ -27,6 +28,7 @@ export interface UpdateProdutorData {
   endereco?: Endereco;
   ativo?: boolean;
   status?: StatusProdutor;
+  destaque?: boolean;
   motivoRejeicao?: string | null;
 }
 

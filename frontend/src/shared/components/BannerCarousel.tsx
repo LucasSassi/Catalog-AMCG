@@ -5,6 +5,20 @@ interface BannerCarouselProps {
   intervalMs?: number
 }
 
+interface BannerLoadingProps {
+  loading: 'eager' | 'lazy'
+  fetchPriority: 'high' | 'low'
+}
+
+function getBannerLoadingProps(index: number): BannerLoadingProps {
+  const isFirstBanner = index === 0
+
+  return {
+    loading: isFirstBanner ? 'eager' : 'lazy',
+    fetchPriority: isFirstBanner ? 'high' : 'low',
+  }
+}
+
 export function BannerCarousel({
   images,
   intervalMs = 6000,
@@ -47,12 +61,14 @@ export function BannerCarousel({
       aria-roledescription="carousel"
       aria-label="Banners de divulgação"
     >
-      <div className="relative aspect-[16/9] w-full sm:aspect-[16/6]">
+      <div className="relative aspect-[16/8] w-full sm:aspect-[16/5]">
         {images.map((image, index) => (
           <img
             key={image}
             src={image}
             alt={`Banner ${index + 1}`}
+            decoding="async"
+            {...getBannerLoadingProps(index)}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
               index === activeIndex ? 'opacity-100' : 'opacity-0'
             }`}

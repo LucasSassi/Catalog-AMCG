@@ -56,9 +56,15 @@ export function ProducerReviewList({
 
   return (
     <section aria-labelledby="producer-list-title">
-      <h2 id="producer-list-title" className="mb-4 text-xl font-bold">
+      <h2
+        id="producer-list-title"
+        className="mb-1 text-2xl font-bold uppercase tracking-wide text-slate-900"
+      >
         {title}
       </h2>
+      <p className="mb-5 text-sm font-semibold text-brand-700">
+        Curadoria de produtores
+      </p>
       <div className="space-y-4">
         {producers.map((producer) => (
           <ProducerReviewCard

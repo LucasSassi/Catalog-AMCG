@@ -7,6 +7,7 @@ import {
   CNPJ_LENGTH,
   CPF_LENGTH,
   E164_PHONE_REGEX,
+  MAX_DESTAQUES,
   REGISTRO_PRODUTOR_TIPO,
   STATUS_PRODUTOR,
   TIPO_DOCUMENTO,
@@ -19,6 +20,7 @@ import type { IProdutorService } from "../entity/interfaces/produtor.service.int
 import type {
   AtualizarProdutorInput,
   CadastrarProdutorInput,
+  CatalogoProdutores,
   Contato,
   Documento,
   Endereco,
@@ -63,6 +65,7 @@ export class ProdutorService implements IProdutorService {
       endereco,
       ativo: true,
       status: "PENDENTE",
+      destaque: false,
     });
   }
 
@@ -73,6 +76,23 @@ export class ProdutorService implements IProdutorService {
     return this.readRepository.list(filtros);
   }
 
+  async listCatalog(): Promise<CatalogoProdutores> {
+    const produtores = await this.readRepository.list({
+      ativo: true,
+      status: "APROVADO",
+    });
+
+    return {
+      produtores: produtores.map((produtor) => ({
+        id: produtor.id,
+        nome: produtor.nomeEmpresa,
+        municipio: produtor.endereco.cidade,
+        telefone: produtor.contato.telefone,
+        destaque: produtor.destaque,
+      })),
+    };
+  }
+
   async getById(id: string): Promise<Produtor> {
     const produtor = await this.readRepository.findById(id);
 
@@ -81,6 +101,41 @@ export class ProdutorService implements IProdutorService {
     }
 
     return produtor;
+  }
+
+  async setDestaque(id: string, destaque: boolean): Promise<Produtor> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+
+    if (!atual.ativo) {
+      throw new ValidationError("Produtor inativo não pode ser destacado");
+    }
+
+    if (atual.status !== "APROVADO") {
+      throw new ValidationError(
+        "Somente produtores aprovados podem ser destacados",
+      );
+    }
+
+    if (destaque && !atual.destaque) {
+      const total = await this.readRepository.countDestaques();
+      if (total >= MAX_DESTAQUES) {
+        throw new ValidationError(
+          "Limite de 3 destaques atingido — remova um destaque antes",
+        );
+      }
+    }
+
+    const atualizado = await this.writeRepository.update(id, { destaque });
+
+    if (!atualizado) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+
+    return atualizado;
   }
 
   async update(id: string, input: AtualizarProdutorInput): Promise<Produtor> {
@@ -277,26 +332,6 @@ export class ProdutorService implements IProdutorService {
     const numero = registro.numero.trim();
     if (!numero) {
       throw new ValidationError("Número do registro é obrigatório");
-    }
-
-    if (registro.tipo === "Outro") {
-      const tipoOutros = registro.tipoOutros?.trim();
-      if (!tipoOutros) {
-        throw new ValidationError(
-          "tipoOutros é obrigatório quando o tipo for Outro",
-        );
-      }
-      return {
-        tipo: "Outro",
-        tipoOutros,
-        numero,
-        ...(registro.dataEmissao !== undefined
-          ? { dataEmissao: registro.dataEmissao }
-          : {}),
-        ...(registro.dataValidade !== undefined
-          ? { dataValidade: registro.dataValidade }
-          : {}),
-      };
     }
 
     return {

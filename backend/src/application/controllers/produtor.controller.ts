@@ -17,23 +17,12 @@ const documentoSchema = z.object({
   numero: z.string().trim().min(1, "Número do documento é obrigatório"),
 });
 
-const registroSchema = z
-  .object({
-    tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
-    tipoOutros: z.string().trim().optional(),
-    numero: z.string().trim().min(1, "Número do registro é obrigatório"),
-    dataEmissao: z.coerce.date().optional(),
-    dataValidade: z.coerce.date().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.tipo === "Outro" && !data.tipoOutros?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "tipoOutros é obrigatório quando o tipo for Outro",
-        path: ["tipoOutros"],
-      });
-    }
-  });
+const registroSchema = z.object({
+  tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
+  numero: z.string().trim().min(1, "Número do registro é obrigatório"),
+  dataEmissao: z.coerce.date().optional(),
+  dataValidade: z.coerce.date().optional(),
+});
 
 const contatoSchema = z.object({
   telefone: z
@@ -109,6 +98,10 @@ const listQuerySchema = z.object({
   status: z.enum(STATUS_PRODUTOR).optional(),
 });
 
+const destaqueSchema = z.object({
+  destaque: z.boolean(),
+});
+
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
@@ -136,6 +129,18 @@ export function createProdutorController(
   const router = Router();
   const { produtorService, jwtSecret } = options;
   const requireAuth = createAuthMiddleware(jwtSecret);
+
+  router.get(
+    "/catalogo",
+    async (_request: Request, response: Response, next: NextFunction) => {
+      try {
+        const catalogo = await produtorService.listCatalog();
+        response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.post(
     "/",
@@ -199,6 +204,23 @@ export function createProdutorController(
         const produtor = await produtorService.update(
           getRouteId(request),
           body,
+        );
+        response.status(200).json(produtor);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.patch(
+    "/:id/destaque",
+    requireAuth,
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const body = parseOrThrow(destaqueSchema, request.body);
+        const produtor = await produtorService.setDestaque(
+          getRouteId(request),
+          body.destaque,
         );
         response.status(200).json(produtor);
       } catch (error) {

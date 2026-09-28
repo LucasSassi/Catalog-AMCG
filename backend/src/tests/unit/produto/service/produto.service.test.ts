@@ -41,7 +41,7 @@ function buildInput(
     produtorId,
     nome: "Mel Artesanal",
     descricao: "Mel puro de Campos Gerais",
-    categoria: "MEL",
+    categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",
     registros: [{ tipo: "SELO ARTE", numero: "REG-PROD-001" }],
     fotosAvaliacao: [arquivoValido],
@@ -97,7 +97,7 @@ describe("Quando usar o ProdutoService", () => {
         status: "PENDENTE",
         ativo: true,
         valorCentavos: 3500,
-        categoria: "MEL",
+        categoria: "MEL_E_DERIVADOS",
       });
       expect(produto.id).toEqual(expect.any(String));
     });
@@ -112,7 +112,7 @@ describe("Quando usar o ProdutoService", () => {
       const pendente = await produtorService.create(
         buildProdutorInput({
           documento: { tipo: "CPF", numero: "12345678901" },
-          registros: [{ tipo: "SIF", numero: "REG-002" }],
+          registros: [{ tipo: "SIM", numero: "REG-002" }],
         }),
       );
 
@@ -206,14 +206,14 @@ describe("Quando usar o ProdutoService", () => {
       await service.create(
         buildInput(produtorAprovadoId, {
           nome: "Queijo pendente",
-          categoria: "QUEIJO",
+          categoria: "QUEIJOS_E_LACTEOS",
           registros: [{ tipo: "MAPA", numero: "REG-PROD-002" }],
         }),
       );
 
       const catalogo = await service.listCatalog({
         busca: "fazenda",
-        categoria: "MEL",
+        categoria: "MEL_E_DERIVADOS",
         municipio: "Ponta Grossa",
       });
 
@@ -226,7 +226,7 @@ describe("Quando usar o ProdutoService", () => {
           telefone: "+5542999999999",
         },
       });
-      expect(catalogo.categorias).toContain("MEL");
+      expect(catalogo.categorias).toContain("MEL_E_DERIVADOS");
       expect(catalogo.municipios).toEqual(["Ponta Grossa"]);
     });
   });
@@ -237,7 +237,7 @@ describe("Quando usar o ProdutoService", () => {
       await service.create(
         buildInput(produtorAprovadoId, {
           nome: "Queijo Artesanal",
-          categoria: "QUEIJO",
+          categoria: "QUEIJOS_E_LACTEOS",
           registros: [{ tipo: "MAPA", numero: "REG-PROD-002" }],
         }),
       );
@@ -245,9 +245,9 @@ describe("Quando usar o ProdutoService", () => {
       const porProdutor = await service.list({ produtorId: produtorAprovadoId });
       expect(porProdutor).toHaveLength(2);
 
-      const porCategoria = await service.list({ categoria: "MEL" });
+      const porCategoria = await service.list({ categoria: "MEL_E_DERIVADOS" });
       expect(porCategoria).toHaveLength(1);
-      expect(porCategoria[0].categoria).toBe("MEL");
+      expect(porCategoria[0].categoria).toBe("MEL_E_DERIVADOS");
     });
   });
 
@@ -337,6 +337,24 @@ describe("Quando usar o ProdutoService", () => {
       const criado = await service.create(buildInput(produtorAprovadoId));
       await service.remove(criado.id);
       await expect(service.remove(criado.id)).resolves.toBeUndefined();
+    });
+  });
+
+  describe("Quando destacar um produto", () => {
+    it("Deve destacar produto aprovado", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const destacado = await service.setDestaque(criado.id, true);
+      expect(destacado.destaque).toBe(true);
+    });
+
+    it("Deve rejeitar destaque de produto pendente", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+
+      await expect(service.setDestaque(criado.id, true)).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
   });
 });

@@ -56,6 +56,7 @@ export function toProdutoEntity(document: ProdutoModelDocument): Produto {
       : {}),
     ativo: document.ativo,
     status: document.status,
+    destaque: document.destaque ?? false,
     ...(document.motivoRejeicao !== undefined
       ? { motivoRejeicao: document.motivoRejeicao }
       : {}),

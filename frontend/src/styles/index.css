@@ -3,14 +3,16 @@
 @theme {
   --color-brand-50: #eef8f1;
   --color-brand-100: #d7eddd;
+  --color-brand-200: #b3dcc0;
   --color-brand-500: #2a8f55;
   --color-brand-600: #167744;
   --color-brand-700: #115f38;
   --color-brand-800: #0d4b2e;
   --color-brand-900: #0a3b25;
+  --color-accent-300: #fadb7a;
   --color-accent-400: #f7c948;
   --color-accent-500: #e7ad17;
-  --font-sans: "Inter", "Segoe UI", sans-serif;
+  --font-sans: "Onest", "Segoe UI", sans-serif;
 }
 
 :root {

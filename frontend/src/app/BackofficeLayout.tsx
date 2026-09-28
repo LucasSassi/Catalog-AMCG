@@ -12,11 +12,13 @@ export function BackofficeLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div>
             <p className="font-bold text-brand-900">Backoffice AMCG</p>
-            <p className="text-xs text-slate-500">Curadoria do catálogo</p>
+            <p className="text-xs font-semibold text-brand-700">
+              Curadoria do catálogo
+            </p>
           </div>
           <nav className="flex items-center gap-2" aria-label="Navegação">
             <Link

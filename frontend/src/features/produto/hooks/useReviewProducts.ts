@@ -3,6 +3,7 @@ import {
   approveProduct,
   listProducts,
   rejectProduct,
+  setProductDestaque,
   type ProductListFilter,
 } from '../api/products'
 import type { Product } from '../types'
@@ -56,6 +57,33 @@ export function useReviewProducts(status: ProductListFilter) {
     return updateProduct(() => rejectProduct(id, reason), id)
   }
 
+  async function toggleDestaque(
+    id: string,
+    destaque: boolean,
+  ): Promise<boolean> {
+    setIsUpdating(true)
+    setError('')
+
+    try {
+      const updated = await setProductDestaque(id, destaque)
+      setProducts((currentProducts) =>
+        currentProducts.map((product) =>
+          product.id === id ? updated : product,
+        ),
+      )
+      return true
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setError(requestError.message)
+      } else {
+        setError('Não foi possível atualizar o destaque.')
+      }
+      return false
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   async function updateProduct(
     request: () => Promise<Product>,
     id: string,
@@ -93,6 +121,7 @@ export function useReviewProducts(status: ProductListFilter) {
     error,
     approve,
     reject,
+    toggleDestaque,
     reload,
   }
 }

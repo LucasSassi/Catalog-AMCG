@@ -1,4 +1,10 @@
+import { Link } from 'react-router-dom'
 import { Modal } from '../../../shared/components/Modal'
+import logoPlaceholder from '../../../shared/assets/logo-catalogo-campos-gerais.png'
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 import type { CatalogProduct } from '../types'
@@ -9,14 +15,15 @@ interface ProducerInfoModalProps {
   producer: CatalogProducer
   products: CatalogProduct[]
   onClose: () => void
-  onSelectProduct: (product: CatalogProduct) => void
 }
+
+const PLACEHOLDER_DESCRIPTION =
+  'Produtor da agricultura familiar dos Campos Gerais, selecionado por edital da AMCG em parceria com o Sebrae. Produz com dedicação e qualidade, valorizando a tradição e a identidade produtiva da região.'
 
 export function ProducerInfoModal({
   producer,
   products,
   onClose,
-  onSelectProduct,
 }: ProducerInfoModalProps) {
   const whatsappUrl = buildWhatsAppUrl({
     telefone: producer.telefone,
@@ -24,15 +31,28 @@ export function ProducerInfoModal({
   })
 
   return (
-    <Modal title={producer.nome} onClose={onClose}>
+    <Modal title="Informações do produtor" onClose={onClose}>
       <div className="space-y-6">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Município
-          </p>
-          <p className="mt-1 text-base font-semibold text-brand-900">
-            {producer.municipio}
-          </p>
+          <div className="flex items-center gap-4">
+            <img
+              src={logoPlaceholder}
+              alt={`Logo de ${producer.nome}`}
+              width={64}
+              height={64}
+              decoding="async"
+              className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-contain p-1"
+            />
+            <div className="min-w-0">
+              <h3 className="text-xl font-bold text-brand-900">
+                {producer.nome}
+              </h3>
+              <p className="mt-0.5 text-sm text-slate-600">
+                {producer.municipio}
+              </p>
+            </div>
+          </div>
+
           <a
             href={whatsappUrl}
             target="_blank"
@@ -45,25 +65,41 @@ export function ProducerInfoModal({
 
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Sobre o produtor
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {PLACEHOLDER_DESCRIPTION}
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Produtos deste produtor
           </h3>
 
           {products.length === 0 ? (
             <p className="mt-3 text-sm text-slate-600">
-              Nenhum outro produto deste produtor no catálogo filtrado.
+              Nenhum produto deste produtor no catálogo.
             </p>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {products.map((product) => (
-                <button
+                <Link
                   key={product.id}
-                  type="button"
-                  onClick={() => onSelectProduct(product)}
+                  to={`/produtos/${product.id}`}
+                  onClick={onClose}
                   className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   <img
-                    src={product.fotoDivulgacao.url}
+                    src={buildThumbnailUrl(
+                      product.fotoDivulgacao.url,
+                      THUMBNAIL_WIDTH.card,
+                    )}
                     alt={product.nome}
+                    width={600}
+                    height={600}
+                    loading="lazy"
+                    decoding="async"
                     className="aspect-square w-full object-cover"
                   />
                   <div className="p-3">
@@ -74,7 +110,7 @@ export function ProducerInfoModal({
                       {formatCurrency(product.valorCentavos)}
                     </p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           )}

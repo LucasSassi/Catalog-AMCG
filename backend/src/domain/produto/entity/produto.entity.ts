@@ -1,5 +1,6 @@
 import type {
   CategoriaProduto,
+  CertificacaoCatalogo,
   RegistroProdutoTipo,
   StatusProduto,
   UnidadeMedida,
@@ -41,6 +42,7 @@ export interface Produto {
   observacoes?: string;
   ativo: boolean;
   status: StatusProduto;
+  destaque: boolean;
   motivoRejeicao?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -81,12 +83,14 @@ export interface ListarProdutosFiltros {
   categoria?: CategoriaProduto;
   ativo?: boolean;
   status?: StatusProduto;
+  destaque?: boolean;
 }
 
 export interface CatalogoFiltros {
   busca?: string;
   categoria?: CategoriaProduto;
   municipio?: string;
+  certificacao?: CertificacaoCatalogo;
 }
 
 export interface ProdutoCatalogo {
@@ -97,6 +101,8 @@ export interface ProdutoCatalogo {
   unidadeMedida: UnidadeMedida;
   valorCentavos: number;
   fotoDivulgacao: Arquivo;
+  destaque: boolean;
+  premiado: boolean;
   produtor: {
     id: string;
     nome: string;
@@ -105,8 +111,19 @@ export interface ProdutoCatalogo {
   };
 }
 
+export interface ProdutoCatalogoDetalhe extends ProdutoCatalogo {
+  fotosDivulgacao: Arquivo[];
+  registros: Array<{ tipo: RegistroProdutoTipo }>;
+  premiacoes: Array<{ nome: string; ano: number }>;
+  observacoes?: string;
+  produtor: ProdutoCatalogo["produtor"] & {
+    temRegistroSim: boolean;
+  };
+}
+
 export interface CatalogoProdutos {
   produtos: ProdutoCatalogo[];
   categorias: CategoriaProduto[];
   municipios: string[];
+  certificacoes: CertificacaoCatalogo[];
 }
