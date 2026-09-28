@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import logoCatalogo from '../shared/assets/logo-catalogo-campos-gerais-branca.png'
 import {
   MobileNavGroup,
   NavDropdown,
   type NavDropdownItem,
 } from '../shared/components/NavDropdown'
+import { BackToCatalogLink } from './BackToCatalogLink'
+
+const CATALOG_HOME_PATH = '/'
 
 interface CatalogHeaderProps {
   onRegisterClick: () => void
@@ -16,6 +19,8 @@ const linkClassName =
 
 export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const { pathname } = useLocation()
+  const showBackLink = pathname !== CATALOG_HOME_PATH
 
   const catalogItems: NavDropdownItem[] = [
     { label: 'Conheça o Projeto', to: '/quem-somos' },
@@ -46,7 +51,12 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 bg-brand-800 shadow-md">
-      <div className="mx-auto hidden max-w-7xl items-start gap-2 px-4 py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center lg:px-8">
+      <div className="relative mx-auto hidden max-w-7xl items-start gap-2 px-4 py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center lg:px-8">
+        {showBackLink ? (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 lg:left-8">
+            <BackToCatalogLink />
+          </div>
+        ) : null}
         <nav className="flex flex-wrap items-center justify-end gap-1 lg:gap-3">
           <NavDropdown label="Conheça o Catálogo" items={catalogItems} />
           <NavDropdown
@@ -74,16 +84,26 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
             align="right"
           />
         </nav>
+
+        <Link
+          to="/backoffice"
+          className="absolute bottom-1 right-2 text-xs font-semibold uppercase tracking-wide text-brand-200 transition hover:text-accent-300 lg:right-8"
+        >
+          Acessar painel
+        </Link>
       </div>
 
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:hidden">
-        <Link to="/" onClick={closeMobile}>
-          <img
-            src={logoCatalogo}
-            alt="Catálogo de Produtos dos Campos Gerais"
-            className="h-12 w-auto object-contain"
-          />
-        </Link>
+        <div className="flex items-center gap-2">
+          {showBackLink ? <BackToCatalogLink onClick={closeMobile} /> : null}
+          <Link to="/" onClick={closeMobile}>
+            <img
+              src={logoCatalogo}
+              alt="Catálogo de Produtos dos Campos Gerais"
+              className="h-12 w-auto object-contain"
+            />
+          </Link>
+        </div>
         <button
           type="button"
           className="rounded-lg border border-brand-500 px-3 py-2 text-sm font-semibold text-white"
@@ -162,17 +182,6 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
           </Link>
         </nav>
       ) : null}
-
-      <div className="hidden border-t border-brand-700 md:block">
-        <div className="mx-auto flex max-w-7xl justify-end px-4 py-1.5 lg:px-8">
-          <Link
-            to="/backoffice"
-            className="text-xs font-semibold uppercase tracking-wide text-brand-200 transition hover:text-accent-300"
-          >
-            Acessar painel
-          </Link>
-        </div>
-      </div>
     </header>
   )
 }

@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router-dom'
 import { ProducerRegistrationDrawer } from '../features/produtor/components/ProducerRegistrationDrawer'
 import logoFooter from '../shared/assets/logo-catalogo-campos-gerais-branca.png'
 import { CatalogHeader } from './CatalogHeader'
+import { ScrollToHash } from './ScrollToHash'
 
 export function CatalogLayout() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
@@ -10,6 +11,7 @@ export function CatalogLayout() {
   return (
     <div className="min-h-screen bg-slate-50">
       <CatalogHeader onRegisterClick={() => setIsRegistrationOpen(true)} />
+      <ScrollToHash />
 
       <Outlet />
 
@@ -69,7 +71,7 @@ export function CatalogLayout() {
             </ul>
           </div>
 
-          <div id="contato">
+          <div id="contato-rodape">
             <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
               Contato
             </p>
