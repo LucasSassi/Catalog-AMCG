@@ -9,6 +9,10 @@ import type { CatalogFilters } from '../../features/produto/types'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
 import premiadoBadge from '../../shared/assets/premiado.png'
 import { Feedback } from '../../shared/components/Feedback'
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../shared/lib/formatCurrency'
 
 const emptyFilters: CatalogFilters = {
@@ -87,8 +91,15 @@ export function ProductDetailPage() {
                       }`}
                     >
                       <img
-                        src={photo.url}
+                        src={buildThumbnailUrl(
+                          photo.url,
+                          THUMBNAIL_WIDTH.gallery,
+                        )}
                         alt=""
+                        width={64}
+                        height={64}
+                        loading="lazy"
+                        decoding="async"
                         className="aspect-square w-full object-cover"
                       />
                     </button>
@@ -98,8 +109,13 @@ export function ProductDetailPage() {
 
               <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100">
                 <img
-                  src={mainPhoto.url}
+                  src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
                   alt={product.nome}
+                  width={1200}
+                  height={900}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="aspect-[4/3] w-full object-cover"
                 />
                 {product.premiado ? (
@@ -107,6 +123,10 @@ export function ProductDetailPage() {
                     <img
                       src={premiadoBadge}
                       alt="Produto premiado"
+                      width={56}
+                      height={56}
+                      loading="lazy"
+                      decoding="async"
                       className="h-14 w-14 object-contain drop-shadow"
                     />
                     <span className="pointer-events-none absolute right-0 top-16 z-10 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-xs text-white group-hover:block">
@@ -170,6 +190,10 @@ export function ProductDetailPage() {
                   <img
                     src={logoPlaceholder}
                     alt=""
+                    width={40}
+                    height={40}
+                    loading="lazy"
+                    decoding="async"
                     className="h-10 w-10 rounded-md bg-white object-contain"
                   />
                   <span>

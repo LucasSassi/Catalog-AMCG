@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Modal } from '../../../shared/components/Modal'
 import logoPlaceholder from '../../../shared/assets/logo-catalogo-campos-gerais.png'
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import { buildWhatsAppUrl } from '../lib/whatsapp'
 import type { CatalogProduct } from '../types'
@@ -34,6 +38,9 @@ export function ProducerInfoModal({
             <img
               src={logoPlaceholder}
               alt={`Logo de ${producer.nome}`}
+              width={64}
+              height={64}
+              decoding="async"
               className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-contain p-1"
             />
             <div className="min-w-0">
@@ -84,8 +91,15 @@ export function ProducerInfoModal({
                   className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   <img
-                    src={product.fotoDivulgacao.url}
+                    src={buildThumbnailUrl(
+                      product.fotoDivulgacao.url,
+                      THUMBNAIL_WIDTH.card,
+                    )}
                     alt={product.nome}
+                    width={600}
+                    height={600}
+                    loading="lazy"
+                    decoding="async"
                     className="aspect-square w-full object-cover"
                   />
                   <div className="p-3">
