@@ -63,6 +63,10 @@ export function ProducersPage() {
                 <img
                   src={logoPlaceholder}
                   alt=""
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  decoding="async"
                   className="h-16 w-16 rounded-full border border-slate-200 object-contain p-1"
                 />
                 <div>

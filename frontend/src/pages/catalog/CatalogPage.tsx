@@ -1,14 +1,20 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CatalogFilterBar } from '../../features/produto/components/CatalogFilterBar'
-import { FeaturedProductsRow } from '../../features/produto/components/FeaturedProductsRow'
+import { CatalogPagination } from '../../features/produto/components/CatalogPagination'
+import { FeaturedProductsStrip } from '../../features/produto/components/FeaturedProductsStrip'
 import { ProductCard } from '../../features/produto/components/ProductCard'
 import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
 import type { CatalogFilters as CatalogFiltersValue } from '../../features/produto/types'
-import { FeaturedProducersRow } from '../../features/produtor/components/FeaturedProducersRow'
+import { FeaturedProducersStrip } from '../../features/produtor/components/FeaturedProducersStrip'
 import { useCatalogProducers } from '../../features/produtor/hooks/useCatalogProducers'
 import { bannerImages } from '../../shared/assets/banners'
 import { BannerCarousel } from '../../shared/components/BannerCarousel'
 import { Feedback } from '../../shared/components/Feedback'
+import {
+  TabbedSection,
+  type SectionTab,
+} from '../../shared/components/TabbedSection'
 
 const initialFilters: CatalogFiltersValue = {
   busca: '',
@@ -16,6 +22,21 @@ const initialFilters: CatalogFiltersValue = {
   municipio: '',
   certificacao: '',
 }
+
+const PRODUCTS_PER_PAGE = 12
+const FIRST_PAGE = 1
+
+const HIGHLIGHT_TAB = {
+  products: 'produtos',
+  producers: 'produtores',
+} as const
+
+const HIGHLIGHT_TAB_BY_HASH: Record<string, string> = {
+  '#produtos-destaque': HIGHLIGHT_TAB.products,
+  '#produtores-destaque': HIGHLIGHT_TAB.producers,
+}
+
+const highlightAnchorClassName = 'block scroll-mt-32'
 
 const iconClassName = 'h-8 w-8 shrink-0 text-brand-600'
 
@@ -131,6 +152,61 @@ export function CatalogPage() {
   const featuredProducts = unfilteredCatalog.products.filter(
     (product) => product.destaque,
   )
+  const [currentPage, setCurrentPage] = useState(FIRST_PAGE)
+  const productsSectionRef = useRef<HTMLElement>(null)
+  const { hash, key: locationKey } = useLocation()
+  const [highlightSelection, setHighlightSelection] = useState<{
+    locationKey: string
+    tabId: string
+  } | null>(null)
+
+  const activeHighlightTab =
+    highlightSelection?.locationKey === locationKey
+      ? highlightSelection.tabId
+      : (HIGHLIGHT_TAB_BY_HASH[hash] ?? HIGHLIGHT_TAB.products)
+
+  const highlightTabs: SectionTab[] = []
+
+  if (featuredProducts.length > 0) {
+    highlightTabs.push({
+      id: HIGHLIGHT_TAB.products,
+      label: 'Produtos',
+      content: <FeaturedProductsStrip products={featuredProducts} />,
+    })
+  }
+
+  if (featuredProducers.length > 0) {
+    highlightTabs.push({
+      id: HIGHLIGHT_TAB.producers,
+      label: 'Produtores',
+      content: <FeaturedProducersStrip producers={featuredProducers} />,
+    })
+  }
+
+  function handleHighlightTabChange(tabId: string): void {
+    setHighlightSelection({ locationKey, tabId })
+  }
+
+  const totalPages = Math.max(
+    FIRST_PAGE,
+    Math.ceil(products.length / PRODUCTS_PER_PAGE),
+  )
+  const activePage = Math.min(currentPage, totalPages)
+  const pageStart = (activePage - 1) * PRODUCTS_PER_PAGE
+  const visibleProducts = products.slice(
+    pageStart,
+    pageStart + PRODUCTS_PER_PAGE,
+  )
+
+  function handleFiltersChange(nextFilters: CatalogFiltersValue): void {
+    setFilters(nextFilters)
+    setCurrentPage(FIRST_PAGE)
+  }
+
+  function handlePageChange(page: number): void {
+    setCurrentPage(page)
+    productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   return (
     <>
@@ -153,20 +229,36 @@ export function CatalogPage() {
         </div>
       </section>
 
-      <FeaturedProducersRow producers={featuredProducers} />
-      <FeaturedProductsRow products={featuredProducts} />
+      {highlightTabs.length > 0 ? (
+        <section className="border-b border-slate-200 bg-white py-6">
+          <span id="produtos-destaque" className={highlightAnchorClassName} />
+          <span
+            id="produtores-destaque"
+            className={highlightAnchorClassName}
+          />
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <TabbedSection
+              title="Destaques"
+              tabs={highlightTabs}
+              activeTabId={activeHighlightTab}
+              onTabChange={handleHighlightTabChange}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <CatalogFilterBar
         filters={filters}
         categories={categories}
         cities={cities}
         certifications={certifications}
-        onChange={setFilters}
+        onChange={handleFiltersChange}
       />
 
       <main
+        ref={productsSectionRef}
         id="produtos"
-        className="scroll-mt-40 py-8 px-4 sm:px-6 lg:px-8"
+        className="scroll-mt-48 py-8 px-4 sm:px-6 lg:px-8"
       >
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-5 text-center">
@@ -199,11 +291,18 @@ export function CatalogPage() {
           ) : null}
 
           {!isLoading && !error && products.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+                {visibleProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              <CatalogPagination
+                currentPage={activePage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
           ) : null}
         </div>
       </main>

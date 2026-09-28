@@ -11,20 +11,78 @@ interface CatalogFilterBarProps {
   onChange: (filters: CatalogFilters) => void
 }
 
+interface FilterOption {
+  value: string
+  label: string
+}
+
+type ColumnCount = 2 | 3 | 4
+
+interface FilterDropdownProps {
+  label: string
+  value: string
+  options: FilterOption[]
+  columns: ColumnCount
+  onSelect: (value: string) => void
+}
+
+const ALL_OPTIONS_VALUE = ''
+const OPTIONS_PER_COLUMN = 5
+const MOUSE_POINTER = 'mouse'
+
+const PANEL_LAYOUT_CLASS: Record<ColumnCount, string> = {
+  2: 'sm:w-[26rem] sm:grid-cols-2',
+  3: 'sm:w-[40rem] sm:grid-cols-3',
+  4: 'sm:w-[46rem] sm:grid-cols-4',
+}
+
+function getColumnCount(optionCount: number): ColumnCount {
+  const columns = Math.ceil((optionCount + 1) / OPTIONS_PER_COLUMN)
+
+  return Math.min(4, Math.max(2, columns)) as ColumnCount
+}
+
+function getOptionClassName(isSelected: boolean): string {
+  const stateClassName = isSelected
+    ? 'text-accent-300'
+    : 'text-white hover:bg-brand-700 hover:text-accent-300'
+
+  return `block w-full rounded-md px-3 py-2 text-left text-sm font-semibold transition sm:text-center ${stateClassName}`
+}
+
+function ChevronIcon({ isOpen }: { isOpen: boolean }) {
+  return (
+    <svg
+      className={`h-4 w-4 text-accent-400 transition-transform ${
+        isOpen ? 'rotate-180' : ''
+      }`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}
+
 function FilterDropdown({
   label,
   value,
   options,
+  columns,
   onSelect,
-}: {
-  label: string
-  value: string
-  options: Array<{ value: string; label: string }>
-  onSelect: (value: string) => void
-}) {
+}: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const menuId = useId()
+  const isHighlighted = isOpen || value !== ALL_OPTIONS_VALUE
+  const allOptions: FilterOption[] = [
+    { value: ALL_OPTIONS_VALUE, label: 'Todos' },
+    ...options,
+  ]
+  const rowCount = Math.ceil(allOptions.length / columns)
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -33,59 +91,75 @@ function FilterDropdown({
       }
     }
 
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
     document.addEventListener('mousedown', handlePointerDown)
-    return () => document.removeEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleEscape)
+    }
   }, [])
 
+  function selectOption(optionValue: string): void {
+    onSelect(optionValue)
+    setIsOpen(false)
+  }
+
+  function openOnMouseHover(pointerType: string): void {
+    if (pointerType === MOUSE_POINTER) {
+      setIsOpen(true)
+    }
+  }
+
+  function closeOnMouseLeave(pointerType: string): void {
+    if (pointerType === MOUSE_POINTER) {
+      setIsOpen(false)
+    }
+  }
+
   return (
-    <div ref={ref} className="relative">
+    <div
+      ref={ref}
+      className="sm:relative"
+      onPointerEnter={(event) => openOnMouseHover(event.pointerType)}
+      onPointerLeave={(event) => closeOnMouseLeave(event.pointerType)}
+    >
       <button
         type="button"
-        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white transition hover:text-accent-300"
+        className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold transition hover:text-accent-300 sm:text-base ${
+          isHighlighted ? 'text-accent-300' : 'text-white'
+        }`}
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={() => setIsOpen((current) => !current)}
       >
         {label}
-        <span className="text-accent-400" aria-hidden="true">
-          ▾
-        </span>
+        <ChevronIcon isOpen={isOpen} />
       </button>
 
       {isOpen ? (
-        <div
-          id={menuId}
-          className="absolute left-0 top-full z-30 mt-1 max-h-72 min-w-56 overflow-auto rounded-b-xl bg-brand-800 p-2 shadow-lg"
-        >
-          <button
-            type="button"
-            className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
-              !value ? 'text-accent-300' : 'text-white hover:bg-brand-700'
-            }`}
-            onClick={() => {
-              onSelect('')
-              setIsOpen(false)
-            }}
+        <div className="absolute inset-x-0 top-full z-30 pt-3 sm:inset-x-auto sm:left-0">
+          <div
+            id={menuId}
+            className={`grid max-h-80 grid-cols-1 gap-x-4 gap-y-1 overflow-y-auto rounded-b-3xl bg-brand-800 px-4 py-4 shadow-lg sm:max-h-none sm:grid-flow-col sm:px-6 ${PANEL_LAYOUT_CLASS[columns]}`}
+            style={{ gridTemplateRows: `repeat(${rowCount}, auto)` }}
           >
-            Todos
-          </button>
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
-                value === option.value
-                  ? 'text-accent-300'
-                  : 'text-white hover:bg-brand-700'
-              }`}
-              onClick={() => {
-                onSelect(option.value)
-                setIsOpen(false)
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
+            {allOptions.map((option) => (
+              <button
+                key={option.value || 'todos'}
+                type="button"
+                className={getOptionClassName(value === option.value)}
+                onClick={() => selectOption(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
@@ -117,23 +191,26 @@ export function CatalogFilterBar({
   return (
     <div className="sticky top-[4.5rem] z-30 bg-brand-800 shadow-md md:top-[5.5rem]">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="flex flex-wrap items-center gap-1 sm:gap-3">
+        <div className="relative flex flex-wrap items-center gap-1 sm:gap-6">
           <FilterDropdown
             label="Município"
             value={filters.municipio}
             options={cityOptions}
+            columns={4}
             onSelect={(municipio) => onChange({ ...filters, municipio })}
           />
           <FilterDropdown
             label="Categoria"
             value={filters.categoria}
             options={categoryOptions}
+            columns={3}
             onSelect={(categoria) => onChange({ ...filters, categoria })}
           />
           <FilterDropdown
             label="Certificação"
             value={filters.certificacao}
             options={certificationOptions}
+            columns={getColumnCount(certificationOptions.length)}
             onSelect={(certificacao) => onChange({ ...filters, certificacao })}
           />
         </div>
