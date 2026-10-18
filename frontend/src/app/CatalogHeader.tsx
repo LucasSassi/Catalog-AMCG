@@ -15,7 +15,7 @@ interface CatalogHeaderProps {
 }
 
 const linkClassName =
-  'block px-2 py-1.5 text-sm text-surface transition hover:text-accent-yellow-soft'
+  'block min-h-11 px-4 py-3 text-sm text-surface transition hover:text-accent-yellow-soft'
 
 export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
@@ -106,7 +106,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
         </div>
         <button
           type="button"
-          className="rounded-lg border border-success px-3 py-2 text-sm font-semibold text-white"
+          className="min-h-11 rounded-lg border border-success px-3 py-2 text-sm font-semibold text-white"
           aria-expanded={isMobileOpen}
           onClick={() => setIsMobileOpen((current) => !current)}
         >

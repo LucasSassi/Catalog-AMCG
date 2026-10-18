@@ -28,6 +28,8 @@ export function ProductDetailPage() {
   const { products } = useCatalogProducts(emptyFilters)
   const [isProducerOpen, setIsProducerOpen] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
+  const [isPremiadoHintOpen, setIsPremiadoHintOpen] = useState(false)
+  const [isSimHintOpen, setIsSimHintOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -76,15 +78,60 @@ export function ProductDetailPage() {
 
         <div className="rounded-3xl bg-white p-5 shadow-sm sm:p-8">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 sm:order-2">
+                <img
+                  src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
+                  alt={product.nome}
+                  width={1200}
+                  height={900}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  className="aspect-[4/3] w-full object-cover"
+                />
+                {product.premiado ? (
+                  <div className="absolute right-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2">
+                    <button
+                      type="button"
+                      aria-expanded={isPremiadoHintOpen}
+                      aria-controls="premiado-hint"
+                      onClick={() =>
+                        setIsPremiadoHintOpen((current) => !current)
+                      }
+                      className="rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-yellow"
+                    >
+                      <img
+                        src={premiadoBadge}
+                        alt="Produto premiado"
+                        width={56}
+                        height={56}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-14 w-14 object-contain drop-shadow"
+                      />
+                    </button>
+                    {isPremiadoHintOpen ? (
+                      <p
+                        id="premiado-hint"
+                        className="w-full max-w-56 rounded-lg bg-slate-900 px-3 py-2 text-xs text-white"
+                      >
+                        Ver produtos premiados. O produtor deve informar e
+                        comprovar prêmios.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
               {photos.length > 1 ? (
-                <div className="flex w-16 shrink-0 flex-col gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 sm:order-1 sm:w-16 sm:shrink-0 sm:flex-col sm:overflow-visible sm:pb-0">
                   {photos.map((photo, index) => (
                     <button
                       key={`${photo.url}-${index}`}
                       type="button"
                       onClick={() => setSelectedPhotoIndex(index)}
-                      className={`overflow-hidden rounded-lg border-2 ${
+                      className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${
                         index === selectedPhotoIndex
                           ? 'border-primary'
                           : 'border-transparent'
@@ -100,42 +147,12 @@ export function ProductDetailPage() {
                         height={64}
                         loading="lazy"
                         decoding="async"
-                        className="aspect-square w-full object-cover"
+                        className="aspect-square h-full w-full object-cover"
                       />
                     </button>
                   ))}
                 </div>
               ) : null}
-
-              <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100">
-                <img
-                  src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
-                  alt={product.nome}
-                  width={1200}
-                  height={900}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                {product.premiado ? (
-                  <div className="group absolute right-3 top-3">
-                    <img
-                      src={premiadoBadge}
-                      alt="Produto premiado"
-                      width={56}
-                      height={56}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-14 w-14 object-contain drop-shadow"
-                    />
-                    <span className="pointer-events-none absolute right-0 top-16 z-10 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-xs text-white group-hover:block">
-                      Ver produtos premiados. O produtor deve informar e
-                      comprovar prêmios.
-                    </span>
-                  </div>
-                ) : null}
-              </div>
             </div>
 
             <div>
@@ -164,47 +181,62 @@ export function ProductDetailPage() {
                 WhatsApp
               </a>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
-                <span
-                  className="group relative inline-flex rounded-md bg-stone-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800"
-                  title={
-                    product.produtor.temRegistroSim
-                      ? 'SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios'
-                      : product.produtor.municipio
-                  }
-                >
-                  {product.produtor.municipio}
+              <div className="mt-8 border-t border-slate-200 pt-6">
+                <div className="flex flex-wrap items-center gap-3">
                   {product.produtor.temRegistroSim ? (
-                    <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-64 rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-normal normal-case tracking-normal text-white group-hover:block">
-                      SIM – Inspeção Municipal: comercialização somente dentro
-                      dos respectivos municípios.
+                    <button
+                      type="button"
+                      aria-expanded={isSimHintOpen}
+                      aria-controls="sim-hint"
+                      title="SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios"
+                      onClick={() => setIsSimHintOpen((current) => !current)}
+                      className="inline-flex min-h-11 items-center rounded-md bg-stone-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800"
+                    >
+                      {product.produtor.municipio}
+                    </button>
+                  ) : (
+                    <span
+                      className="inline-flex min-h-11 items-center rounded-md bg-stone-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800"
+                      title={product.produtor.municipio}
+                    >
+                      {product.produtor.municipio}
                     </span>
-                  ) : null}
-                </span>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={() => setIsProducerOpen(true)}
-                  className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-success"
-                >
-                  <img
-                    src={logoPlaceholder}
-                    alt=""
-                    width={40}
-                    height={40}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-10 w-10 rounded-md bg-white object-contain"
-                  />
-                  <span>
-                    <span className="block text-xs uppercase tracking-wide text-slate-500">
-                      Produtor
+                  <button
+                    type="button"
+                    onClick={() => setIsProducerOpen(true)}
+                    className="inline-flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-success"
+                  >
+                    <img
+                      src={logoPlaceholder}
+                      alt=""
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-10 w-10 rounded-md bg-white object-contain"
+                    />
+                    <span>
+                      <span className="block text-xs uppercase tracking-wide text-slate-500">
+                        Produtor
+                      </span>
+                      <span className="block text-sm font-bold text-foreground">
+                        {product.produtor.nome}
+                      </span>
                     </span>
-                    <span className="block text-sm font-bold text-foreground">
-                      {product.produtor.nome}
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
+
+                {product.produtor.temRegistroSim && isSimHintOpen ? (
+                  <p
+                    id="sim-hint"
+                    className="mt-3 w-full max-w-full rounded-lg bg-slate-900 px-3 py-2 text-[11px] text-white"
+                  >
+                    SIM – Inspeção Municipal: comercialização somente dentro dos
+                    respectivos municípios.
+                  </p>
+                ) : null}
               </div>
 
               {product.registros.length > 0 ? (

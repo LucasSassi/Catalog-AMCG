@@ -258,7 +258,7 @@ export function CatalogPage() {
       <main
         ref={productsSectionRef}
         id="produtos"
-        className="scroll-mt-48 py-8 px-4 sm:px-6 lg:px-8"
+        className="scroll-mt-24 py-8 px-4 sm:px-6 lg:scroll-mt-48 lg:px-8"
       >
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-5 text-center">
@@ -292,7 +292,7 @@ export function CatalogPage() {
 
           {!isLoading && !error && products.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:gap-8">
                 {visibleProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
