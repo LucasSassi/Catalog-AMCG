@@ -1,4 +1,9 @@
 import { Link } from 'react-router-dom'
+import camposGerais from '../../shared/assets/campos-gerais.png'
+import idrLogo from '../../shared/assets/IDR-Logo.png'
+import sebraeLogo from '../../shared/assets/SEBRAE-logo.png'
+import uepgLogo from '../../shared/assets/UEPG-logo.png'
+import amcgLogo from '../../shared/assets/LOGO_AMCG.png'
 
 export function AboutPage() {
   return (
@@ -13,15 +18,25 @@ export function AboutPage() {
           </p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-2xl border border-surface bg-white p-6 shadow-sm sm:p-8">
-            <p className="text-sm leading-7 text-slate-700 sm:text-base">
+            <h2 className="text-xl font-bold uppercase tracking-wide text-foreground sm:text-2xl">
+              O que é AMCG?
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-700 sm:text-base">
               A AMCG é um órgão de representação municipal e microrregional,
               constituída sob a forma de sociedade civil sem fins lucrativos. É
-              composta por 19 municípios: Arapoti, Carambeí, Castro, Curiúva,
-              Imbaú, Ipiranga, Ivaí, Jaguariaíva, Ortigueira, Palmeira, Piraí do
-              Sul, Porto Amazonas, Ponta Grossa, Reserva, São João do Triunfo,
-              Sengés, Telêmaco Borba, Tibagi e Ventania.
+              composta por 19 municípios:{' '}
+              <strong>Arapoti</strong>, <strong>Carambeí</strong>,{' '}
+              <strong>Castro</strong>, <strong>Curiúva</strong>,{' '}
+              <strong>Imbaú</strong>, <strong>Ipiranga</strong>,{' '}
+              <strong>Ivaí</strong>, <strong>Jaguariaíva</strong>,{' '}
+              <strong>Ortigueira</strong>, <strong>Palmeira</strong>,{' '}
+              <strong>Piraí do Sul</strong>, <strong>Porto Amazonas</strong>,{' '}
+              <strong>Ponta Grossa</strong>, <strong>Reserva</strong>,{' '}
+              <strong>São João do Triunfo</strong>, <strong>Sengés</strong>,{' '}
+              <strong>Telêmaco Borba</strong>, <strong>Tibagi</strong> e{' '}
+              <strong>Ventania</strong>.
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-700 sm:text-base">
               Seu principal objetivo é a integração regional, econômica e
@@ -32,31 +47,43 @@ export function AboutPage() {
               amplia a visibilidade dos empreendedores rurais e fortalece a
               identidade produtiva da região.
             </p>
-            <a
-              href="https://www.amcg.com.br"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-darker"
-            >
-              Conhecer o site da AMCG
-            </a>
+
+            <div className="mt-8">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-primary-darker">
+                Entidades Parceiras
+              </h3>
+              <div className="mt-4 flex flex-wrap items-center gap-6 sm:gap-8">
+                <img
+                  src={uepgLogo}
+                  alt="Logo da Universidade Estadual de Ponta Grossa (UEPG)"
+                  className="h-14 w-auto object-contain"
+                />
+                <img
+                  src={sebraeLogo}
+                  alt="Logo do Sebrae"
+                  className="h-12 w-auto object-contain"
+                />
+                <img
+                  src={idrLogo}
+                  alt="Logo do IDR-Paraná"
+                  className="h-14 w-auto object-contain"
+                />
+                <img
+                  src={amcgLogo}
+                  alt="Logo da Associação dos Municípios dos Campos Gerais (AMCG)"
+                  className="h-14 w-auto object-contain"
+                />
+              </div>
+            </div>
           </div>
 
-          <aside className="rounded-2xl border border-surface bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary-darker">
-              Sobre o catálogo
-            </p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-              <li>Mais de 50 produtos da agricultura familiar</li>
-              <li>25 produtores de 13 municípios</li>
-              <li>Seleção por critérios técnicos de edital</li>
-              <li>Parceria AMCG + Sebrae</li>
-              <li>
-                Destaques: queijos, mel, embutidos, biscoitos, pães, sucos e
-                geleias
-              </li>
-            </ul>
-          </aside>
+          <div className="flex items-center justify-center">
+            <img
+              src={camposGerais}
+              alt="Mapa dos municípios dos Campos Gerais"
+              className="w-full max-w-md h-auto object-contain lg:max-w-none"
+            />
+          </div>
         </div>
 
         <section
