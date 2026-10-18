@@ -33,7 +33,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           autoComplete="name"
           value={nome}
           onChange={(event) => setNome(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600"
+          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary"
           placeholder="Seu nome"
         />
       </label>
@@ -48,7 +48,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600"
+          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary"
           placeholder="nome@email.com"
         />
       </label>
@@ -64,7 +64,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           minLength={6}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600"
+          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary"
           placeholder="Mínimo 6 caracteres"
         />
       </label>

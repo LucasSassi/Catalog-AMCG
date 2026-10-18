@@ -44,7 +44,7 @@ export function ProducerInfoModal({
               className="h-16 w-16 shrink-0 rounded-full border border-slate-200 object-contain p-1"
             />
             <div className="min-w-0">
-              <h3 className="text-xl font-bold text-brand-900">
+              <h3 className="text-xl font-bold text-foreground">
                 {producer.nome}
               </h3>
               <p className="mt-0.5 text-sm text-slate-600">
@@ -57,7 +57,7 @@ export function ProducerInfoModal({
             href={whatsappUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 sm:w-auto"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-darker sm:w-auto"
           >
             Falar no WhatsApp
           </a>
@@ -88,7 +88,7 @@ export function ProducerInfoModal({
                   key={product.id}
                   to={`/produtos/${product.id}`}
                   onClick={onClose}
-                  className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                  className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   <img
                     src={buildThumbnailUrl(
@@ -103,7 +103,7 @@ export function ProducerInfoModal({
                     className="aspect-square w-full object-cover"
                   />
                   <div className="p-3">
-                    <p className="line-clamp-2 text-sm font-semibold text-brand-900">
+                    <p className="line-clamp-2 text-sm font-semibold text-foreground">
                       {product.nome}
                     </p>
                     <p className="mt-1 text-sm font-bold text-slate-900">

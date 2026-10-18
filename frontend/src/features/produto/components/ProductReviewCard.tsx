@@ -28,7 +28,7 @@ export function ProductReviewCard({
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-brand-500 hover:shadow-md"
+      className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-success hover:shadow-md"
     >
       <div className="flex gap-4">
         {image ? (
@@ -47,7 +47,7 @@ export function ProductReviewCard({
               {statusLabel}
             </span>
             {product.destaque ? (
-              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+              <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-primary-dark">
                 Destaque
               </span>
             ) : null}
@@ -84,7 +84,7 @@ export function ProductReviewCard({
         </p>
       ) : null}
 
-      <p className="mt-4 border-t border-slate-200 pt-3 text-sm font-semibold text-brand-700">
+      <p className="mt-4 border-t border-slate-200 pt-3 text-sm font-semibold text-primary-darker">
         Clique para analisar o cadastro
       </p>
     </button>

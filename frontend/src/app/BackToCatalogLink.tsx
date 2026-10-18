@@ -13,7 +13,7 @@ export function BackToCatalogLink({ onClick }: BackToCatalogLinkProps) {
       onClick={onClick}
       aria-label={BACK_LABEL}
       title={BACK_LABEL}
-      className="inline-grid h-11 w-11 place-items-center rounded-full bg-transparent text-accent-400 transition hover:bg-brand-700 hover:text-accent-300"
+      className="inline-grid h-11 w-11 place-items-center rounded-full bg-transparent text-accent-yellow transition hover:bg-primary-darker hover:text-accent-yellow-soft"
     >
       <svg
         className="h-6 w-6"

@@ -170,7 +170,7 @@ function PhotoGallery({
 }: PhotoGalleryProps) {
   return (
     <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <h3 className="font-bold text-brand-900">{title}</h3>
+      <h3 className="font-bold text-foreground">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-slate-600">{description}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {images.map((image, index) => (

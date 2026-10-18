@@ -38,7 +38,7 @@ export function FeaturedProductsStrip({ products }: FeaturedProductsStripProps) 
             <p className="mt-1 truncate text-xs text-slate-600">
               {product.produtor.nome} · {product.produtor.municipio}
             </p>
-            <span className="mt-2 inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
+            <span className="mt-2 inline-flex rounded-full bg-secondary-background px-2 py-0.5 text-[11px] font-semibold text-primary-darker">
               {PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria}
             </span>
           </div>

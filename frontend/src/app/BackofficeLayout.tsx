@@ -15,15 +15,15 @@ export function BackofficeLayout() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div>
-            <p className="font-bold text-brand-900">Backoffice AMCG</p>
-            <p className="text-xs font-semibold text-brand-700">
+            <p className="font-bold text-foreground">Backoffice AMCG</p>
+            <p className="text-xs font-semibold text-primary-darker">
               Curadoria do catálogo
             </p>
           </div>
           <nav className="flex items-center gap-2" aria-label="Navegação">
             <Link
               to="/"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-primary-darker transition hover:bg-secondary-background"
             >
               Ver catálogo
             </Link>

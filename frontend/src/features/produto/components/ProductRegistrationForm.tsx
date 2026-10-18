@@ -34,7 +34,7 @@ const emptyPhoto: ProductFile = {
 }
 
 const inputClassName =
-  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600'
+  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary'
 
 export function ProductRegistrationForm({
   onSuccess,
@@ -192,7 +192,7 @@ export function ProductRegistrationForm({
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Produtor
         </legend>
         <label className="block">
@@ -220,7 +220,7 @@ export function ProductRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Dados do produto
         </legend>
 
@@ -341,7 +341,7 @@ export function ProductRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Registros
         </legend>
 
@@ -494,7 +494,7 @@ function PhotoFields({
 }) {
   return (
     <fieldset className="space-y-4">
-      <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+      <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
         {title}
       </legend>
 

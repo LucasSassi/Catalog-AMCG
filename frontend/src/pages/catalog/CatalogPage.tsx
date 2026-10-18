@@ -38,7 +38,7 @@ const HIGHLIGHT_TAB_BY_HASH: Record<string, string> = {
 
 const highlightAnchorClassName = 'block scroll-mt-32'
 
-const iconClassName = 'h-8 w-8 shrink-0 text-brand-600'
+const iconClassName = 'h-8 w-8 shrink-0 text-primary'
 
 const trustBadges: Array<{
   title: string
@@ -221,7 +221,7 @@ export function CatalogPage() {
             <div key={badge.title} className="flex items-center gap-3">
               {badge.icon}
               <div>
-                <p className="text-sm font-bold text-brand-700">{badge.title}</p>
+                <p className="text-sm font-bold text-primary-darker">{badge.title}</p>
                 <p className="text-xs text-slate-600">{badge.subtitle}</p>
               </div>
             </div>
@@ -262,7 +262,7 @@ export function CatalogPage() {
       >
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-5 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-wide text-brand-700 sm:text-3xl">
+            <h2 className="text-2xl font-bold uppercase tracking-wide text-primary-darker sm:text-3xl">
               Produtos disponíveis
             </h2>
             <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -313,7 +313,7 @@ export function CatalogPage() {
             <h2 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
               Por que comprar no Catálogo AMCG
             </h2>
-            <p className="mt-1 text-sm font-semibold text-brand-700">
+            <p className="mt-1 text-sm font-semibold text-primary-darker">
               Valorizamos quem produz nos Campos Gerais
             </p>
           </div>
@@ -323,7 +323,7 @@ export function CatalogPage() {
                 key={item.title}
                 className="rounded-xl border border-slate-200 bg-slate-50 p-5"
               >
-                <h3 className="text-base font-bold text-brand-900">
+                <h3 className="text-base font-bold text-foreground">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">

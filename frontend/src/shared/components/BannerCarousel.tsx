@@ -55,7 +55,7 @@ export function BannerCarousel({
 
   return (
     <section
-      className="relative overflow-hidden bg-brand-900"
+      className="relative overflow-hidden bg-foreground"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       aria-roledescription="carousel"
@@ -74,7 +74,7 @@ export function BannerCarousel({
             }`}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent" />
       </div>
 
       {hasMultiple ? (
@@ -82,7 +82,7 @@ export function BannerCarousel({
           <button
             type="button"
             onClick={goToPrevious}
-            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl font-bold text-brand-900 shadow transition hover:bg-white"
+            className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl font-bold text-foreground shadow transition hover:bg-white"
             aria-label="Banner anterior"
           >
             ‹
@@ -90,7 +90,7 @@ export function BannerCarousel({
           <button
             type="button"
             onClick={goToNext}
-            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl font-bold text-brand-900 shadow transition hover:bg-white"
+            className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-xl font-bold text-foreground shadow transition hover:bg-white"
             aria-label="Próximo banner"
           >
             ›
@@ -103,7 +103,7 @@ export function BannerCarousel({
                 onClick={() => setActiveIndex(index)}
                 className={`h-2.5 w-2.5 rounded-full transition ${
                   index === activeIndex
-                    ? 'bg-accent-400'
+                    ? 'bg-accent-yellow'
                     : 'bg-white/60 hover:bg-white'
                 }`}
                 aria-label={`Ir para o banner ${index + 1}`}

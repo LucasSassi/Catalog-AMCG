@@ -26,7 +26,7 @@ function ArrowIcon({ direction }: { direction: 'left' | 'right' }) {
 
 function getPageButtonClassName(isActive: boolean): string {
   const stateClassName = isActive
-    ? 'bg-brand-600 text-white'
+    ? 'bg-primary text-white'
     : 'bg-white text-slate-900 hover:bg-slate-100'
 
   return `grid h-10 w-10 place-items-center rounded-full text-sm font-bold shadow-sm transition ${stateClassName}`

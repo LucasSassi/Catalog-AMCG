@@ -56,13 +56,13 @@ export function NavDropdown({
     >
       <button
         type="button"
-        className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-white transition hover:text-accent-300"
+        className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-white transition hover:text-accent-yellow-soft"
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={() => setIsOpen((current) => !current)}
       >
         {label}
-        <span className="text-accent-400" aria-hidden="true">
+        <span className="text-accent-yellow" aria-hidden="true">
           ▾
         </span>
       </button>
@@ -71,13 +71,13 @@ export function NavDropdown({
         <div
           id={menuId}
           role="menu"
-          className={`absolute top-full z-50 min-w-52 rounded-b-xl bg-brand-800 py-2 shadow-lg ${
+          className={`absolute top-full z-50 min-w-52 rounded-b-xl bg-primary-dark py-2 shadow-lg ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >
           {items.map((item) => {
             const className =
-              'block w-full px-4 py-2 text-left text-sm text-white transition hover:bg-brand-700 hover:text-accent-300'
+              'block w-full px-4 py-2 text-left text-sm text-white transition hover:bg-primary-darker hover:text-accent-yellow-soft'
 
             if (item.onClick) {
               return (
@@ -141,7 +141,7 @@ export function MobileNavGroup({ label, children }: MobileNavGroupProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className="border-b border-brand-600">
+    <div className="border-b border-primary">
       <button
         type="button"
         className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-white"
@@ -149,7 +149,7 @@ export function MobileNavGroup({ label, children }: MobileNavGroupProps) {
         aria-expanded={isOpen}
       >
         {label}
-        <span className="text-accent-400" aria-hidden="true">
+        <span className="text-accent-yellow" aria-hidden="true">
           {isOpen ? '▴' : '▾'}
         </span>
       </button>

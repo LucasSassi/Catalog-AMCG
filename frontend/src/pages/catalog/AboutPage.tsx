@@ -2,19 +2,19 @@ import { Link } from 'react-router-dom'
 
 export function AboutPage() {
   return (
-    <main className="bg-brand-50 py-14">
+    <main className="bg-secondary-background py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
             Quem somos
           </h1>
-          <p className="mt-1 text-sm font-semibold text-brand-700">
+          <p className="mt-1 text-sm font-semibold text-primary-darker">
             Associação dos Municípios dos Campos Gerais
           </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="rounded-2xl border border-surface bg-white p-6 shadow-sm sm:p-8">
             <p className="text-sm leading-7 text-slate-700 sm:text-base">
               A AMCG é um órgão de representação municipal e microrregional,
               constituída sob a forma de sociedade civil sem fins lucrativos. É
@@ -36,14 +36,14 @@ export function AboutPage() {
               href="https://www.amcg.com.br"
               target="_blank"
               rel="noreferrer"
-              className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
+              className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-darker"
             >
               Conhecer o site da AMCG
             </a>
           </div>
 
-          <aside className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
+          <aside className="rounded-2xl border border-surface bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary-darker">
               Sobre o catálogo
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
@@ -61,9 +61,9 @@ export function AboutPage() {
 
         <section
           id="contato"
-          className="mt-10 scroll-mt-28 rounded-2xl border border-brand-100 bg-white p-6 shadow-sm sm:p-8"
+          className="mt-10 scroll-mt-28 rounded-2xl border border-surface bg-white p-6 shadow-sm sm:p-8"
         >
-          <h2 className="text-xl font-bold text-brand-900">
+          <h2 className="text-xl font-bold text-foreground">
             Dúvidas e Contato
           </h2>
           <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700">
@@ -74,7 +74,7 @@ export function AboutPage() {
             <li>
               <a
                 href="tel:+554232251398"
-                className="font-semibold text-brand-700 hover:underline"
+                className="font-semibold text-primary-darker hover:underline"
               >
                 (42) 3225-1398
               </a>
@@ -82,7 +82,7 @@ export function AboutPage() {
             <li>
               <a
                 href="mailto:secretaria@amcg.com.br"
-                className="font-semibold text-brand-700 hover:underline"
+                className="font-semibold text-primary-darker hover:underline"
               >
                 secretaria@amcg.com.br
               </a>
@@ -90,7 +90,7 @@ export function AboutPage() {
           </ul>
           <Link
             to="/"
-            className="mt-6 inline-flex text-sm font-semibold text-brand-700 hover:underline"
+            className="mt-6 inline-flex text-sm font-semibold text-primary-darker hover:underline"
           >
             Voltar ao catálogo
           </Link>

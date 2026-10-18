@@ -15,7 +15,7 @@ interface CatalogHeaderProps {
 }
 
 const linkClassName =
-  'block px-2 py-1.5 text-sm text-brand-100 transition hover:text-accent-300'
+  'block px-2 py-1.5 text-sm text-surface transition hover:text-accent-yellow-soft'
 
 export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
@@ -50,7 +50,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-brand-800 shadow-md">
+    <header className="sticky top-0 z-40 bg-primary-dark shadow-md">
       <div className="relative mx-auto hidden max-w-7xl items-start gap-2 px-4 py-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center lg:px-8">
         {showBackLink ? (
           <div className="absolute left-4 top-1/2 -translate-y-1/2 lg:left-8">
@@ -87,7 +87,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
 
         <Link
           to="/backoffice"
-          className="absolute bottom-1 right-2 text-xs font-semibold uppercase tracking-wide text-brand-200 transition hover:text-accent-300 lg:right-8"
+          className="absolute bottom-1 right-2 text-xs font-semibold uppercase tracking-wide text-muted transition hover:text-accent-yellow-soft lg:right-8"
         >
           Acessar painel
         </Link>
@@ -106,7 +106,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
         </div>
         <button
           type="button"
-          className="rounded-lg border border-brand-500 px-3 py-2 text-sm font-semibold text-white"
+          className="rounded-lg border border-success px-3 py-2 text-sm font-semibold text-white"
           aria-expanded={isMobileOpen}
           onClick={() => setIsMobileOpen((current) => !current)}
         >
@@ -115,7 +115,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
       </div>
 
       {isMobileOpen ? (
-        <nav className="border-t border-brand-700 bg-brand-900 md:hidden">
+        <nav className="border-t border-primary-darker bg-foreground md:hidden">
           <MobileNavGroup label="Conheça o Catálogo">
             <Link to="/quem-somos" className={linkClassName} onClick={closeMobile}>
               Conheça o Projeto
@@ -175,7 +175,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
           </MobileNavGroup>
           <Link
             to="/backoffice"
-            className="block px-4 py-3 text-sm font-semibold text-accent-300"
+            className="block px-4 py-3 text-sm font-semibold text-accent-yellow-soft"
             onClick={closeMobile}
           >
             Acessar painel

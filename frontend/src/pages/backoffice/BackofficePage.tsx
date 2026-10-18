@@ -68,7 +68,7 @@ export function BackofficePage() {
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary-darker">
             Visão geral
           </p>
           <h1 className="mt-1 text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">

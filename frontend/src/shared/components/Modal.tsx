@@ -35,7 +35,7 @@ export function Modal({ title, children, onClose }: ModalProps) {
         className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
       >
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
-          <h2 id="modal-title" className="text-xl font-bold text-brand-900">
+          <h2 id="modal-title" className="text-xl font-bold text-foreground">
             {title}
           </h2>
           <button

@@ -27,7 +27,7 @@ const initialForm: CreateProducerInput = {
 }
 
 const inputClassName =
-  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600'
+  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary'
 
 export function ProducerRegistrationForm({
   onSuccess,
@@ -97,7 +97,7 @@ export function ProducerRegistrationForm({
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Empresa
         </legend>
 
@@ -130,7 +130,7 @@ export function ProducerRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Documento
         </legend>
 
@@ -177,7 +177,7 @@ export function ProducerRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Registros
         </legend>
 
@@ -201,7 +201,7 @@ export function ProducerRegistrationForm({
               ) : null}
             </div>
 
-            <p className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-800">
+            <p className="rounded-lg border border-surface bg-secondary-background px-3 py-2 text-sm font-medium text-primary-dark">
               Tipo: Registro SIM (Inspeção Municipal)
             </p>
 
@@ -228,7 +228,7 @@ export function ProducerRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Contato
         </legend>
 
@@ -271,7 +271,7 @@ export function ProducerRegistrationForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-brand-700">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
           Endereço
         </legend>
 

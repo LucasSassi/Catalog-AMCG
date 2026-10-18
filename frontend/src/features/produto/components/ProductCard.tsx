@@ -21,7 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <article className="[contain-intrinsic-size:auto_480px] [content-visibility:auto]">
       <Link
         to={`/produtos/${product.id}`}
-        className="group flex h-full w-full flex-col rounded-3xl border border-slate-300 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+        className="group flex h-full w-full flex-col rounded-3xl border border-slate-300 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-slate-100">
           <img
@@ -36,7 +36,7 @@ export function ProductCard({ product }: ProductCardProps) {
             decoding="async"
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
-          <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-brand-700 shadow-sm">
+          <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-primary-darker shadow-sm">
             {categoryLabel}
           </span>
           {product.premiado ? (
@@ -70,7 +70,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 por {product.unidadeMedida}
               </p>
             </div>
-            <span className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg bg-brand-600 px-4 text-xs font-bold uppercase tracking-wide text-white transition group-hover:bg-brand-700">
+            <span className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wide text-white transition group-hover:bg-primary-darker">
               Ver produto
             </span>
           </div>

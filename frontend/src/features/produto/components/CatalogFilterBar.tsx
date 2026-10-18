@@ -44,8 +44,8 @@ function getColumnCount(optionCount: number): ColumnCount {
 
 function getOptionClassName(isSelected: boolean): string {
   const stateClassName = isSelected
-    ? 'text-accent-300'
-    : 'text-white hover:bg-brand-700 hover:text-accent-300'
+    ? 'text-accent-yellow-soft'
+    : 'text-white hover:bg-primary-darker hover:text-accent-yellow-soft'
 
   return `block w-full rounded-md px-3 py-2 text-left text-sm font-semibold transition sm:text-center ${stateClassName}`
 }
@@ -53,7 +53,7 @@ function getOptionClassName(isSelected: boolean): string {
 function ChevronIcon({ isOpen }: { isOpen: boolean }) {
   return (
     <svg
-      className={`h-4 w-4 text-accent-400 transition-transform ${
+      className={`h-4 w-4 text-accent-yellow transition-transform ${
         isOpen ? 'rotate-180' : ''
       }`}
       viewBox="0 0 24 24"
@@ -131,8 +131,8 @@ function FilterDropdown({
     >
       <button
         type="button"
-        className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold transition hover:text-accent-300 sm:text-base ${
-          isHighlighted ? 'text-accent-300' : 'text-white'
+        className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold transition hover:text-accent-yellow-soft sm:text-base ${
+          isHighlighted ? 'text-accent-yellow-soft' : 'text-white'
         }`}
         aria-expanded={isOpen}
         aria-controls={menuId}
@@ -146,7 +146,7 @@ function FilterDropdown({
         <div className="absolute inset-x-0 top-full z-30 pt-3 sm:inset-x-auto sm:left-0">
           <div
             id={menuId}
-            className={`grid max-h-80 grid-cols-1 gap-x-4 gap-y-1 overflow-y-auto rounded-b-3xl bg-brand-800 px-4 py-4 shadow-lg sm:max-h-none sm:grid-flow-col sm:px-6 ${PANEL_LAYOUT_CLASS[columns]}`}
+            className={`grid max-h-80 grid-cols-1 gap-x-4 gap-y-1 overflow-y-auto rounded-b-3xl bg-primary-dark px-4 py-4 shadow-lg sm:max-h-none sm:grid-flow-col sm:px-6 ${PANEL_LAYOUT_CLASS[columns]}`}
             style={{ gridTemplateRows: `repeat(${rowCount}, auto)` }}
           >
             {allOptions.map((option) => (
@@ -189,7 +189,7 @@ export function CatalogFilterBar({
   }))
 
   return (
-    <div className="sticky top-[4.5rem] z-30 bg-brand-800 shadow-md md:top-[5.5rem]">
+    <div className="sticky top-[4.5rem] z-30 bg-primary-dark shadow-md md:top-[5.5rem]">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div className="relative flex flex-wrap items-center gap-1 sm:gap-6">
           <FilterDropdown
@@ -227,7 +227,7 @@ export function CatalogFilterBar({
             onChange={(event) =>
               onChange({ ...filters, busca: event.target.value })
             }
-            className="min-h-10 w-full rounded-lg border border-brand-600 bg-brand-900/40 px-3 py-2 text-sm text-white placeholder:text-brand-200 focus:border-accent-400 focus:outline-none"
+            className="min-h-10 w-full rounded-lg border border-primary bg-foreground/40 px-3 py-2 text-sm text-white placeholder:text-muted focus:border-accent-yellow focus:outline-none"
           />
           <img
             src={logoCatalogo}

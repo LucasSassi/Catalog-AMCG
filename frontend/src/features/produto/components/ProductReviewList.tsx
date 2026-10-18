@@ -62,7 +62,7 @@ export function ProductReviewList({
       >
         {title}
       </h2>
-      <p className="mb-5 text-sm font-semibold text-brand-700">
+      <p className="mb-5 text-sm font-semibold text-primary-darker">
         Curadoria de produtos
       </p>
       <div className="space-y-4">

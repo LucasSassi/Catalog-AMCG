@@ -47,7 +47,7 @@ export function ProductDetailPage() {
         />
         <Link
           to="/"
-          className="mt-4 inline-flex text-sm font-semibold text-brand-700 hover:underline"
+          className="mt-4 inline-flex text-sm font-semibold text-primary-darker hover:underline"
         >
           Voltar ao catálogo
         </Link>
@@ -70,7 +70,7 @@ export function ProductDetailPage() {
   return (
     <main className="bg-stone-100 py-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <p className="mb-6 text-center text-sm font-bold uppercase tracking-[0.25em] text-brand-700">
+        <p className="mb-6 text-center text-sm font-bold uppercase tracking-[0.25em] text-primary-darker">
           Campos Gerais
         </p>
 
@@ -86,7 +86,7 @@ export function ProductDetailPage() {
                       onClick={() => setSelectedPhotoIndex(index)}
                       className={`overflow-hidden rounded-lg border-2 ${
                         index === selectedPhotoIndex
-                          ? 'border-brand-600'
+                          ? 'border-primary'
                           : 'border-transparent'
                       }`}
                     >
@@ -139,7 +139,7 @@ export function ProductDetailPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                 {categoryLabel}
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
@@ -159,7 +159,7 @@ export function ProductDetailPage() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-700 sm:w-auto"
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-primary-darker sm:w-auto"
               >
                 WhatsApp
               </a>
@@ -185,7 +185,7 @@ export function ProductDetailPage() {
                 <button
                   type="button"
                   onClick={() => setIsProducerOpen(true)}
-                  className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-brand-500"
+                  className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-success"
                 >
                   <img
                     src={logoPlaceholder}
@@ -200,7 +200,7 @@ export function ProductDetailPage() {
                     <span className="block text-xs uppercase tracking-wide text-slate-500">
                       Produtor
                     </span>
-                    <span className="block text-sm font-bold text-brand-900">
+                    <span className="block text-sm font-bold text-foreground">
                       {product.produtor.nome}
                     </span>
                   </span>
@@ -216,7 +216,7 @@ export function ProductDetailPage() {
                     {product.registros.map((registro) => (
                       <span
                         key={registro.tipo}
-                        className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800"
+                        className="rounded-full bg-secondary-background px-3 py-1 text-xs font-semibold text-primary-dark"
                       >
                         {registro.tipo}
                       </span>
@@ -231,7 +231,7 @@ export function ProductDetailPage() {
         <div className="mt-6 text-center">
           <Link
             to="/#produtos"
-            className="text-sm font-semibold text-brand-700 hover:underline"
+            className="text-sm font-semibold text-primary-darker hover:underline"
           >
             Voltar ao catálogo
           </Link>
