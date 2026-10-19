@@ -6,8 +6,14 @@ import { InMemoryProdutorRepository } from "../../mocks/produtor.repository.mock
 
 const JWT_SECRET = "test-secret";
 
-function authHeader(sub = "user-1", email = "admin@amcg.org"): string {
-  const token = jwt.sign({ sub, email }, JWT_SECRET, { expiresIn: "1h" });
+function authHeader(
+  sub = "user-1",
+  email = "admin@amcg.org",
+  role: "admin" | "usuario" = "admin",
+): string {
+  const token = jwt.sign({ sub, email, role }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
   return `Bearer ${token}`;
 }
 
@@ -52,6 +58,28 @@ describe("Quando usar o ProdutorController (integration)", () => {
       .post("/api/produtores")
       .send(payloadBase);
     expect(criarSemToken.status).toBe(401);
+  });
+
+  it("Deve permitir cadastro com role usuario e bloquear listagem administrativa", async () => {
+    const usuarioAuth = authHeader("user-comum", "usuario@amcg.org", "usuario");
+
+    const cadastrar = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", usuarioAuth)
+      .send(payloadBase);
+
+    expect(cadastrar.status).toBe(201);
+
+    const listar = await request(app)
+      .get("/api/produtores")
+      .set("Authorization", usuarioAuth);
+    expect(listar.status).toBe(403);
+
+    const aprovar = await request(app)
+      .put(`/api/produtores/${cadastrar.body.id}`)
+      .set("Authorization", usuarioAuth)
+      .send({ status: "APROVADO" });
+    expect(aprovar.status).toBe(403);
   });
 
   it("Deve retornar a lista de UFs brasileiras", async () => {

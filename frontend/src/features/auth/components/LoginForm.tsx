@@ -4,18 +4,22 @@ import { useLogin } from '../hooks/useLogin'
 
 interface LoginFormProps {
   onSuccess: () => void
+  requireAdmin?: boolean
 }
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm({ onSuccess, requireAdmin = false }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { authenticate, error, isLoading } = useLogin()
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const didLogin = await authenticate({ email, senha: password })
+    const usuario = await authenticate(
+      { email, senha: password },
+      { requireAdmin },
+    )
 
-    if (didLogin) {
+    if (usuario) {
       onSuccess()
     }
   }

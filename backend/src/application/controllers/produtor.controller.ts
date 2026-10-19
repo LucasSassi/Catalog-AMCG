@@ -10,7 +10,10 @@ import {
   listUfsBrasil,
 } from "../../domain/produtor/entity/produtor.constants";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import {
+  createAuthMiddleware,
+  createRequireAdmin,
+} from "../middleware/auth.middleware";
 
 const documentoSchema = z.object({
   tipo: z.enum(TIPO_DOCUMENTO),
@@ -129,6 +132,7 @@ export function createProdutorController(
   const router = Router();
   const { produtorService, jwtSecret } = options;
   const requireAuth = createAuthMiddleware(jwtSecret);
+  const requireAdmin = createRequireAdmin(jwtSecret);
 
   router.get(
     "/catalogo",
@@ -158,7 +162,7 @@ export function createProdutorController(
 
   router.get(
     "/",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const filtros = parseOrThrow(listQuerySchema, request.query);
@@ -172,7 +176,7 @@ export function createProdutorController(
 
   router.get(
     "/ufs",
-    requireAuth,
+    requireAdmin,
     (_request: Request, response: Response, next: NextFunction) => {
       try {
         response.status(200).json(listUfsBrasil());
@@ -184,7 +188,7 @@ export function createProdutorController(
 
   router.get(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const produtor = await produtorService.getById(getRouteId(request));
@@ -197,7 +201,7 @@ export function createProdutorController(
 
   router.put(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
@@ -214,7 +218,7 @@ export function createProdutorController(
 
   router.patch(
     "/:id/destaque",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(destaqueSchema, request.body);
@@ -231,7 +235,7 @@ export function createProdutorController(
 
   router.delete(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         await produtorService.remove(getRouteId(request));

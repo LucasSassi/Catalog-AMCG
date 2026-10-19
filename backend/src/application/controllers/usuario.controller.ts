@@ -1,9 +1,15 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
-import { MIN_SENHA_LENGTH } from "../../domain/usuario/entity/usuario.constants";
+import {
+  MIN_SENHA_LENGTH,
+  ROLE_USUARIO,
+} from "../../domain/usuario/entity/usuario.constants";
 import type { IUsuarioService } from "../../domain/usuario/entity/interfaces/usuario.service.interface";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import {
+  createRequireAdmin,
+  type AuthenticatedRequest,
+} from "../middleware/auth.middleware";
 
 const cadastrarSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório"),
@@ -38,6 +44,10 @@ const atualizarSchema = z
     { message: "Nenhum campo para atualizar" },
   );
 
+const alterarRoleSchema = z.object({
+  role: z.enum(ROLE_USUARIO),
+});
+
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
@@ -64,7 +74,7 @@ export function createUsuarioController(
 ): Router {
   const router = Router();
   const { usuarioService, jwtSecret } = options;
-  const requireAuth = createAuthMiddleware(jwtSecret);
+  const requireAdmin = createRequireAdmin(jwtSecret);
 
   router.post(
     "/cadastrar",
@@ -94,7 +104,7 @@ export function createUsuarioController(
 
   router.get(
     "/",
-    requireAuth,
+    requireAdmin,
     async (_request: Request, response: Response, next: NextFunction) => {
       try {
         const usuarios = await usuarioService.list();
@@ -107,7 +117,7 @@ export function createUsuarioController(
 
   router.get(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const usuario = await usuarioService.getById(getRouteId(request));
@@ -120,7 +130,7 @@ export function createUsuarioController(
 
   router.put(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
@@ -132,9 +142,27 @@ export function createUsuarioController(
     },
   );
 
+  router.patch(
+    "/:id/role",
+    requireAdmin,
+    async (request: AuthenticatedRequest, response: Response, next: NextFunction) => {
+      try {
+        const body = parseOrThrow(alterarRoleSchema, request.body);
+        const usuario = await usuarioService.alterarRole(
+          request.userId!,
+          getRouteId(request),
+          body.role,
+        );
+        response.status(200).json(usuario);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
   router.delete(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         await usuarioService.remove(getRouteId(request));

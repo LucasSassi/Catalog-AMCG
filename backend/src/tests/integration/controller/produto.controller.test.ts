@@ -8,8 +8,14 @@ import { InMemoryProdutoRepository } from "../../mocks/produto.repository.mock";
 
 const JWT_SECRET = "test-secret";
 
-function authHeader(sub = "user-1", email = "admin@amcg.org"): string {
-  const token = jwt.sign({ sub, email }, JWT_SECRET, { expiresIn: "1h" });
+function authHeader(
+  sub = "user-1",
+  email = "admin@amcg.org",
+  role: "admin" | "usuario" = "admin",
+): string {
+  const token = jwt.sign({ sub, email, role }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
   return `Bearer ${token}`;
 }
 
@@ -99,6 +105,21 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .post("/api/produtos")
       .send(buildProdutoPayload(produtorAprovadoId));
     expect(criarSemToken.status).toBe(401);
+  });
+
+  it("Deve bloquear rotas de produtos para role usuario", async () => {
+    const usuarioAuth = authHeader("user-comum", "usuario@amcg.org", "usuario");
+
+    const criar = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", usuarioAuth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+    expect(criar.status).toBe(403);
+
+    const listar = await request(app)
+      .get("/api/produtos")
+      .set("Authorization", usuarioAuth);
+    expect(listar.status).toBe(403);
   });
 
   it("Deve disponibilizar o catálogo sem exigir JWT", async () => {

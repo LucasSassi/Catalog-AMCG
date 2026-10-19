@@ -15,7 +15,7 @@ import {
   listUnidadesMedida,
 } from "../../domain/produto/entity/produto.constants";
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import { createRequireAdmin } from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -179,7 +179,7 @@ export function createProdutoController(
 ): Router {
   const router = Router();
   const { produtoService, jwtSecret } = options;
-  const requireAuth = createAuthMiddleware(jwtSecret);
+  const requireAdmin = createRequireAdmin(jwtSecret);
 
   router.get(
     "/catalogo",
@@ -208,7 +208,7 @@ export function createProdutoController(
 
   router.post(
     "/",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(cadastrarSchema, request.body);
@@ -222,7 +222,7 @@ export function createProdutoController(
 
   router.get(
     "/",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const filtros = parseOrThrow(listQuerySchema, request.query);
@@ -236,7 +236,7 @@ export function createProdutoController(
 
   router.get(
     "/categorias",
-    requireAuth,
+    requireAdmin,
     (_request: Request, response: Response, next: NextFunction) => {
       try {
         response.status(200).json(listCategoriasProduto());
@@ -248,7 +248,7 @@ export function createProdutoController(
 
   router.get(
     "/unidades-medida",
-    requireAuth,
+    requireAdmin,
     (_request: Request, response: Response, next: NextFunction) => {
       try {
         response.status(200).json(listUnidadesMedida());
@@ -260,7 +260,7 @@ export function createProdutoController(
 
   router.get(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const produto = await produtoService.getById(getRouteId(request));
@@ -273,7 +273,7 @@ export function createProdutoController(
 
   router.put(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
@@ -287,7 +287,7 @@ export function createProdutoController(
 
   router.patch(
     "/:id/destaque",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(destaqueSchema, request.body);
@@ -304,7 +304,7 @@ export function createProdutoController(
 
   router.delete(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         await produtoService.remove(getRouteId(request));

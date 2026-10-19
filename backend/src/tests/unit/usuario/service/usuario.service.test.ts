@@ -29,11 +29,13 @@ describe("Quando usar o UsuarioService", () => {
       expect(usuario).toMatchObject({
         nome: "Ana",
         email: "ana@amcg.org",
+        role: "usuario",
       });
       expect(usuario).not.toHaveProperty("senhaHash");
 
       const stored = await repository.findByEmail("ana@amcg.org");
       expect(stored).not.toBeNull();
+      expect(stored!.role).toBe("usuario");
       expect(stored!.senhaHash).not.toBe("senha123");
       expect(await bcrypt.compare("senha123", stored!.senhaHash)).toBe(true);
     });
@@ -81,14 +83,17 @@ describe("Quando usar o UsuarioService", () => {
       });
 
       expect(result.usuario.email).toBe("ana@amcg.org");
+      expect(result.usuario.role).toBe("usuario");
       expect(result.usuario).not.toHaveProperty("senhaHash");
 
       const payload = jwt.verify(result.token, JWT_SECRET) as {
         sub: string;
         email: string;
+        role: string;
       };
       expect(payload.email).toBe("ana@amcg.org");
       expect(payload.sub).toBe(result.usuario.id);
+      expect(payload.role).toBe("usuario");
     });
 
     it("Deve rejeitar senha incorreta", async () => {
@@ -155,6 +160,39 @@ describe("Quando usar o UsuarioService", () => {
       await expect(
         service.update(primeiro.id, { email: "bruno@amcg.org" }),
       ).rejects.toMatchObject({ statusCode: 409 });
+    });
+  });
+
+  describe("Quando alterar role", () => {
+    it("Deve promover outro usuário a admin", async () => {
+      const admin = await service.cadastrar({
+        nome: "Admin",
+        email: "admin@amcg.org",
+        senha: "senha123",
+      });
+      await repository.update(admin.id, { role: "admin" });
+
+      const alvo = await service.cadastrar({
+        nome: "Ana",
+        email: "ana@amcg.org",
+        senha: "senha123",
+      });
+
+      const atualizado = await service.alterarRole(admin.id, alvo.id, "admin");
+      expect(atualizado.role).toBe("admin");
+    });
+
+    it("Deve recusar alterar a própria role", async () => {
+      const admin = await service.cadastrar({
+        nome: "Admin",
+        email: "admin@amcg.org",
+        senha: "senha123",
+      });
+      await repository.update(admin.id, { role: "admin" });
+
+      await expect(
+        service.alterarRole(admin.id, admin.id, "usuario"),
+      ).rejects.toMatchObject({ statusCode: 403 });
     });
   });
 });

@@ -17,7 +17,10 @@ export function LoginPage() {
           Entre com sua conta para avaliar e cadastrar produtores e produtos.
         </p>
 
-        <LoginForm onSuccess={() => navigate('/backoffice')} />
+        <LoginForm
+          requireAdmin
+          onSuccess={() => navigate('/backoffice')}
+        />
       </section>
     </main>
   )

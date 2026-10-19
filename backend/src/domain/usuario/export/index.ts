@@ -5,8 +5,10 @@ export type {
   CadastrarUsuarioInput,
   LoginUsuarioInput,
   AtualizarUsuarioInput,
+  AlterarRoleUsuarioInput,
   LoginUsuarioResult,
 } from "../entity/usuario.entity";
+export type { RoleUsuario } from "../entity/usuario.constants";
 export type { IUsuarioService } from "../entity/interfaces/usuario.service.interface";
 export type { IUsuarioRepositoryRead } from "../repository/usuario.repository.read";
 export type {
