@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
-import { useCatalogProduct } from '../../features/produto/hooks/useCatalogProduct'
-import { buildProductWhatsAppUrl } from '../../features/produto/lib/whatsapp'
+import { SimilarProductsCarousel } from '../../features/produto/components/SimilarProductsCarousel'
 import { PRODUCT_CATEGORY_LABELS } from '../../features/produto/constants'
+import { useCatalogProduct } from '../../features/produto/hooks/useCatalogProduct'
+import { useSimilarProducts } from '../../features/produto/hooks/useSimilarProducts'
+import { buildProductWhatsAppUrl } from '../../features/produto/lib/whatsapp'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
 import premiadoBadge from '../../shared/assets/premiado.png'
 import { Feedback } from '../../shared/components/Feedback'
@@ -16,10 +18,17 @@ import { formatCurrency } from '../../shared/lib/formatCurrency'
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { product, isLoading, error } = useCatalogProduct(id)
+  const similares = useSimilarProducts(product?.categoria, product?.id)
   const [isProducerOpen, setIsProducerOpen] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
   const [isPremiadoHintOpen, setIsPremiadoHintOpen] = useState(false)
   const [isSimHintOpen, setIsSimHintOpen] = useState(false)
+
+  useEffect(() => {
+    setSelectedPhotoIndex(0)
+    setIsPremiadoHintOpen(false)
+    setIsSimHintOpen(false)
+  }, [product?.id])
 
   if (isLoading) {
     return (
@@ -65,8 +74,38 @@ export function ProductDetailPage() {
 
         <div className="rounded-3xl bg-white p-5 shadow-sm sm:p-8">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 sm:order-2">
+            <div className="flex flex-row gap-3">
+              {photos.length > 1 ? (
+                <div className="flex w-16 shrink-0 flex-col gap-2 overflow-y-auto">
+                  {photos.map((photo, index) => (
+                    <button
+                      key={`${photo.url}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedPhotoIndex(index)}
+                      className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${
+                        index === selectedPhotoIndex
+                          ? 'border-primary'
+                          : 'border-transparent'
+                      }`}
+                    >
+                      <img
+                        src={buildThumbnailUrl(
+                          photo.url,
+                          THUMBNAIL_WIDTH.gallery,
+                        )}
+                        alt=""
+                        width={64}
+                        height={64}
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-square h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100">
                 <img
                   src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
                   alt={product.nome}
@@ -110,36 +149,6 @@ export function ProductDetailPage() {
                   </div>
                 ) : null}
               </div>
-
-              {photos.length > 1 ? (
-                <div className="flex gap-2 overflow-x-auto pb-1 sm:order-1 sm:w-16 sm:shrink-0 sm:flex-col sm:overflow-visible sm:pb-0">
-                  {photos.map((photo, index) => (
-                    <button
-                      key={`${photo.url}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedPhotoIndex(index)}
-                      className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${
-                        index === selectedPhotoIndex
-                          ? 'border-primary'
-                          : 'border-transparent'
-                      }`}
-                    >
-                      <img
-                        src={buildThumbnailUrl(
-                          photo.url,
-                          THUMBNAIL_WIDTH.gallery,
-                        )}
-                        alt=""
-                        width={64}
-                        height={64}
-                        loading="lazy"
-                        decoding="async"
-                        className="aspect-square h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
 
             <div>
@@ -246,6 +255,15 @@ export function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        <SimilarProductsCarousel
+          products={similares.products}
+          hasPrevious={similares.hasPrevious}
+          hasNext={similares.hasNext}
+          onPrevious={similares.goToPreviousPage}
+          onNext={similares.goToNextPage}
+          isLoading={similares.isLoading}
+        />
 
         <div className="mt-6 text-center">
           <Link

@@ -215,9 +215,8 @@ describe("Quando usar o ProdutoService", () => {
       );
 
       const catalogo = await service.listCatalog({
-        busca: "fazenda",
+        busca: "Mel",
         categoria: "MEL_E_DERIVADOS",
-        municipio: "Ponta Grossa",
       });
 
       expect(catalogo.produtos).toHaveLength(1);
@@ -231,6 +230,8 @@ describe("Quando usar o ProdutoService", () => {
       });
       expect(catalogo.categorias).toContain("MEL_E_DERIVADOS");
       expect(catalogo.municipios).toEqual(["Ponta Grossa"]);
+      expect(catalogo.pageSize).toBe(12);
+      expect(catalogo.hasNext).toBe(false);
     });
   });
 

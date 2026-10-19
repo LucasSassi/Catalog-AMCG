@@ -5,9 +5,10 @@ import { CatalogPagination } from '../../features/produto/components/CatalogPagi
 import { FeaturedProductsStrip } from '../../features/produto/components/FeaturedProductsStrip'
 import { ProductCard } from '../../features/produto/components/ProductCard'
 import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
+import { useFeaturedProducts } from '../../features/produto/hooks/useFeaturedProducts'
 import type { CatalogFilters as CatalogFiltersValue } from '../../features/produto/types'
 import { FeaturedProducersStrip } from '../../features/produtor/components/FeaturedProducersStrip'
-import { useCatalogProducers } from '../../features/produtor/hooks/useCatalogProducers'
+import { useFeaturedProducers } from '../../features/produtor/hooks/useFeaturedProducers'
 import { bannerImages } from '../../shared/assets/banners'
 import { BannerCarousel } from '../../shared/components/BannerCarousel'
 import { Feedback } from '../../shared/components/Feedback'
@@ -24,7 +25,6 @@ const initialFilters: CatalogFiltersValue = {
 }
 
 const PRODUCTS_PER_PAGE = 12
-const FIRST_PAGE = 1
 
 const HIGHLIGHT_TAB = {
   products: 'produtos',
@@ -143,16 +143,24 @@ const whyBuyItems = [
 export function CatalogPage() {
   const [filters, setFilters] =
     useState<CatalogFiltersValue>(initialFilters)
-  const { products, categories, cities, certifications, isLoading, error } =
-    useCatalogProducts(filters)
-  const unfilteredCatalog = useCatalogProducts(initialFilters)
-  const { producers } = useCatalogProducers()
-
-  const featuredProducers = producers.filter((producer) => producer.destaque)
-  const featuredProducts = unfilteredCatalog.products.filter(
-    (product) => product.destaque,
-  )
-  const [currentPage, setCurrentPage] = useState(FIRST_PAGE)
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
+  const currentCursor = cursorStack[cursorStack.length - 1] ?? null
+  const catalogFilters: CatalogFiltersValue = {
+    ...filters,
+    pageSize: PRODUCTS_PER_PAGE,
+    ...(currentCursor ? { lastItemId: currentCursor } : {}),
+  }
+  const {
+    products,
+    categories,
+    cities,
+    certifications,
+    hasNext,
+    isLoading,
+    error,
+  } = useCatalogProducts(catalogFilters)
+  const { products: featuredProducts } = useFeaturedProducts()
+  const { producers: featuredProducers } = useFeaturedProducers()
   const productsSectionRef = useRef<HTMLElement>(null)
   const { hash, key: locationKey } = useLocation()
   const [highlightSelection, setHighlightSelection] = useState<{
@@ -187,24 +195,35 @@ export function CatalogPage() {
     setHighlightSelection({ locationKey, tabId })
   }
 
-  const totalPages = Math.max(
-    FIRST_PAGE,
-    Math.ceil(products.length / PRODUCTS_PER_PAGE),
-  )
-  const activePage = Math.min(currentPage, totalPages)
-  const pageStart = (activePage - 1) * PRODUCTS_PER_PAGE
-  const visibleProducts = products.slice(
-    pageStart,
-    pageStart + PRODUCTS_PER_PAGE,
-  )
-
   function handleFiltersChange(nextFilters: CatalogFiltersValue): void {
-    setFilters(nextFilters)
-    setCurrentPage(FIRST_PAGE)
+    setFilters({
+      busca: nextFilters.busca,
+      categoria: nextFilters.categoria,
+      municipio: nextFilters.municipio,
+      certificacao: nextFilters.certificacao,
+    })
+    setCursorStack([null])
   }
 
-  function handlePageChange(page: number): void {
-    setCurrentPage(page)
+  function handlePreviousPage(): void {
+    if (cursorStack.length <= 1) {
+      return
+    }
+    setCursorStack((current) => current.slice(0, -1))
+    productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function handleNextPage(): void {
+    if (!hasNext || products.length === 0) {
+      return
+    }
+
+    const nextCursor = products[products.length - 1]?.id
+    if (!nextCursor) {
+      return
+    }
+
+    setCursorStack((current) => [...current, nextCursor])
     productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
@@ -269,7 +288,7 @@ export function CatalogPage() {
               Seleção Especial
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              {products.length} resultado(s)
+              {products.length} resultado(s) nesta página
             </p>
           </div>
 
@@ -293,14 +312,15 @@ export function CatalogPage() {
           {!isLoading && !error && products.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:gap-8">
-                {visibleProducts.map((product) => (
+                {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
               <CatalogPagination
-                currentPage={activePage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
+                hasPrevious={cursorStack.length > 1}
+                hasNext={hasNext}
+                onPrevious={handlePreviousPage}
+                onNext={handleNextPage}
               />
             </>
           ) : null}

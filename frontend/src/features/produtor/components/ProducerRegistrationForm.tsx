@@ -8,8 +8,10 @@ import {
   MAX_PRODUCER_PHOTOS,
 } from '../constants'
 import { useRegisterProducer } from '../hooks/useRegisterProducer'
+import { useUpdateProducer } from '../hooks/useUpdateProducer'
 import type {
   CreateProducerInput,
+  Producer,
   ProducerFile,
   ProducerRegistration,
 } from '../types'
@@ -17,6 +19,7 @@ import type {
 interface ProducerRegistrationFormProps {
   onSuccess: () => void
   approveAfterCreate?: boolean
+  producer?: Producer
 }
 
 const emptyRegistration: ProducerRegistration = {
@@ -43,19 +46,79 @@ const initialForm: CreateProducerInput = {
   site: '',
 }
 
+function buildInitialForm(producer?: Producer): CreateProducerInput {
+  if (!producer) {
+    return {
+      ...initialForm,
+      documento: { ...initialForm.documento },
+      registros: [{ ...emptyRegistration }],
+      contato: { ...initialForm.contato },
+      endereco: { ...initialForm.endereco },
+      logo: { ...emptyPhoto },
+      fotos: [{ ...emptyPhoto }],
+    }
+  }
+
+  return {
+    nomeEmpresa: producer.nomeEmpresa,
+    municipioId: producer.municipioId,
+    documento: { ...producer.documento },
+    registros:
+      producer.registros.length > 0
+        ? producer.registros.map((registro) => ({ ...registro }))
+        : [{ ...emptyRegistration }],
+    contato: { ...producer.contato },
+    endereco: { ...producer.endereco },
+    historia: producer.historia,
+    logo: producer.logo ? { ...producer.logo } : { ...emptyPhoto },
+    fotos:
+      producer.fotos.length > 0
+        ? producer.fotos.map((foto) => ({ ...foto }))
+        : [{ ...emptyPhoto }],
+    site: producer.site ?? '',
+  }
+}
+
+function getSocialHandle(
+  producer: Producer | undefined,
+  tipo: 'INSTAGRAM' | 'FACEBOOK',
+): string {
+  if (!producer) {
+    return ''
+  }
+
+  const network = producer.redesSociais.find((item) => item.tipo === tipo)
+  if (!network) {
+    return ''
+  }
+
+  return network.handle
+}
+
 const inputClassName =
   'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary'
 
 export function ProducerRegistrationForm({
   onSuccess,
   approveAfterCreate = false,
+  producer,
 }: ProducerRegistrationFormProps) {
-  const [form, setForm] = useState<CreateProducerInput>(initialForm)
-  const [instagram, setInstagram] = useState('')
-  const [facebook, setFacebook] = useState('')
-  const { submit, error, isLoading } = useRegisterProducer({
+  const isEditMode = producer !== undefined
+  const [form, setForm] = useState<CreateProducerInput>(() =>
+    buildInitialForm(producer),
+  )
+  const [instagram, setInstagram] = useState(() =>
+    getSocialHandle(producer, 'INSTAGRAM'),
+  )
+  const [facebook, setFacebook] = useState(() =>
+    getSocialHandle(producer, 'FACEBOOK'),
+  )
+  const register = useRegisterProducer({
     approveAfterCreate,
   })
+  const update = useUpdateProducer()
+  const error = isEditMode ? update.error : register.error
+  const isLoading = isEditMode ? update.isLoading : register.isLoading
 
   function updateField<K extends keyof CreateProducerInput>(
     field: K,
@@ -166,7 +229,19 @@ export function ProducerRegistrationForm({
       site: form.site?.trim() || undefined,
     }
 
-    const didSubmit = await submit(payload)
+    if (isEditMode && producer) {
+      const updated = await update.submit(
+        producer.id,
+        payload,
+        producer.status,
+      )
+      if (updated) {
+        onSuccess()
+      }
+      return
+    }
+
+    const didSubmit = await register.submit(payload)
 
     if (didSubmit) {
       onSuccess()
@@ -648,7 +723,13 @@ export function ProducerRegistrationForm({
       ) : null}
 
       <Button type="submit" fullWidth disabled={isLoading}>
-        {isLoading ? 'Enviando cadastro...' : 'Enviar cadastro'}
+        {isLoading
+          ? isEditMode
+            ? 'Salvando...'
+            : 'Enviando cadastro...'
+          : isEditMode
+            ? 'Salvar alterações'
+            : 'Enviar cadastro'}
       </Button>
     </form>
   )

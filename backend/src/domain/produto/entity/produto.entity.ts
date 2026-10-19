@@ -91,6 +91,37 @@ export interface CatalogoFiltros {
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  pageSize?: number;
+  lastItemId?: string;
+}
+
+export interface CatalogoSimilaresFiltros {
+  categoria: CategoriaProduto;
+  excludeId?: string;
+  pageSize?: number;
+  lastItemId?: string;
+}
+
+export interface CatalogoCursorFiltros {
+  busca?: string;
+  categoria?: CategoriaProduto;
+  municipio?: string;
+  certificacao?: CertificacaoCatalogo;
+  pageSize: number;
+  lastItemId?: string;
+  destaque?: boolean;
+  excludeIds?: string[];
+}
+
+export interface CatalogoCursorPage {
+  items: Produto[];
+  nextLastItemId: string | null;
+}
+
+export interface CatalogoCursorMeta {
+  pageSize: number;
+  nextLastItemId: string | null;
+  hasNext: boolean;
 }
 
 export interface ProdutoCatalogo {
@@ -121,9 +152,17 @@ export interface ProdutoCatalogoDetalhe extends ProdutoCatalogo {
   };
 }
 
-export interface CatalogoProdutos {
+export interface CatalogoProdutos extends CatalogoCursorMeta {
   produtos: ProdutoCatalogo[];
   categorias: CategoriaProduto[];
   municipios: string[];
   certificacoes: CertificacaoCatalogo[];
+}
+
+export interface CatalogoDestaquesProdutos {
+  produtos: ProdutoCatalogo[];
+}
+
+export interface CatalogoSimilaresProdutos extends CatalogoCursorMeta {
+  produtos: ProdutoCatalogo[];
 }

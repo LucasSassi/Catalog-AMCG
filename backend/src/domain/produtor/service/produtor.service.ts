@@ -28,6 +28,7 @@ import type {
   Arquivo,
   AtualizarProdutorInput,
   CadastrarProdutorInput,
+  CatalogoDestaquesProdutores,
   CatalogoProdutores,
   Contato,
   Documento,
@@ -104,6 +105,36 @@ export class ProdutorService implements IProdutorService {
 
     return {
       produtores: produtores.map((produtor) => this.toProdutorCatalogo(produtor)),
+    };
+  }
+
+  async listDestaques(): Promise<CatalogoDestaquesProdutores> {
+    const manuais = await this.readRepository.listLimited(
+      {
+        ativo: true,
+        status: "APROVADO",
+        destaque: true,
+      },
+      MAX_DESTAQUES,
+    );
+    const selecionados = manuais.map((produtor) =>
+      this.toProdutorCatalogo(produtor),
+    );
+
+    if (selecionados.length >= MAX_DESTAQUES) {
+      return { produtores: selecionados };
+    }
+
+    const aleatorios = await this.readRepository.sampleApproved(
+      selecionados.map((produtor) => produtor.id),
+      MAX_DESTAQUES - selecionados.length,
+    );
+
+    return {
+      produtores: [
+        ...selecionados,
+        ...aleatorios.map((produtor) => this.toProdutorCatalogo(produtor)),
+      ],
     };
   }
 

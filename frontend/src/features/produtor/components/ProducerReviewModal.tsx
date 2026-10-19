@@ -16,6 +16,7 @@ interface ProducerReviewModalProps {
   onApprove: (id: string) => Promise<boolean>
   onReject: (id: string, reason: string) => Promise<boolean>
   onToggleDestaque: (id: string, destaque: boolean) => Promise<boolean>
+  onEdit: () => void
 }
 
 export function ProducerReviewModal({
@@ -25,6 +26,7 @@ export function ProducerReviewModal({
   onApprove,
   onReject,
   onToggleDestaque,
+  onEdit,
 }: ProducerReviewModalProps) {
   const isRejected = producer.status === 'REJEITADO'
   const isApproved = producer.status === 'APROVADO'
@@ -163,6 +165,12 @@ export function ProducerReviewModal({
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <Button variant="secondary" disabled={disabled} onClick={onEdit}>
+          Editar
+        </Button>
       </div>
 
       {!isRejected && !isApproved ? (

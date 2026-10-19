@@ -7,6 +7,9 @@ const emptyCatalog: ProductCatalog = {
   categorias: [],
   municipios: [],
   certificacoes: [],
+  pageSize: 12,
+  nextLastItemId: null,
+  hasNext: false,
 }
 
 export function useCatalogProducts(filters: CatalogFilters) {
@@ -52,6 +55,9 @@ export function useCatalogProducts(filters: CatalogFilters) {
     categories: catalog.categorias,
     cities: catalog.municipios,
     certifications: catalog.certificacoes,
+    pageSize: catalog.pageSize,
+    nextLastItemId: catalog.nextLastItemId,
+    hasNext: catalog.hasNext,
     isLoading: loadedKey !== filterKey,
     error,
   }

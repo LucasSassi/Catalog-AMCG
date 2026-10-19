@@ -11,8 +11,10 @@ import {
   PRODUCT_REGISTRATION_TYPES,
 } from '../constants'
 import { useRegisterProduct } from '../hooks/useRegisterProduct'
+import { useUpdateProduct } from '../hooks/useUpdateProduct'
 import type {
   CreateProductInput,
+  Product,
   ProductFile,
   ProductRegistration,
 } from '../types'
@@ -20,6 +22,7 @@ import type {
 interface ProductRegistrationFormProps {
   onSuccess?: () => void
   approveAfterCreate?: boolean
+  product?: Product
 }
 
 const emptyRegistration: ProductRegistration = {
@@ -33,34 +36,72 @@ const emptyPhoto: ProductFile = {
   nomeOriginal: '',
 }
 
+function buildInitialForm(product?: Product): CreateProductInput {
+  if (!product) {
+    return {
+      produtorId: '',
+      nome: '',
+      descricao: '',
+      categoria: 'MEL_E_DERIVADOS',
+      unidadeMedida: 'KG',
+      registros: [{ ...emptyRegistration }],
+      fotosAvaliacao: [{ ...emptyPhoto }],
+      fotosDivulgacao: [],
+      premiacoes: [],
+      valorCentavos: 0,
+      observacoes: '',
+    }
+  }
+
+  return {
+    produtorId: product.produtorId,
+    nome: product.nome,
+    descricao: product.descricao,
+    categoria: product.categoria,
+    unidadeMedida: product.unidadeMedida,
+    registros:
+      product.registros.length > 0
+        ? product.registros.map((registro) => ({ ...registro }))
+        : [{ ...emptyRegistration }],
+    fotosAvaliacao:
+      product.fotosAvaliacao.length > 0
+        ? product.fotosAvaliacao.map((foto) => ({ ...foto }))
+        : [{ ...emptyPhoto }],
+    fotosDivulgacao: product.fotosDivulgacao.map((foto) => ({ ...foto })),
+    premiacoes: product.premiacoes.map((premiacao) => ({ ...premiacao })),
+    valorCentavos: product.valorCentavos,
+    observacoes: product.observacoes ?? '',
+  }
+}
+
 const inputClassName =
   'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary'
 
 export function ProductRegistrationForm({
   onSuccess,
   approveAfterCreate = true,
+  product,
 }: ProductRegistrationFormProps) {
+  const isEditMode = product !== undefined
   const [approvedProducers, setApprovedProducers] = useState<Producer[]>([])
   const [isLoadingProducers, setIsLoadingProducers] = useState(true)
   const [producersError, setProducersError] = useState('')
-  const [priceReais, setPriceReais] = useState('')
-  const [form, setForm] = useState<CreateProductInput>({
-    produtorId: '',
-    nome: '',
-    descricao: '',
-    categoria: 'MEL_E_DERIVADOS',
-    unidadeMedida: 'KG',
-    registros: [{ ...emptyRegistration }],
-    fotosAvaliacao: [{ ...emptyPhoto }],
-    fotosDivulgacao: [],
-    premiacoes: [],
-    valorCentavos: 0,
-    observacoes: '',
+  const [priceReais, setPriceReais] = useState(() => {
+    if (!product) {
+      return ''
+    }
+    return (product.valorCentavos / 100).toFixed(2).replace('.', ',')
   })
+  const [form, setForm] = useState<CreateProductInput>(() =>
+    buildInitialForm(product),
+  )
 
-  const { submit, error, isLoading } = useRegisterProduct({
+  const register = useRegisterProduct({
     approveAfterCreate,
   })
+  const update = useUpdateProduct()
+  const error = isEditMode ? update.error : register.error
+  const isLoading = isEditMode ? update.isLoading : register.isLoading
 
   useEffect(() => {
     let isCurrent = true
@@ -152,14 +193,25 @@ export function ProductRegistrationForm({
     const payload: CreateProductInput = {
       ...form,
       valorCentavos,
-      fotosDivulgacao: form.fotosAvaliacao,
+      fotosDivulgacao:
+        form.fotosDivulgacao.length > 0
+          ? form.fotosDivulgacao
+          : form.fotosAvaliacao,
       observacoes: form.observacoes?.trim()
         ? form.observacoes.trim()
         : undefined,
-      premiacoes: [],
+      premiacoes: isEditMode ? form.premiacoes : [],
     }
 
-    const didSubmit = await submit(payload)
+    if (isEditMode && product) {
+      const updated = await update.submit(product.id, payload, product.status)
+      if (updated) {
+        onSuccess?.()
+      }
+      return
+    }
+
+    const didSubmit = await register.submit(payload)
 
     if (didSubmit) {
       onSuccess?.()
@@ -469,7 +521,13 @@ export function ProductRegistrationForm({
       ) : null}
 
       <Button type="submit" fullWidth disabled={isLoading}>
-        {isLoading ? 'Enviando cadastro...' : 'Enviar cadastro'}
+        {isLoading
+          ? isEditMode
+            ? 'Salvando...'
+            : 'Enviando cadastro...'
+          : isEditMode
+            ? 'Salvar alterações'
+            : 'Enviar cadastro'}
       </Button>
     </form>
   )

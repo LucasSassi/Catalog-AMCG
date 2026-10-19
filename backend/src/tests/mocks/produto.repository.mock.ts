@@ -5,6 +5,8 @@ import type {
 } from "../../domain/produto/repository/produto.repository.write";
 import type { IProdutoRepositoryRead } from "../../domain/produto/repository/produto.repository.read";
 import type {
+  CatalogoCursorFiltros,
+  CatalogoCursorPage,
   ListarProdutosFiltros,
   Produto,
 } from "../../domain/produto/entity/produto.entity";
@@ -45,6 +47,81 @@ export class InMemoryProdutoRepository
     return items.sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
+  }
+
+  async listCatalogCursor(
+    filtros: CatalogoCursorFiltros,
+  ): Promise<CatalogoCursorPage> {
+    let items = await this.list({
+      ativo: true,
+      status: "APROVADO",
+      ...(filtros.categoria !== undefined
+        ? { categoria: filtros.categoria }
+        : {}),
+      ...(filtros.destaque !== undefined ? { destaque: filtros.destaque } : {}),
+    });
+
+    items = items.filter((produto) => produto.fotosDivulgacao.length > 0);
+
+    if (filtros.excludeIds && filtros.excludeIds.length > 0) {
+      const excluded = new Set(filtros.excludeIds);
+      items = items.filter((produto) => !excluded.has(produto.id));
+    }
+
+    if (filtros.certificacao && filtros.certificacao !== "SIM") {
+      items = items.filter((produto) =>
+        produto.registros.some(
+          (registro) => registro.tipo === filtros.certificacao,
+        ),
+      );
+    }
+
+    if (filtros.busca?.trim()) {
+      const busca = filtros.busca.trim().toLowerCase();
+      items = items.filter((produto) => {
+        const conteudo = `${produto.nome} ${produto.descricao}`.toLowerCase();
+        return conteudo.includes(busca);
+      });
+    }
+
+    items = items.sort((a, b) => b.id.localeCompare(a.id));
+
+    if (filtros.lastItemId) {
+      items = items.filter((produto) => produto.id < filtros.lastItemId!);
+    }
+
+    const pageItems = items.slice(0, filtros.pageSize);
+    const hasNext = items.length > filtros.pageSize;
+    const lastItem = pageItems[pageItems.length - 1];
+
+    return {
+      items: pageItems,
+      nextLastItemId: hasNext && lastItem ? lastItem.id : null,
+    };
+  }
+
+  async sampleApproved(
+    excludeIds: string[],
+    size: number,
+  ): Promise<Produto[]> {
+    if (size <= 0) {
+      return [];
+    }
+
+    const excluded = new Set(excludeIds);
+    const candidatos = (await this.list({ ativo: true, status: "APROVADO" }))
+      .filter((produto) => produto.fotosDivulgacao.length > 0)
+      .filter((produto) => !excluded.has(produto.id));
+
+    const shuffled = [...candidatos];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      const current = shuffled[index];
+      shuffled[index] = shuffled[swapIndex];
+      shuffled[swapIndex] = current;
+    }
+
+    return shuffled.slice(0, size);
   }
 
   async findByRegistroNumero(numero: string): Promise<Produto | null> {

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { ProductCreateModal } from '../../features/produto/components/ProductCreateModal'
+import { ProductEditModal } from '../../features/produto/components/ProductEditModal'
 import { ProductReviewList } from '../../features/produto/components/ProductReviewList'
 import { ProductReviewModal } from '../../features/produto/components/ProductReviewModal'
 import { useReviewProducts } from '../../features/produto/hooks/useReviewProducts'
 import type { Product } from '../../features/produto/types'
 import { ProducerCreateModal } from '../../features/produtor/components/ProducerCreateModal'
+import { ProducerEditModal } from '../../features/produtor/components/ProducerEditModal'
 import { ProducerReviewList } from '../../features/produtor/components/ProducerReviewList'
 import { ProducerReviewModal } from '../../features/produtor/components/ProducerReviewModal'
 import { useReviewProducers } from '../../features/produtor/hooks/useReviewProducers'
@@ -24,6 +26,8 @@ export function BackofficePage() {
     null,
   )
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [editingProducer, setEditingProducer] = useState<Producer | null>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [isCreateProducerOpen, setIsCreateProducerOpen] = useState(false)
   const [isCreateProductOpen, setIsCreateProductOpen] = useState(false)
 
@@ -118,7 +122,7 @@ export function BackofficePage() {
         </div>
       </div>
 
-      {selectedProducer ? (
+      {selectedProducer && !editingProducer ? (
         <ProducerReviewModal
           producer={
             producers.producers.find(
@@ -130,10 +134,18 @@ export function BackofficePage() {
           onApprove={producers.approve}
           onReject={producers.reject}
           onToggleDestaque={producers.toggleDestaque}
+          onEdit={() => {
+            setEditingProducer(
+              producers.producers.find(
+                (item) => item.id === selectedProducer.id,
+              ) ?? selectedProducer,
+            )
+            setSelectedProducer(null)
+          }}
         />
       ) : null}
 
-      {selectedProduct ? (
+      {selectedProduct && !editingProduct ? (
         <ProductReviewModal
           product={
             products.products.find((item) => item.id === selectedProduct.id) ??
@@ -144,6 +156,30 @@ export function BackofficePage() {
           onApprove={products.approve}
           onReject={products.reject}
           onToggleDestaque={products.toggleDestaque}
+          onEdit={() => {
+            setEditingProduct(
+              products.products.find(
+                (item) => item.id === selectedProduct.id,
+              ) ?? selectedProduct,
+            )
+            setSelectedProduct(null)
+          }}
+        />
+      ) : null}
+
+      {editingProducer ? (
+        <ProducerEditModal
+          producer={editingProducer}
+          onClose={() => setEditingProducer(null)}
+          onSuccess={() => producers.reload()}
+        />
+      ) : null}
+
+      {editingProduct ? (
+        <ProductEditModal
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSuccess={() => products.reload()}
         />
       ) : null}
 

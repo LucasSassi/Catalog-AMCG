@@ -147,6 +147,15 @@ const catalogQuerySchema = z.object({
   categoria: z.enum(CATEGORIA_PRODUTO).optional(),
   municipio: z.string().trim().optional(),
   certificacao: z.enum(CERTIFICACAO_CATALOGO).optional(),
+  pageSize: z.coerce.number().int().min(1).max(12).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
+});
+
+const similaresQuerySchema = z.object({
+  categoria: z.enum(CATEGORIA_PRODUTO),
+  excludeId: z.string().trim().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(10).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
 });
 
 const destaqueSchema = z.object({
@@ -188,6 +197,31 @@ export function createProdutoController(
         const filtros = parseOrThrow(catalogQuerySchema, request.query);
         const catalogo = await produtoService.listCatalog(filtros);
         response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/destaques",
+    async (_request: Request, response: Response, next: NextFunction) => {
+      try {
+        const destaques = await produtoService.listDestaques();
+        response.status(200).json(destaques);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/similares",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const filtros = parseOrThrow(similaresQuerySchema, request.query);
+        const similares = await produtoService.listSimilares(filtros);
+        response.status(200).json(similares);
       } catch (error) {
         next(error);
       }

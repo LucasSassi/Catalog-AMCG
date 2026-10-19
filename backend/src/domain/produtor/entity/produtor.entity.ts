@@ -86,6 +86,10 @@ export interface CatalogoProdutores {
   produtores: ProdutorCatalogo[];
 }
 
+export interface CatalogoDestaquesProdutores {
+  produtores: ProdutorCatalogo[];
+}
+
 export interface CadastrarProdutorInput {
   nomeEmpresa: string;
   municipioId: string;

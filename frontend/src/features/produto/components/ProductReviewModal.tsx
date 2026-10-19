@@ -11,6 +11,7 @@ interface ProductReviewModalProps {
   onApprove: (id: string) => Promise<boolean>
   onReject: (id: string, reason: string) => Promise<boolean>
   onToggleDestaque: (id: string, destaque: boolean) => Promise<boolean>
+  onEdit: () => void
 }
 
 export function ProductReviewModal({
@@ -20,6 +21,7 @@ export function ProductReviewModal({
   onApprove,
   onReject,
   onToggleDestaque,
+  onEdit,
 }: ProductReviewModalProps) {
   const isRejected = product.status === 'REJEITADO'
   const isApproved = product.status === 'APROVADO'
@@ -122,6 +124,12 @@ export function ProductReviewModal({
             </p>
           </div>
         ) : null}
+      </div>
+
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <Button variant="secondary" disabled={disabled} onClick={onEdit}>
+          Editar
+        </Button>
       </div>
 
       {!isRejected && !isApproved ? (

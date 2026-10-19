@@ -220,6 +220,18 @@ export function createProdutorController(
   );
 
   router.get(
+    "/catalogo/destaques",
+    async (_request: Request, response: Response, next: NextFunction) => {
+      try {
+        const destaques = await produtorService.listDestaques();
+        response.status(200).json(destaques);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
     "/catalogo/:id",
     async (request: Request, response: Response, next: NextFunction) => {
       try {
