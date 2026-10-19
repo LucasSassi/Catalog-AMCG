@@ -4,9 +4,20 @@ interface ModalProps {
   title: string
   children: ReactNode
   onClose: () => void
+  size?: 'default' | 'wide'
 }
 
-export function Modal({ title, children, onClose }: ModalProps) {
+const SIZE_CLASS = {
+  default: 'max-w-3xl',
+  wide: 'max-w-5xl',
+} as const
+
+export function Modal({
+  title,
+  children,
+  onClose,
+  size = 'default',
+}: ModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -32,7 +43,7 @@ export function Modal({ title, children, onClose }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+        className={`max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white shadow-2xl ${SIZE_CLASS[size]}`}
       >
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
           <h2 id="modal-title" className="text-xl font-bold text-foreground">

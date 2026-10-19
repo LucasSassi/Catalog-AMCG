@@ -3,9 +3,14 @@ import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   E164_PHONE_REGEX,
+  MAX_FOTOS,
+  MAX_HISTORIA_LENGTH,
+  MAX_REDES_SOCIAIS,
+  MIN_FOTOS,
   REGISTRO_PRODUTOR_TIPO,
   STATUS_PRODUTOR,
   TIPO_DOCUMENTO,
+  TIPO_REDE_SOCIAL,
   UF_BRASIL,
   listUfsBrasil,
 } from "../../domain/produtor/entity/produtor.constants";
@@ -42,6 +47,57 @@ const enderecoSchema = z.object({
   estado: z.enum(UF_BRASIL),
 });
 
+const arquivoSchema = z.object({
+  url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
+  contentType: z.string().trim().min(1, "Content type é obrigatório"),
+  nomeOriginal: z.string().trim().min(1, "Nome original é obrigatório"),
+});
+
+const fotosSchema = z
+  .array(arquivoSchema)
+  .min(MIN_FOTOS, `Mínimo de ${MIN_FOTOS} foto`)
+  .max(MAX_FOTOS, `Máximo de ${MAX_FOTOS} fotos`);
+
+const historiaSchema = z
+  .string()
+  .trim()
+  .min(1, "História do produtor é obrigatória")
+  .max(
+    MAX_HISTORIA_LENGTH,
+    `História deve ter no máximo ${MAX_HISTORIA_LENGTH} caracteres`,
+  );
+
+const redeSocialItemSchema = z.object({
+  tipo: z.enum(TIPO_REDE_SOCIAL),
+  handle: z.string().trim().min(1, "Handle da rede social é obrigatório"),
+});
+
+const redesSociaisSchema = z
+  .array(redeSocialItemSchema)
+  .max(MAX_REDES_SOCIAIS, `Máximo de ${MAX_REDES_SOCIAIS} redes sociais`)
+  .superRefine((items, ctx) => {
+    const tipos = new Set<string>();
+    for (const [index, item] of items.entries()) {
+      if (tipos.has(item.tipo)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Não é permitido cadastrar o mesmo tipo de rede social mais de uma vez",
+          path: [index, "tipo"],
+        });
+      }
+      tipos.add(item.tipo);
+    }
+  });
+
+const optionalSiteSchema = z
+  .string()
+  .trim()
+  .url("Site inválido")
+  .optional()
+  .or(z.literal(""))
+  .transform((value) => (value === "" || value === undefined ? undefined : value));
+
 const cadastrarSchema = z.object({
   nomeEmpresa: z.string().trim().min(1, "Nome da empresa é obrigatório"),
   municipioId: z.string().trim().min(1, "Município é obrigatório"),
@@ -49,6 +105,11 @@ const cadastrarSchema = z.object({
   registros: z.array(registroSchema).min(1, "Ao menos um registro é obrigatório"),
   contato: contatoSchema,
   endereco: enderecoSchema,
+  historia: historiaSchema,
+  logo: arquivoSchema,
+  fotos: fotosSchema,
+  redesSociais: redesSociaisSchema.optional().default([]),
+  site: optionalSiteSchema,
 });
 
 const atualizarSchema = z
@@ -66,6 +127,13 @@ const atualizarSchema = z
       .optional(),
     contato: contatoSchema.optional(),
     endereco: enderecoSchema.optional(),
+    historia: historiaSchema.optional(),
+    logo: arquivoSchema.optional(),
+    fotos: fotosSchema.optional(),
+    redesSociais: redesSociaisSchema.optional(),
+    site: z
+      .union([z.string().trim().url("Site inválido"), z.literal(""), z.null()])
+      .optional(),
     status: z.enum(STATUS_PRODUTOR).optional(),
     motivoRejeicao: z.string().trim().optional(),
   })
@@ -86,6 +154,11 @@ const atualizarSchema = z
       data.registros !== undefined ||
       data.contato !== undefined ||
       data.endereco !== undefined ||
+      data.historia !== undefined ||
+      data.logo !== undefined ||
+      data.fotos !== undefined ||
+      data.redesSociais !== undefined ||
+      data.site !== undefined ||
       data.status !== undefined ||
       data.motivoRejeicao !== undefined,
     { message: "Nenhum campo para atualizar" },
@@ -140,6 +213,18 @@ export function createProdutorController(
       try {
         const catalogo = await produtorService.listCatalog();
         response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/:id",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const produtor = await produtorService.getCatalogById(getRouteId(request));
+        response.status(200).json(produtor);
       } catch (error) {
         next(error);
       }

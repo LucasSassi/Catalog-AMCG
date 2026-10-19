@@ -2,10 +2,8 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
 import { useCatalogProduct } from '../../features/produto/hooks/useCatalogProduct'
-import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
 import { buildProductWhatsAppUrl } from '../../features/produto/lib/whatsapp'
 import { PRODUCT_CATEGORY_LABELS } from '../../features/produto/constants'
-import type { CatalogFilters } from '../../features/produto/types'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
 import premiadoBadge from '../../shared/assets/premiado.png'
 import { Feedback } from '../../shared/components/Feedback'
@@ -15,17 +13,9 @@ import {
 } from '../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../shared/lib/formatCurrency'
 
-const emptyFilters: CatalogFilters = {
-  busca: '',
-  categoria: '',
-  municipio: '',
-  certificacao: '',
-}
-
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { product, isLoading, error } = useCatalogProduct(id)
-  const { products } = useCatalogProducts(emptyFilters)
   const [isProducerOpen, setIsProducerOpen] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
   const [isPremiadoHintOpen, setIsPremiadoHintOpen] = useState(false)
@@ -65,9 +55,6 @@ export function ProductDetailPage() {
   const whatsappUrl = buildProductWhatsAppUrl(product)
   const categoryLabel =
     PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
-  const producerProducts = products.filter(
-    (item) => item.produtor.id === product.produtor.id,
-  )
 
   return (
     <main className="bg-stone-100 py-10">
@@ -272,8 +259,7 @@ export function ProductDetailPage() {
 
       {isProducerOpen ? (
         <ProducerInfoModal
-          producer={product.produtor}
-          products={producerProducts}
+          producerId={product.produtor.id}
           onClose={() => setIsProducerOpen(false)}
         />
       ) : null}

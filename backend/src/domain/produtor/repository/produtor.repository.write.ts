@@ -1,8 +1,10 @@
 import type {
+  Arquivo,
   Contato,
   Documento,
   Endereco,
   Produtor,
+  RedeSocialItem,
   RegistroProdutor,
 } from "../entity/produtor.entity";
 import type { StatusProdutor } from "../entity/produtor.constants";
@@ -14,6 +16,11 @@ export interface CreateProdutorData {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  historia: string;
+  logo: Arquivo;
+  fotos: Arquivo[];
+  redesSociais: RedeSocialItem[];
+  site?: string;
   ativo: boolean;
   status: StatusProdutor;
   destaque: boolean;
@@ -26,6 +33,11 @@ export interface UpdateProdutorData {
   registros?: RegistroProdutor[];
   contato?: Contato;
   endereco?: Endereco;
+  historia?: string;
+  logo?: Arquivo;
+  fotos?: Arquivo[];
+  redesSociais?: RedeSocialItem[];
+  site?: string | null;
   ativo?: boolean;
   status?: StatusProdutor;
   destaque?: boolean;

@@ -40,6 +40,9 @@ const produtorPayload = {
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+  logo: arquivoValido,
+  fotos: [arquivoValido],
 };
 
 function buildProdutoPayload(produtorId: string) {

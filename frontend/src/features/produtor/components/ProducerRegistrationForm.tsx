@@ -3,9 +3,16 @@ import { Button } from '../../../shared/components/Button'
 import {
   BRAZILIAN_STATES,
   DOCUMENT_TYPES,
+  IMAGE_CONTENT_TYPES,
+  MAX_HISTORIA_LENGTH,
+  MAX_PRODUCER_PHOTOS,
 } from '../constants'
 import { useRegisterProducer } from '../hooks/useRegisterProducer'
-import type { CreateProducerInput, ProducerRegistration } from '../types'
+import type {
+  CreateProducerInput,
+  ProducerFile,
+  ProducerRegistration,
+} from '../types'
 
 interface ProducerRegistrationFormProps {
   onSuccess: () => void
@@ -17,6 +24,12 @@ const emptyRegistration: ProducerRegistration = {
   numero: '',
 }
 
+const emptyPhoto: ProducerFile = {
+  url: '',
+  contentType: 'image/jpeg',
+  nomeOriginal: '',
+}
+
 const initialForm: CreateProducerInput = {
   nomeEmpresa: '',
   municipioId: '',
@@ -24,6 +37,10 @@ const initialForm: CreateProducerInput = {
   registros: [{ ...emptyRegistration }],
   contato: { telefone: '', email: '' },
   endereco: { rua: '', bairro: '', cidade: '', estado: 'PR' },
+  historia: '',
+  logo: { ...emptyPhoto },
+  fotos: [{ ...emptyPhoto }],
+  site: '',
 }
 
 const inputClassName =
@@ -34,6 +51,8 @@ export function ProducerRegistrationForm({
   approveAfterCreate = false,
 }: ProducerRegistrationFormProps) {
   const [form, setForm] = useState<CreateProducerInput>(initialForm)
+  const [instagram, setInstagram] = useState('')
+  const [facebook, setFacebook] = useState('')
   const { submit, error, isLoading } = useRegisterProducer({
     approveAfterCreate,
   })
@@ -85,9 +104,69 @@ export function ProducerRegistrationForm({
     })
   }
 
+  function updatePhoto(
+    index: number,
+    field: keyof ProducerFile,
+    value: string,
+  ) {
+    setForm((current) => {
+      const fotos = current.fotos.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item
+        }
+
+        return { ...item, [field]: value }
+      })
+
+      return { ...current, fotos }
+    })
+  }
+
+  function addPhoto() {
+    setForm((current) => {
+      if (current.fotos.length >= MAX_PRODUCER_PHOTOS) {
+        return current
+      }
+
+      return {
+        ...current,
+        fotos: [...current.fotos, { ...emptyPhoto }],
+      }
+    })
+  }
+
+  function removePhoto(index: number) {
+    setForm((current) => {
+      if (current.fotos.length === 1) {
+        return current
+      }
+
+      return {
+        ...current,
+        fotos: current.fotos.filter((_, itemIndex) => itemIndex !== index),
+      }
+    })
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const didSubmit = await submit(form)
+
+    const redesSociais = [
+      ...(instagram.trim()
+        ? [{ tipo: 'INSTAGRAM' as const, handle: instagram.trim() }]
+        : []),
+      ...(facebook.trim()
+        ? [{ tipo: 'FACEBOOK' as const, handle: facebook.trim() }]
+        : []),
+    ]
+
+    const payload: CreateProducerInput = {
+      ...form,
+      redesSociais,
+      site: form.site?.trim() || undefined,
+    }
+
+    const didSubmit = await submit(payload)
 
     if (didSubmit) {
       onSuccess()
@@ -126,6 +205,24 @@ export function ProducerRegistrationForm({
             className={inputClassName}
             placeholder="Ex.: Ponta Grossa"
           />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            História do produtor
+          </span>
+          <textarea
+            required
+            value={form.historia}
+            maxLength={MAX_HISTORIA_LENGTH}
+            rows={5}
+            onChange={(event) => updateField('historia', event.target.value)}
+            className={inputClassName}
+            placeholder="Conte a história e a identidade produtiva do produtor"
+          />
+          <span className="mt-1 block text-xs text-slate-500">
+            {form.historia.length}/{MAX_HISTORIA_LENGTH}
+          </span>
         </label>
       </fieldset>
 
@@ -268,6 +365,45 @@ export function ProducerRegistrationForm({
             className={inputClassName}
           />
         </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            Instagram
+          </span>
+          <input
+            type="text"
+            value={instagram}
+            onChange={(event) => setInstagram(event.target.value)}
+            className={inputClassName}
+            placeholder="@produtor"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            Facebook
+          </span>
+          <input
+            type="text"
+            value={facebook}
+            onChange={(event) => setFacebook(event.target.value)}
+            className={inputClassName}
+            placeholder="produtor.oficial"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            Site
+          </span>
+          <input
+            type="url"
+            value={form.site ?? ''}
+            onChange={(event) => updateField('site', event.target.value)}
+            className={inputClassName}
+            placeholder="https://..."
+          />
+        </label>
       </fieldset>
 
       <fieldset className="space-y-4">
@@ -351,6 +487,158 @@ export function ProducerRegistrationForm({
             ))}
           </select>
         </label>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
+          Logo
+        </legend>
+
+        <div className="space-y-3 rounded-lg border border-slate-200 p-4">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-slate-700">
+              URL
+            </span>
+            <input
+              required
+              type="url"
+              value={form.logo.url}
+              onChange={(event) =>
+                updateField('logo', { ...form.logo, url: event.target.value })
+              }
+              className={inputClassName}
+              placeholder="https://..."
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-slate-700">
+              Content-Type
+            </span>
+            <select
+              required
+              value={form.logo.contentType}
+              onChange={(event) =>
+                updateField('logo', {
+                  ...form.logo,
+                  contentType: event.target.value,
+                })
+              }
+              className={inputClassName}
+            >
+              {IMAGE_CONTENT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-slate-700">
+              Nome original
+            </span>
+            <input
+              required
+              type="text"
+              value={form.logo.nomeOriginal}
+              onChange={(event) =>
+                updateField('logo', {
+                  ...form.logo,
+                  nomeOriginal: event.target.value,
+                })
+              }
+              className={inputClassName}
+              placeholder="logo-produtor.jpg"
+            />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
+          Fotos do produtor
+        </legend>
+
+        {form.fotos.map((photo, index) => (
+          <div
+            key={index}
+            className="space-y-3 rounded-lg border border-slate-200 p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-slate-700">
+                Foto {index + 1}
+              </p>
+              {form.fotos.length > 1 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => removePhoto(index)}
+                >
+                  Remover
+                </Button>
+              ) : null}
+            </div>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                URL
+              </span>
+              <input
+                required
+                type="url"
+                value={photo.url}
+                onChange={(event) =>
+                  updatePhoto(index, 'url', event.target.value)
+                }
+                className={inputClassName}
+                placeholder="https://..."
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Content-Type
+              </span>
+              <select
+                required
+                value={photo.contentType}
+                onChange={(event) =>
+                  updatePhoto(index, 'contentType', event.target.value)
+                }
+                className={inputClassName}
+              >
+                {IMAGE_CONTENT_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">
+                Nome original
+              </span>
+              <input
+                required
+                type="text"
+                value={photo.nomeOriginal}
+                onChange={(event) =>
+                  updatePhoto(index, 'nomeOriginal', event.target.value)
+                }
+                className={inputClassName}
+                placeholder="foto-produtor.jpg"
+              />
+            </label>
+          </div>
+        ))}
+
+        {form.fotos.length < MAX_PRODUCER_PHOTOS ? (
+          <Button type="button" variant="secondary" onClick={addPhoto}>
+            Adicionar foto
+          </Button>
+        ) : null}
       </fieldset>
 
       {error ? (

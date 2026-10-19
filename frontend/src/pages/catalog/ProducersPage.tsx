@@ -1,29 +1,19 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
-import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
-import type { CatalogFilters, CatalogProduct } from '../../features/produto/types'
 import { useCatalogProducers } from '../../features/produtor/hooks/useCatalogProducers'
-import type { CatalogProducer } from '../../features/produtor/types'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
 import { Feedback } from '../../shared/components/Feedback'
-
-const emptyFilters: CatalogFilters = {
-  busca: '',
-  categoria: '',
-  municipio: '',
-  certificacao: '',
-}
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../shared/lib/buildThumbnailUrl'
 
 export function ProducersPage() {
   const { producers, isLoading, error } = useCatalogProducers()
-  const { products } = useCatalogProducts(emptyFilters)
-  const [selectedProducer, setSelectedProducer] =
-    useState<CatalogProducer | null>(null)
-
-  const selectedProducts: CatalogProduct[] = selectedProducer
-    ? products.filter((product) => product.produtor.id === selectedProducer.id)
-    : []
+  const [selectedProducerId, setSelectedProducerId] = useState<string | null>(
+    null,
+  )
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -52,37 +42,44 @@ export function ProducersPage() {
 
       {!isLoading && !error && producers.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {producers.map((producer) => (
-            <button
-              key={producer.id}
-              type="button"
-              onClick={() => setSelectedProducer(producer)}
-              className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-success hover:shadow-md"
-            >
-              <div className="flex items-center gap-4">
-                <img
-                  src={logoPlaceholder}
-                  alt=""
-                  width={64}
-                  height={64}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-16 w-16 rounded-full border border-slate-200 object-contain p-1"
-                />
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">
-                    {producer.nome}
-                  </h2>
-                  <p className="text-sm text-slate-600">{producer.municipio}</p>
-                  {producer.destaque ? (
-                    <span className="mt-2 inline-flex rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-primary-dark">
-                      Destaque
-                    </span>
-                  ) : null}
+          {producers.map((producer) => {
+            const cover = producer.logo ?? producer.fotos[0]
+            return (
+              <button
+                key={producer.id}
+                type="button"
+                onClick={() => setSelectedProducerId(producer.id)}
+                className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-success hover:shadow-md"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={
+                      cover
+                        ? buildThumbnailUrl(cover.url, THUMBNAIL_WIDTH.avatar)
+                        : logoPlaceholder
+                    }
+                    alt=""
+                    width={64}
+                    height={64}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-16 w-16 rounded-full border border-slate-200 object-cover"
+                  />
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">
+                      {producer.nome}
+                    </h2>
+                    <p className="text-sm text-slate-600">{producer.municipio}</p>
+                    {producer.destaque ? (
+                      <span className="mt-2 inline-flex rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-primary-dark">
+                        Destaque
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
       ) : null}
 
@@ -95,16 +92,10 @@ export function ProducersPage() {
         </Link>
       </div>
 
-      {selectedProducer ? (
+      {selectedProducerId ? (
         <ProducerInfoModal
-          producer={{
-            id: selectedProducer.id,
-            nome: selectedProducer.nome,
-            municipio: selectedProducer.municipio,
-            telefone: selectedProducer.telefone,
-          }}
-          products={selectedProducts}
-          onClose={() => setSelectedProducer(null)}
+          producerId={selectedProducerId}
+          onClose={() => setSelectedProducerId(null)}
         />
       ) : null}
     </main>

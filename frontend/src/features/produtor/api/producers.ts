@@ -1,5 +1,6 @@
 import { apiRequest } from '../../../shared/api/client'
 import type {
+  CatalogProducer,
   CreateProducerInput,
   Producer,
   ProducerCatalog,
@@ -18,6 +19,10 @@ export function createProducer(input: CreateProducerInput): Promise<Producer> {
 
 export function listCatalogProducers(): Promise<ProducerCatalog> {
   return apiRequest<ProducerCatalog>('/api/produtores/catalogo')
+}
+
+export function getCatalogProducer(id: string): Promise<CatalogProducer> {
+  return apiRequest<CatalogProducer>(`/api/produtores/catalogo/${id}`)
 }
 
 export function listProducers(filter: ProducerListFilter): Promise<Producer[]> {

@@ -76,6 +76,11 @@ export class InMemoryProdutorRepository
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      historia: data.historia,
+      logo: data.logo,
+      fotos: data.fotos,
+      redesSociais: data.redesSociais,
+      ...(data.site !== undefined ? { site: data.site } : {}),
       ativo: data.ativo,
       status: data.status,
       destaque: data.destaque,
@@ -105,11 +110,21 @@ export class InMemoryProdutorRepository
           }
         : atual.contato,
       endereco: data.endereco ?? atual.endereco,
+      historia: data.historia ?? atual.historia,
+      logo: data.logo ?? atual.logo,
+      fotos: data.fotos ?? atual.fotos,
+      redesSociais: data.redesSociais ?? atual.redesSociais,
       ativo: data.ativo ?? atual.ativo,
       status: data.status ?? atual.status,
       destaque: data.destaque ?? atual.destaque,
       updatedAt: new Date(),
     };
+
+    if (data.site === null) {
+      delete atualizado.site;
+    } else if (data.site !== undefined) {
+      atualizado.site = data.site;
+    }
 
     if (data.motivoRejeicao === null) {
       delete atualizado.motivoRejeicao;

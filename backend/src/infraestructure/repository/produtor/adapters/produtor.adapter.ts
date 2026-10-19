@@ -30,6 +30,28 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
       cidade: document.endereco.cidade,
       estado: document.endereco.estado,
     },
+    historia: document.historia ?? "",
+    ...(document.logo !== undefined
+      ? {
+          logo: {
+            url: document.logo.url,
+            contentType: document.logo.contentType,
+            nomeOriginal: document.logo.nomeOriginal,
+          },
+        }
+      : {}),
+    fotos: (document.fotos ?? []).map((foto) => ({
+      url: foto.url,
+      contentType: foto.contentType,
+      nomeOriginal: foto.nomeOriginal,
+    })),
+    redesSociais: (document.redesSociais ?? []).map((rede) => ({
+      tipo: rede.tipo,
+      handle: rede.handle,
+    })),
+    ...(document.site !== undefined && document.site !== ""
+      ? { site: document.site }
+      : {}),
     ativo: document.ativo,
     status: document.status,
     destaque: document.destaque ?? false,

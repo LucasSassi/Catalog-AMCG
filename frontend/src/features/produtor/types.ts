@@ -1,5 +1,7 @@
 export type ProducerStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 
+export type SocialNetworkType = 'INSTAGRAM' | 'FACEBOOK'
+
 export interface ProducerDocument {
   tipo: 'CNPJ' | 'CPF' | 'CAD_PRO'
   numero: string
@@ -24,6 +26,23 @@ export interface ProducerAddress {
   estado: string
 }
 
+export interface ProducerFile {
+  url: string
+  contentType: string
+  nomeOriginal: string
+}
+
+export interface ProducerSocialNetwork {
+  tipo: SocialNetworkType
+  handle: string
+}
+
+export interface CatalogProducerAddress {
+  bairro: string
+  cidade: string
+  estado: string
+}
+
 export interface Producer {
   id: string
   nomeEmpresa: string
@@ -32,6 +51,11 @@ export interface Producer {
   registros: ProducerRegistration[]
   contato: ProducerContact
   endereco: ProducerAddress
+  historia: string
+  logo?: ProducerFile
+  fotos: ProducerFile[]
+  redesSociais: ProducerSocialNetwork[]
+  site?: string
   ativo: boolean
   status: ProducerStatus
   destaque: boolean
@@ -46,6 +70,12 @@ export interface CatalogProducer {
   municipio: string
   telefone: string
   destaque: boolean
+  historia: string
+  logo?: ProducerFile
+  fotos: ProducerFile[]
+  endereco: CatalogProducerAddress
+  redesSociais: ProducerSocialNetwork[]
+  site?: string
 }
 
 export interface ProducerCatalog {
@@ -59,4 +89,9 @@ export interface CreateProducerInput {
   registros: ProducerRegistration[]
   contato: ProducerContact
   endereco: ProducerAddress
+  historia: string
+  logo: ProducerFile
+  fotos: ProducerFile[]
+  redesSociais?: ProducerSocialNetwork[]
+  site?: string
 }
