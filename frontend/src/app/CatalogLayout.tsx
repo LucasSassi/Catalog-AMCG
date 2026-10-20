@@ -1,21 +1,17 @@
-import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import { ProducerRegistrationDrawer } from '../features/produtor/components/ProducerRegistrationDrawer'
 import logoFooter from '../shared/assets/logo-catalogo-campos-gerais-branca.png'
 import { CatalogHeader } from './CatalogHeader'
 import { ScrollToHash } from './ScrollToHash'
 
 export function CatalogLayout() {
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false)
-
   return (
     <div className="min-h-screen bg-slate-50">
-      <CatalogHeader onRegisterClick={() => setIsRegistrationOpen(true)} />
+      <CatalogHeader />
       <ScrollToHash />
 
       <Outlet />
 
-      <footer className="mt-12 border-t border-brand-800 bg-brand-900 text-brand-100">
+      <footer className="mt-12 border-t border-primary-dark bg-foreground text-surface">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
           <div>
             <img
@@ -23,7 +19,7 @@ export function CatalogLayout() {
               alt="Catálogo de Produtos dos Campos Gerais"
               className="mb-4 h-14 w-auto object-contain"
             />
-            <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
+            <p className="text-sm font-semibold uppercase tracking-wide text-accent-yellow">
               Quem somos
             </p>
             <p className="mt-3 text-sm leading-6">
@@ -33,13 +29,13 @@ export function CatalogLayout() {
               regional, econômica e administrativa, visando o desenvolvimento
               econômico e social.
             </p>
-            <p className="mt-3 text-xs text-brand-100/80">
+            <p className="mt-3 text-xs text-surface/80">
               CNPJ 00.756.565/0001-01
             </p>
           </div>
 
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
+            <p className="text-sm font-semibold uppercase tracking-wide text-accent-yellow">
               Links
             </p>
             <ul className="mt-3 space-y-2 text-sm">
@@ -72,7 +68,7 @@ export function CatalogLayout() {
           </div>
 
           <div id="contato-rodape">
-            <p className="text-sm font-semibold uppercase tracking-wide text-accent-400">
+            <p className="text-sm font-semibold uppercase tracking-wide text-accent-yellow">
               Contato
             </p>
             <ul className="mt-3 space-y-2 text-sm leading-6">
@@ -100,18 +96,13 @@ export function CatalogLayout() {
           </div>
         </div>
 
-        <div className="border-t border-brand-800">
-          <div className="mx-auto max-w-7xl px-4 py-4 text-xs text-brand-100/70 sm:px-6 lg:px-8">
+        <div className="border-t border-primary-dark">
+          <div className="mx-auto max-w-7xl px-4 py-4 text-xs text-surface/70 sm:px-6 lg:px-8">
             © {new Date().getFullYear()} AMCG — Catálogo de Produtos dos Campos
             Gerais. Todos os direitos reservados.
           </div>
         </div>
       </footer>
-
-      <ProducerRegistrationDrawer
-        isOpen={isRegistrationOpen}
-        onClose={() => setIsRegistrationOpen(false)}
-      />
     </div>
   )
 }

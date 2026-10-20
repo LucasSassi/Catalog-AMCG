@@ -1,8 +1,11 @@
+import type { RoleUsuario } from "./usuario.constants";
+
 export interface Usuario {
   id: string;
   nome: string;
   email: string;
   senhaHash: string;
+  role: RoleUsuario;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +27,10 @@ export interface AtualizarUsuarioInput {
   nome?: string;
   email?: string;
   senha?: string;
+}
+
+export interface AlterarRoleUsuarioInput {
+  role: RoleUsuario;
 }
 
 export interface LoginUsuarioResult {

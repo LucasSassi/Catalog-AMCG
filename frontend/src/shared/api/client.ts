@@ -1,4 +1,6 @@
-import { getAuthToken } from './auth-token'
+import { getAuthToken, removeAuthToken } from './auth-token'
+
+const LOGIN_PATH = '/backoffice/login'
 
 interface ApiErrorResponse {
   error: string
@@ -49,6 +51,11 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
+    if (options.authenticated && response.status === 401) {
+      removeAuthToken()
+      window.location.assign(LOGIN_PATH)
+    }
+
     const payload = (await response.json()) as ApiErrorResponse
     throw new ApiError(payload.error, response.status)
   }

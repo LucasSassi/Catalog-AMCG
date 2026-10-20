@@ -4,10 +4,12 @@ import {
   REGISTRO_PRODUTOR_TIPO,
   STATUS_PRODUTOR,
   TIPO_DOCUMENTO,
+  TIPO_REDE_SOCIAL,
   UF_BRASIL,
   type RegistroProdutorTipo,
   type StatusProdutor,
   type TipoDocumento,
+  type TipoRedeSocial,
   type UfBrasil,
 } from "../../../../domain/produtor/entity/produtor.constants";
 
@@ -35,6 +37,17 @@ export interface EnderecoDocument {
   estado: UfBrasil;
 }
 
+export interface ArquivoDocument {
+  url: string;
+  contentType: string;
+  nomeOriginal: string;
+}
+
+export interface RedeSocialDocument {
+  tipo: TipoRedeSocial;
+  handle: string;
+}
+
 export interface ProdutorDocument {
   nomeEmpresa: string;
   municipioId: string;
@@ -42,6 +55,13 @@ export interface ProdutorDocument {
   registros: RegistroProdutorDocument[];
   contato: ContatoDocument;
   endereco: EnderecoDocument;
+  historia: string;
+  logo?: ArquivoDocument;
+  fotos: ArquivoDocument[];
+  redesSociais: RedeSocialDocument[];
+  /** @deprecated legado — ignorado pelo adapter */
+  redeSocial?: string;
+  site?: string;
   ativo: boolean;
   status: StatusProdutor;
   destaque: boolean;
@@ -86,6 +106,23 @@ const enderecoSchema = new Schema<EnderecoDocument>(
   { _id: false },
 );
 
+const arquivoSchema = new Schema<ArquivoDocument>(
+  {
+    url: { type: String, required: true, trim: true },
+    contentType: { type: String, required: true, trim: true },
+    nomeOriginal: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
+const redeSocialSchema = new Schema<RedeSocialDocument>(
+  {
+    tipo: { type: String, required: true, enum: TIPO_REDE_SOCIAL },
+    handle: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
 export const produtorSchema = new Schema<ProdutorDocument>(
   {
     nomeEmpresa: { type: String, required: true, trim: true },
@@ -94,6 +131,12 @@ export const produtorSchema = new Schema<ProdutorDocument>(
     registros: { type: [registroProdutorSchema], default: [] },
     contato: { type: contatoSchema, required: true },
     endereco: { type: enderecoSchema, required: true },
+    historia: { type: String, required: true, trim: true, default: "" },
+    logo: { type: arquivoSchema },
+    fotos: { type: [arquivoSchema], default: [] },
+    redesSociais: { type: [redeSocialSchema], default: [] },
+    redeSocial: { type: String, trim: true },
+    site: { type: String, trim: true },
     ativo: { type: Boolean, required: true, default: true },
     status: {
       type: String,

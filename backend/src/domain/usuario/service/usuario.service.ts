@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import {
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
@@ -10,6 +11,9 @@ import {
   BCRYPT_SALT_ROUNDS,
   JWT_EXPIRES_IN,
   MIN_SENHA_LENGTH,
+  ROLE_PADRAO,
+  ROLE_USUARIO,
+  type RoleUsuario,
 } from "../entity/usuario.constants";
 import type { IUsuarioService } from "../entity/interfaces/usuario.service.interface";
 import type {
@@ -57,6 +61,7 @@ export class UsuarioService implements IUsuarioService {
       nome: input.nome.trim(),
       email,
       senhaHash,
+      role: ROLE_PADRAO,
     });
 
     return this.toPublico(usuario);
@@ -79,7 +84,7 @@ export class UsuarioService implements IUsuarioService {
     }
 
     const token = jwt.sign(
-      { sub: usuario.id, email: usuario.email },
+      { sub: usuario.id, email: usuario.email, role: usuario.role },
       this.jwtSecret,
       { expiresIn: JWT_EXPIRES_IN },
     );
@@ -170,11 +175,38 @@ export class UsuarioService implements IUsuarioService {
     }
   }
 
+  async alterarRole(
+    actorId: string,
+    targetId: string,
+    role: RoleUsuario,
+  ): Promise<UsuarioPublico> {
+    this.assertRoleValida(role);
+
+    if (actorId === targetId) {
+      throw new ForbiddenError("Não é permitido alterar a própria role");
+    }
+
+    const alvo = await this.readRepository.findById(targetId);
+
+    if (!alvo) {
+      throw new NotFoundError("Usuário não encontrado");
+    }
+
+    const atualizado = await this.writeRepository.update(targetId, { role });
+
+    if (!atualizado) {
+      throw new NotFoundError("Usuário não encontrado");
+    }
+
+    return this.toPublico(atualizado);
+  }
+
   private toPublico(usuario: Usuario): UsuarioPublico {
     return {
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
+      role: usuario.role,
       createdAt: usuario.createdAt,
       updatedAt: usuario.updatedAt,
     };
@@ -201,6 +233,12 @@ export class UsuarioService implements IUsuarioService {
       throw new ValidationError(
         `Senha deve ter no mínimo ${MIN_SENHA_LENGTH} caracteres`,
       );
+    }
+  }
+
+  private assertRoleValida(role: string): asserts role is RoleUsuario {
+    if (!(ROLE_USUARIO as readonly string[]).includes(role)) {
+      throw new ValidationError("Role inválida");
     }
   }
 }

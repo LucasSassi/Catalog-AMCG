@@ -54,3 +54,21 @@ export const E164_PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
 
 export const CPF_LENGTH = 11;
 export const CNPJ_LENGTH = 14;
+
+export const MAX_HISTORIA_LENGTH = 2000;
+export const MIN_FOTOS = 1;
+export const MAX_FOTOS = 8;
+
+export const CONTENT_TYPES_IMAGEM = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+export const TIPO_REDE_SOCIAL = ["INSTAGRAM", "FACEBOOK"] as const;
+export type TipoRedeSocial = (typeof TIPO_REDE_SOCIAL)[number];
+export const MAX_REDES_SOCIAIS = 2;
+
+export function isTipoRedeSocial(value: string): value is TipoRedeSocial {
+  return (TIPO_REDE_SOCIAL as readonly string[]).includes(value);
+}

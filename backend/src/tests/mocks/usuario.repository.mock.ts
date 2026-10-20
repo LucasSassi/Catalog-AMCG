@@ -39,6 +39,7 @@ export class InMemoryUsuarioRepository
       nome: data.nome,
       email: data.email.toLowerCase().trim(),
       senhaHash: data.senhaHash,
+      role: data.role,
       createdAt: now,
       updatedAt: now,
     };
@@ -57,6 +58,7 @@ export class InMemoryUsuarioRepository
       nome: data.nome ?? atual.nome,
       email: data.email ? data.email.toLowerCase().trim() : atual.email,
       senhaHash: data.senhaHash ?? atual.senhaHash,
+      role: data.role ?? atual.role,
       updatedAt: new Date(),
     };
     this.items.set(id, atualizado);

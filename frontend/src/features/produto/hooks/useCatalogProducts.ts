@@ -7,6 +7,9 @@ const emptyCatalog: ProductCatalog = {
   categorias: [],
   municipios: [],
   certificacoes: [],
+  pageSize: 12,
+  nextLastItemId: null,
+  hasNext: false,
 }
 
 export function useCatalogProducts(filters: CatalogFilters) {
@@ -17,8 +20,9 @@ export function useCatalogProducts(filters: CatalogFilters) {
 
   useEffect(() => {
     let isCurrent = true
+    const currentFilters = JSON.parse(filterKey) as CatalogFilters
 
-    listCatalogProducts(filters)
+    listCatalogProducts(currentFilters)
       .then((response) => {
         if (isCurrent) {
           setCatalog(response)
@@ -45,13 +49,16 @@ export function useCatalogProducts(filters: CatalogFilters) {
     return () => {
       isCurrent = false
     }
-  }, [filterKey, filters])
+  }, [filterKey])
 
   return {
     products: catalog.produtos,
     categories: catalog.categorias,
     cities: catalog.municipios,
     certifications: catalog.certificacoes,
+    pageSize: catalog.pageSize,
+    nextLastItemId: catalog.nextLastItemId,
+    hasNext: catalog.hasNext,
     isLoading: loadedKey !== filterKey,
     error,
   }

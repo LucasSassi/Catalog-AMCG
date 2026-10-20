@@ -29,6 +29,9 @@ function buildProdutorInput(
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+    logo: arquivoValido,
+    fotos: [arquivoValido],
     ...overrides,
   };
 }
@@ -212,9 +215,8 @@ describe("Quando usar o ProdutoService", () => {
       );
 
       const catalogo = await service.listCatalog({
-        busca: "fazenda",
+        busca: "Mel",
         categoria: "MEL_E_DERIVADOS",
-        municipio: "Ponta Grossa",
       });
 
       expect(catalogo.produtos).toHaveLength(1);
@@ -228,6 +230,61 @@ describe("Quando usar o ProdutoService", () => {
       });
       expect(catalogo.categorias).toContain("MEL_E_DERIVADOS");
       expect(catalogo.municipios).toEqual(["Ponta Grossa"]);
+      expect(catalogo.pageSize).toBe(12);
+      expect(catalogo.hasNext).toBe(false);
+    });
+  });
+
+  describe("Quando buscar o detalhe do catálogo público", () => {
+    it("Deve retornar fotos, registros, SIM, logo do produtor e premiações sem comprovante", async () => {
+      const produto = await service.create(
+        buildInput(produtorAprovadoId, {
+          registros: [
+            { tipo: "MAPA", numero: "REG-MAPA-001" },
+            { tipo: "SIF", numero: "REG-SIF-001" },
+          ],
+          fotosDivulgacao: [
+            arquivoValido,
+            {
+              url: "https://example.com/foto-2.jpg",
+              contentType: "image/jpeg",
+              nomeOriginal: "foto-2.jpg",
+            },
+          ],
+          premiacoes: [
+            {
+              nome: "Prêmio Campos Gerais",
+              descricao: "Melhor mel artesanal da região",
+              ano: 2024,
+              comprovante: arquivoValido,
+            },
+          ],
+        }),
+      );
+      await service.update(produto.id, { status: "APROVADO" });
+
+      const detalhe = await service.getCatalogById(produto.id);
+
+      expect(detalhe.fotosDivulgacao).toHaveLength(2);
+      expect(detalhe.registros).toEqual([
+        { tipo: "MAPA" },
+        { tipo: "SIF" },
+      ]);
+      expect(detalhe.premiacoes).toEqual([
+        {
+          nome: "Prêmio Campos Gerais",
+          descricao: "Melhor mel artesanal da região",
+          ano: 2024,
+        },
+      ]);
+      expect(detalhe.premiacoes[0]).not.toHaveProperty("comprovante");
+      expect(detalhe.premiado).toBe(true);
+      expect(detalhe.produtor).toMatchObject({
+        nome: "Fazenda Campos Gerais",
+        municipio: "Ponta Grossa",
+        temRegistroSim: true,
+        logo: arquivoValido,
+      });
     });
   });
 

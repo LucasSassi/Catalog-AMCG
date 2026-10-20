@@ -1,5 +1,6 @@
 import { apiRequest } from '../../../shared/api/client'
 import type {
+  CatalogProducer,
   CreateProducerInput,
   Producer,
   ProducerCatalog,
@@ -16,8 +17,31 @@ export function createProducer(input: CreateProducerInput): Promise<Producer> {
   })
 }
 
+export function updateProducer(
+  id: string,
+  input: CreateProducerInput & { status?: ProducerStatus },
+): Promise<Producer> {
+  return apiRequest<Producer>(`/api/produtores/${id}`, {
+    method: 'PUT',
+    authenticated: true,
+    body: input,
+  })
+}
+
 export function listCatalogProducers(): Promise<ProducerCatalog> {
   return apiRequest<ProducerCatalog>('/api/produtores/catalogo')
+}
+
+export function listFeaturedProducers(): Promise<{
+  produtores: CatalogProducer[]
+}> {
+  return apiRequest<{ produtores: CatalogProducer[] }>(
+    '/api/produtores/catalogo/destaques',
+  )
+}
+
+export function getCatalogProducer(id: string): Promise<CatalogProducer> {
+  return apiRequest<CatalogProducer>(`/api/produtores/catalogo/${id}`)
 }
 
 export function listProducers(filter: ProducerListFilter): Promise<Producer[]> {

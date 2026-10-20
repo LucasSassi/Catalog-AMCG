@@ -15,7 +15,7 @@ import {
   listUnidadesMedida,
 } from "../../domain/produto/entity/produto.constants";
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import { createRequireAdmin } from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -147,10 +147,23 @@ const catalogQuerySchema = z.object({
   categoria: z.enum(CATEGORIA_PRODUTO).optional(),
   municipio: z.string().trim().optional(),
   certificacao: z.enum(CERTIFICACAO_CATALOGO).optional(),
+  pageSize: z.coerce.number().int().min(1).max(12).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
+});
+
+const similaresQuerySchema = z.object({
+  categoria: z.enum(CATEGORIA_PRODUTO),
+  excludeId: z.string().trim().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(10).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
 });
 
 const destaqueSchema = z.object({
   destaque: z.boolean(),
+});
+
+const ativoSchema = z.object({
+  ativo: z.boolean(),
 });
 
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -179,7 +192,7 @@ export function createProdutoController(
 ): Router {
   const router = Router();
   const { produtoService, jwtSecret } = options;
-  const requireAuth = createAuthMiddleware(jwtSecret);
+  const requireAdmin = createRequireAdmin(jwtSecret);
 
   router.get(
     "/catalogo",
@@ -188,6 +201,31 @@ export function createProdutoController(
         const filtros = parseOrThrow(catalogQuerySchema, request.query);
         const catalogo = await produtoService.listCatalog(filtros);
         response.status(200).json(catalogo);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/destaques",
+    async (_request: Request, response: Response, next: NextFunction) => {
+      try {
+        const destaques = await produtoService.listDestaques();
+        response.status(200).json(destaques);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/similares",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const filtros = parseOrThrow(similaresQuerySchema, request.query);
+        const similares = await produtoService.listSimilares(filtros);
+        response.status(200).json(similares);
       } catch (error) {
         next(error);
       }
@@ -208,7 +246,7 @@ export function createProdutoController(
 
   router.post(
     "/",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(cadastrarSchema, request.body);
@@ -222,7 +260,7 @@ export function createProdutoController(
 
   router.get(
     "/",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const filtros = parseOrThrow(listQuerySchema, request.query);
@@ -236,7 +274,7 @@ export function createProdutoController(
 
   router.get(
     "/categorias",
-    requireAuth,
+    requireAdmin,
     (_request: Request, response: Response, next: NextFunction) => {
       try {
         response.status(200).json(listCategoriasProduto());
@@ -248,7 +286,7 @@ export function createProdutoController(
 
   router.get(
     "/unidades-medida",
-    requireAuth,
+    requireAdmin,
     (_request: Request, response: Response, next: NextFunction) => {
       try {
         response.status(200).json(listUnidadesMedida());
@@ -260,7 +298,7 @@ export function createProdutoController(
 
   router.get(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const produto = await produtoService.getById(getRouteId(request));
@@ -273,7 +311,7 @@ export function createProdutoController(
 
   router.put(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
@@ -287,7 +325,7 @@ export function createProdutoController(
 
   router.patch(
     "/:id/destaque",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(destaqueSchema, request.body);
@@ -302,9 +340,26 @@ export function createProdutoController(
     },
   );
 
+  router.patch(
+    "/:id/ativo",
+    requireAdmin,
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const body = parseOrThrow(ativoSchema, request.body);
+        const produto = await produtoService.setAtivo(
+          getRouteId(request),
+          body.ativo,
+        );
+        response.status(200).json(produto);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
   router.delete(
     "/:id",
-    requireAuth,
+    requireAdmin,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         await produtoService.remove(getRouteId(request));

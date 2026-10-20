@@ -47,8 +47,39 @@ export const CATALOG_CERTIFICATIONS = [
   'SIM',
 ] as const
 
+export const SEAL_INFO_TYPES = ['SIM', 'SIF', 'MAPA'] as const
+
+export type SealInfoType = (typeof SEAL_INFO_TYPES)[number]
+
+export const SEAL_INFO: Record<
+  SealInfoType,
+  { short: string; detail: string }
+> = {
+  SIM: {
+    short:
+      'SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios.',
+    detail:
+      'O SIM é a fiscalização sanitária do município. O produto só pode ser vendido nos municípios cobertos por esse serviço de inspeção.',
+  },
+  SIF: {
+    short:
+      'SIF – Inspeção Federal: comercialização em todo o território nacional.',
+    detail:
+      'O SIF é a fiscalização sanitária federal. O produto pode ser vendido em todo o Brasil.',
+  },
+  MAPA: {
+    short:
+      'MAPA – Ministério da Agricultura e Pecuária: registro do produto junto ao órgão federal.',
+    detail:
+      'Identifica produto regularizado no MAPA. A venda segue as condições desse registro.',
+  },
+}
+
 export const IMAGE_CONTENT_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
 ] as const
+
+export const MAX_PRODUCT_PHOTOS = 5
+export const MIN_PRODUCT_PHOTOS = 1

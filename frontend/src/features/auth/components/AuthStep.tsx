@@ -24,7 +24,7 @@ export function AuthStep({ onSuccess }: AuthStepProps) {
           onClick={() => setActiveTab('register')}
           className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
             activeTab === 'register'
-              ? 'bg-brand-600 text-white'
+              ? 'bg-primary text-white'
               : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -35,7 +35,7 @@ export function AuthStep({ onSuccess }: AuthStepProps) {
           onClick={() => setActiveTab('login')}
           className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
             activeTab === 'login'
-              ? 'bg-brand-600 text-white'
+              ? 'bg-primary text-white'
               : 'text-slate-600 hover:bg-slate-50'
           }`}
         >

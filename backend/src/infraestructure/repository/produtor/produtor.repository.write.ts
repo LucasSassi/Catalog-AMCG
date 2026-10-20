@@ -19,6 +19,11 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      historia: data.historia,
+      logo: data.logo,
+      fotos: data.fotos,
+      redesSociais: data.redesSociais,
+      ...(data.site !== undefined ? { site: data.site } : {}),
       ativo: data.ativo,
       status: data.status,
       destaque: data.destaque,
@@ -28,6 +33,7 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
 
   async update(id: string, data: UpdateProdutorData): Promise<Produtor | null> {
     const payload: Record<string, unknown> = { ...data };
+    const unsetFields: Record<string, string> = {};
 
     if (data.contato) {
       payload.contato = {
@@ -37,8 +43,17 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
     }
 
     if (data.motivoRejeicao === null) {
-      payload.$unset = { motivoRejeicao: "" };
+      unsetFields.motivoRejeicao = "";
       delete payload.motivoRejeicao;
+    }
+
+    if (data.site === null) {
+      unsetFields.site = "";
+      delete payload.site;
+    }
+
+    if (Object.keys(unsetFields).length > 0) {
+      payload.$unset = unsetFields;
     }
 
     const document = await ProdutorModel.findByIdAndUpdate(id, payload, {
@@ -57,5 +72,10 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
     ).exec();
 
     return document ? toProdutorEntity(document) : null;
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+    const document = await ProdutorModel.findByIdAndDelete(id).exec();
+    return document !== null;
   }
 }

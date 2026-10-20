@@ -2,6 +2,18 @@ import { ProdutorService } from "../../../../domain/produtor/service/produtor.se
 import type { CadastrarProdutorInput } from "../../../../domain/produtor/entity/produtor.entity";
 import { InMemoryProdutorRepository } from "../../../mocks/produtor.repository.mock";
 
+const fotoPadrao = {
+  url: "https://cdn.example.com/foto-1.jpg",
+  contentType: "image/jpeg",
+  nomeOriginal: "foto-1.jpg",
+};
+
+const logoPadrao = {
+  url: "https://cdn.example.com/logo.jpg",
+  contentType: "image/jpeg",
+  nomeOriginal: "logo.jpg",
+};
+
 function buildInput(
   overrides: Partial<CadastrarProdutorInput> = {},
 ): CadastrarProdutorInput {
@@ -20,6 +32,9 @@ function buildInput(
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+    logo: logoPadrao,
+    fotos: [fotoPadrao],
     ...overrides,
   };
 }
@@ -45,6 +60,9 @@ describe("Quando usar o ProdutorService", () => {
         status: "PENDENTE",
         ativo: true,
         documento: { tipo: "CNPJ", numero: "12345678000199" },
+        historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+        logo: logoPadrao,
+        fotos: [fotoPadrao],
       });
       expect(produtor.id).toEqual(expect.any(String));
     });
@@ -111,6 +129,57 @@ describe("Quando usar o ProdutorService", () => {
         ),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
+
+    it("Deve rejeitar cadastro sem fotos", async () => {
+      await expect(
+        service.create(buildInput({ fotos: [] })),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar cadastro sem logo", async () => {
+      await expect(
+        service.create(
+          buildInput({
+            logo: {
+              url: "",
+              contentType: "image/jpeg",
+              nomeOriginal: "logo.jpg",
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar cadastro sem história", async () => {
+      await expect(
+        service.create(buildInput({ historia: "   " })),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar redes sociais com tipo duplicado", async () => {
+      await expect(
+        service.create(
+          buildInput({
+            redesSociais: [
+              { tipo: "INSTAGRAM", handle: "@um" },
+              { tipo: "INSTAGRAM", handle: "@dois" },
+            ],
+          }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar tipo de rede social inválido", async () => {
+      await expect(
+        service.create(
+          buildInput({
+            redesSociais: [
+              { tipo: "TWITTER" as "INSTAGRAM", handle: "@fazenda" },
+            ],
+          }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
   });
 
   describe("Quando listar produtores", () => {
@@ -130,6 +199,73 @@ describe("Quando usar o ProdutorService", () => {
       const ativos = await service.list({ ativo: true });
       expect(ativos).toHaveLength(1);
       expect(ativos[0].ativo).toBe(true);
+    });
+  });
+
+  describe("Quando listar o catálogo público", () => {
+    it("Deve retornar perfil público com várias fotos", async () => {
+      const fotos = [
+        fotoPadrao,
+        {
+          url: "https://cdn.example.com/foto-2.jpg",
+          contentType: "image/png",
+          nomeOriginal: "foto-2.png",
+        },
+      ];
+      const criado = await service.create(
+        buildInput({
+          fotos,
+          redesSociais: [
+            { tipo: "INSTAGRAM", handle: "@fazenda" },
+            { tipo: "FACEBOOK", handle: "fazenda.oficial" },
+          ],
+          site: "https://fazenda.example.com",
+        }),
+      );
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.listCatalog();
+
+      expect(catalogo.produtores).toHaveLength(1);
+      expect(catalogo.produtores[0]).toMatchObject({
+        id: criado.id,
+        nome: "Fazenda Campos Gerais",
+        municipio: "Ponta Grossa",
+        historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+        logo: logoPadrao,
+        fotos,
+        endereco: {
+          bairro: "Centro",
+          cidade: "Ponta Grossa",
+          estado: "PR",
+        },
+        redesSociais: [
+          { tipo: "INSTAGRAM", handle: "@fazenda" },
+          { tipo: "FACEBOOK", handle: "fazenda.oficial" },
+        ],
+        site: "https://fazenda.example.com",
+      });
+      expect(catalogo.produtores[0]).not.toHaveProperty("documento");
+      expect(catalogo.produtores[0]).not.toHaveProperty("contato");
+    });
+  });
+
+  describe("Quando buscar produtor do catálogo por id", () => {
+    it("Deve retornar o perfil público de produtor aprovado", async () => {
+      const criado = await service.create(buildInput());
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.getCatalogById(criado.id);
+      expect(catalogo.nome).toBe("Fazenda Campos Gerais");
+      expect(catalogo.fotos).toHaveLength(1);
+    });
+
+    it("Deve lançar not found quando o produtor não está aprovado", async () => {
+      const criado = await service.create(buildInput());
+
+      await expect(service.getCatalogById(criado.id)).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
   });
 

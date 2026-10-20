@@ -23,7 +23,7 @@ export function BackofficeNavigation({
   return (
     <>
       <aside className="shrink-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24 lg:w-64">
-        <p className="pb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">
+        <p className="pb-3 text-xs font-semibold uppercase tracking-wide text-primary-darker">
           Cadastros
         </p>
         <nav
@@ -119,11 +119,11 @@ function StatusTab({
   onClick: () => void
 }) {
   let classes =
-    'whitespace-nowrap text-sm font-extrabold text-slate-900 transition hover:text-brand-600 sm:text-base'
+    'whitespace-nowrap text-sm font-extrabold text-slate-900 transition hover:text-primary sm:text-base'
 
   if (active) {
     classes =
-      'whitespace-nowrap text-sm font-extrabold text-brand-800 underline decoration-2 underline-offset-8 sm:text-base'
+      'whitespace-nowrap text-sm font-extrabold text-primary-dark underline decoration-2 underline-offset-8 sm:text-base'
   }
 
   return (
@@ -152,10 +152,10 @@ function SidebarButton({
   icon: ReactNode
   onClick: () => void
 }) {
-  let classes = 'text-slate-800 hover:bg-brand-50 hover:text-brand-800'
+  let classes = 'text-slate-800 hover:bg-secondary-background hover:text-primary-dark'
 
   if (active) {
-    classes = 'bg-brand-50 font-bold text-brand-800'
+    classes = 'bg-secondary-background font-bold text-primary-dark'
   }
 
   return (
@@ -168,7 +168,7 @@ function SidebarButton({
         {icon}
       </span>
       <span className="flex-1">{label}</span>
-      <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
+      <span className="rounded-full bg-secondary-background px-2.5 py-0.5 text-xs font-semibold text-primary-darker">
         {count}
       </span>
     </button>

@@ -13,6 +13,7 @@ export class UsuarioRepositoryWrite implements IUsuarioRepositoryWrite {
       nome: data.nome,
       email: data.email.toLowerCase().trim(),
       senhaHash: data.senhaHash,
+      role: data.role,
     });
     return toUsuarioEntity(document);
   }

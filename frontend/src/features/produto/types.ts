@@ -83,10 +83,11 @@ export interface CatalogProduct {
 export interface CatalogProductDetail extends CatalogProduct {
   fotosDivulgacao: ProductFile[]
   registros: Array<{ tipo: ProductRegistration['tipo'] }>
-  premiacoes: Array<{ nome: string; ano: number }>
+  premiacoes: Array<{ nome: string; descricao: string; ano: number }>
   observacoes?: string
   produtor: CatalogProduct['produtor'] & {
     temRegistroSim: boolean
+    logo?: ProductFile
   }
 }
 
@@ -95,6 +96,8 @@ export interface CatalogFilters {
   categoria: string
   municipio: string
   certificacao: string
+  pageSize?: number
+  lastItemId?: string
 }
 
 export interface ProductCatalog {
@@ -102,6 +105,27 @@ export interface ProductCatalog {
   categorias: ProductCategory[]
   municipios: string[]
   certificacoes: string[]
+  pageSize: number
+  nextLastItemId: string | null
+  hasNext: boolean
+}
+
+export interface FeaturedProductsResponse {
+  produtos: CatalogProduct[]
+}
+
+export interface SimilarProductsFilters {
+  categoria: string
+  excludeId: string
+  pageSize?: number
+  lastItemId?: string
+}
+
+export interface SimilarProductsResponse {
+  produtos: CatalogProduct[]
+  pageSize: number
+  nextLastItemId: string | null
+  hasNext: boolean
 }
 
 export interface CreateProductInput {

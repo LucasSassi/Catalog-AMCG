@@ -9,10 +9,13 @@ export interface RegisterCredentials {
   senha: string
 }
 
+export type AuthUserRole = 'admin' | 'usuario'
+
 export interface AuthUser {
   id: string
   nome: string
   email: string
+  role: AuthUserRole
   createdAt: string
   updatedAt: string
 }

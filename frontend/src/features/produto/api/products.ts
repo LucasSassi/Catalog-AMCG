@@ -3,9 +3,12 @@ import type {
   CatalogFilters,
   CatalogProductDetail,
   CreateProductInput,
+  FeaturedProductsResponse,
   Product,
   ProductCatalog,
   ProductStatus,
+  SimilarProductsFilters,
+  SimilarProductsResponse,
 } from '../types'
 
 export type ProductListFilter = ProductStatus | 'TODOS'
@@ -31,6 +34,14 @@ export function listCatalogProducts(
     searchParams.set('certificacao', filters.certificacao)
   }
 
+  if (filters.pageSize !== undefined) {
+    searchParams.set('pageSize', String(filters.pageSize))
+  }
+
+  if (filters.lastItemId) {
+    searchParams.set('lastItemId', filters.lastItemId)
+  }
+
   const query = searchParams.toString()
   let path = '/api/produtos/catalogo'
 
@@ -39,6 +50,32 @@ export function listCatalogProducts(
   }
 
   return apiRequest<ProductCatalog>(path)
+}
+
+export function listFeaturedProducts(): Promise<FeaturedProductsResponse> {
+  return apiRequest<FeaturedProductsResponse>(
+    '/api/produtos/catalogo/destaques',
+  )
+}
+
+export function listSimilarProducts(
+  filters: SimilarProductsFilters,
+): Promise<SimilarProductsResponse> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('categoria', filters.categoria)
+  searchParams.set('excludeId', filters.excludeId)
+
+  if (filters.pageSize !== undefined) {
+    searchParams.set('pageSize', String(filters.pageSize))
+  }
+
+  if (filters.lastItemId) {
+    searchParams.set('lastItemId', filters.lastItemId)
+  }
+
+  return apiRequest<SimilarProductsResponse>(
+    `/api/produtos/catalogo/similares?${searchParams.toString()}`,
+  )
 }
 
 export function getCatalogProduct(id: string): Promise<CatalogProductDetail> {
@@ -60,6 +97,17 @@ export function listProducts(filter: ProductListFilter): Promise<Product[]> {
 export function createProduct(input: CreateProductInput): Promise<Product> {
   return apiRequest<Product>('/api/produtos', {
     method: 'POST',
+    authenticated: true,
+    body: input,
+  })
+}
+
+export function updateProduct(
+  id: string,
+  input: CreateProductInput & { status?: ProductStatus },
+): Promise<Product> {
+  return apiRequest<Product>(`/api/produtos/${id}`, {
+    method: 'PUT',
     authenticated: true,
     body: input,
   })
@@ -92,5 +140,13 @@ export function setProductDestaque(
     method: 'PATCH',
     authenticated: true,
     body: { destaque },
+  })
+}
+
+export function setProductAtivo(id: string, ativo: boolean): Promise<Product> {
+  return apiRequest<Product>(`/api/produtos/${id}/ativo`, {
+    method: 'PATCH',
+    authenticated: true,
+    body: { ativo },
   })
 }

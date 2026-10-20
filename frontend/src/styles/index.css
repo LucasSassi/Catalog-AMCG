@@ -1,23 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #eef8f1;
-  --color-brand-100: #d7eddd;
-  --color-brand-200: #b3dcc0;
-  --color-brand-500: #2a8f55;
-  --color-brand-600: #167744;
-  --color-brand-700: #115f38;
-  --color-brand-800: #0d4b2e;
-  --color-brand-900: #0a3b25;
-  --color-accent-300: #fadb7a;
-  --color-accent-400: #f7c948;
-  --color-accent-500: #e7ad17;
+  /* Colors — semantic roles (aligned with design-token vocabulary) */
+  --color-background: #f7faf7;
+  --color-background-secondary: #f5f0e8;
+  --color-text: #1c2a20;
+  --color-secondary-background: #eef8f1;
+  --color-surface: #d7eddd;
+  --color-muted: #b3dcc0;
+  --color-success: #2a8f55;
+  --color-primary: #167744;
+  --color-primary-darker: #115f38;
+  --color-primary-dark: #0d4b2e;
+  --color-foreground: #0a3b25;
+  --color-accent-yellow-soft: #fadb7a;
+  --color-accent-yellow: #f7c948;
+  --color-warning: #e7ad17;
+
+  /* Typography */
   --font-sans: "Onest", "Segoe UI", sans-serif;
 }
 
 :root {
-  color: #1c2a20;
-  background: #f7faf7;
+  color: var(--color-text);
+  background: var(--color-background);
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -50,6 +56,6 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent-400) 75%, white);
+  outline: 3px solid color-mix(in srgb, var(--color-accent-yellow) 75%, white);
   outline-offset: 2px;
 }

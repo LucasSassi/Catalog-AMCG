@@ -1,10 +1,15 @@
 export type { ProdutorService } from "../service/produtor.service";
 export type {
+  Arquivo,
   Contato,
   Documento,
   RegistroProdutor,
   Endereco,
+  EnderecoCatalogo,
+  RedeSocialItem,
   Produtor,
+  ProdutorCatalogo,
+  CatalogoProdutores,
   CadastrarProdutorInput,
   AtualizarProdutorInput,
   ListarProdutoresFiltros,

@@ -1,6 +1,10 @@
 import { Button } from '../../../shared/components/Button'
 import { Modal } from '../../../shared/components/Modal'
 import { ReviewActions } from '../../../shared/components/ReviewActions'
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import type { Product } from '../types'
 
@@ -11,6 +15,8 @@ interface ProductReviewModalProps {
   onApprove: (id: string) => Promise<boolean>
   onReject: (id: string, reason: string) => Promise<boolean>
   onToggleDestaque: (id: string, destaque: boolean) => Promise<boolean>
+  onToggleAtivo: (id: string, ativo: boolean) => Promise<boolean>
+  onEdit: () => void
 }
 
 export function ProductReviewModal({
@@ -20,6 +26,8 @@ export function ProductReviewModal({
   onApprove,
   onReject,
   onToggleDestaque,
+  onToggleAtivo,
+  onEdit,
 }: ProductReviewModalProps) {
   const isRejected = product.status === 'REJEITADO'
   const isApproved = product.status === 'APROVADO'
@@ -124,6 +132,12 @@ export function ProductReviewModal({
         ) : null}
       </div>
 
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <Button variant="secondary" disabled={disabled} onClick={onEdit}>
+          Editar
+        </Button>
+      </div>
+
       {!isRejected && !isApproved ? (
         <ReviewActions
           disabled={disabled}
@@ -133,14 +147,29 @@ export function ProductReviewModal({
       ) : null}
 
       {isApproved ? (
-        <div className="mt-5 border-t border-slate-200 pt-4">
-          <Button
-            variant="secondary"
-            disabled={disabled}
-            onClick={() => onToggleDestaque(product.id, !product.destaque)}
-          >
-            {product.destaque ? 'Remover destaque' : 'Destacar no catálogo'}
-          </Button>
+        <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={product.ativo}
+              disabled={disabled}
+              className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+              onChange={(event) => {
+                void onToggleAtivo(product.id, event.target.checked)
+              }}
+            />
+            No catálogo
+          </label>
+          <div>
+            <Button
+              variant="secondary"
+              disabled={disabled || !product.ativo}
+              onClick={() => onToggleDestaque(product.id, !product.destaque)}
+            >
+              {product.destaque ? 'Remover destaque' : 'Destacar no catálogo'}
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -170,14 +199,18 @@ function PhotoGallery({
 }: PhotoGalleryProps) {
   return (
     <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <h3 className="font-bold text-brand-900">{title}</h3>
+      <h3 className="font-bold text-foreground">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-slate-600">{description}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {images.map((image, index) => (
           <figure key={`${image.url}-${index}`}>
             <img
-              src={image.url}
+              src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.card)}
               alt={`${title} de ${productName}`}
+              width={600}
+              height={600}
+              loading="lazy"
+              decoding="async"
               className="aspect-square w-full rounded-lg bg-slate-100 object-cover"
             />
             <figcaption className="mt-1 truncate text-xs text-slate-500">

@@ -15,8 +15,8 @@ interface TabbedSectionProps {
 
 function getTabClassName(isActive: boolean): string {
   const stateClassName = isActive
-    ? 'bg-brand-600 text-white shadow-sm'
-    : 'text-slate-600 hover:text-brand-700'
+    ? 'bg-primary text-white shadow-sm'
+    : 'text-slate-600 hover:text-primary-darker'
 
   return `rounded-full px-4 py-1.5 text-sm font-semibold transition ${stateClassName}`
 }
@@ -41,7 +41,7 @@ export function TabbedSection({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold uppercase tracking-wide text-brand-900">
+        <h2 className="text-lg font-bold uppercase tracking-wide text-foreground">
           {title}
         </h2>
 

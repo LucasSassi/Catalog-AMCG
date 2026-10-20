@@ -46,7 +46,7 @@ export function ReviewActions({
           <textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            className="min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600"
+            className="min-h-24 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary"
             placeholder="Explique o que precisa ser corrigido"
           />
         </label>

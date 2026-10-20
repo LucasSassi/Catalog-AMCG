@@ -8,7 +8,9 @@ interface ProductReviewListProps {
   status: ProductListFilter
   isLoading: boolean
   error: string
+  isUpdating?: boolean
   onSelect: (product: Product) => void
+  onToggleAtivo?: (id: string, ativo: boolean) => Promise<boolean>
 }
 
 export function ProductReviewList({
@@ -16,7 +18,9 @@ export function ProductReviewList({
   status,
   isLoading,
   error,
+  isUpdating = false,
   onSelect,
+  onToggleAtivo,
 }: ProductReviewListProps) {
   if (isLoading) {
     return <Feedback title="Carregando produtos..." />
@@ -62,7 +66,7 @@ export function ProductReviewList({
       >
         {title}
       </h2>
-      <p className="mb-5 text-sm font-semibold text-brand-700">
+      <p className="mb-5 text-sm font-semibold text-primary-darker">
         Curadoria de produtos
       </p>
       <div className="space-y-4">
@@ -71,6 +75,8 @@ export function ProductReviewList({
             key={product.id}
             product={product}
             onSelect={onSelect}
+            onToggleAtivo={onToggleAtivo}
+            isUpdating={isUpdating}
           />
         ))}
       </div>

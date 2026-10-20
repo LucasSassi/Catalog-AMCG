@@ -37,7 +37,7 @@ export function Drawer({ title, children, onClose }: DrawerProps) {
         className="relative flex h-full w-full max-w-lg flex-col bg-white shadow-2xl sm:w-[28rem]"
       >
         <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
-          <h2 id="drawer-title" className="text-xl font-bold text-brand-900">
+          <h2 id="drawer-title" className="text-xl font-bold text-foreground">
             {title}
           </h2>
           <button

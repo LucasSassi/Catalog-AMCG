@@ -29,8 +29,11 @@ import type { IProdutoService } from "../entity/interfaces/produto.service.inter
 import type {
   Arquivo,
   AtualizarProdutoInput,
+  CatalogoDestaquesProdutos,
   CatalogoFiltros,
   CatalogoProdutos,
+  CatalogoSimilaresFiltros,
+  CatalogoSimilaresProdutos,
   CadastrarProdutoInput,
   ListarProdutosFiltros,
   Premiacao,
@@ -39,6 +42,11 @@ import type {
   ProdutoCatalogoDetalhe,
   RegistroProduto,
 } from "../entity/produto.entity";
+
+const CATALOG_DEFAULT_PAGE_SIZE = 12;
+const CATALOG_MAX_PAGE_SIZE = 12;
+const SIMILARES_DEFAULT_PAGE_SIZE = 10;
+const SIMILARES_MAX_PAGE_SIZE = 10;
 import type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
 import type { IProdutoRepositoryWrite } from "../repository/produto.repository.write";
 
@@ -62,7 +70,21 @@ export class ProdutoService implements IProdutoService {
   async create(input: CadastrarProdutoInput): Promise<Produto> {
     const produtorId = this.assertProdutorId(input.produtorId);
     await this.assertProdutorAprovado(produtorId);
+    return this.createPendingProduct(input, produtorId);
+  }
 
+  async createForPendingProducer(
+    input: CadastrarProdutoInput,
+  ): Promise<Produto> {
+    const produtorId = this.assertProdutorId(input.produtorId);
+    await this.assertProdutorAtivo(produtorId);
+    return this.createPendingProduct(input, produtorId);
+  }
+
+  private async createPendingProduct(
+    input: CadastrarProdutoInput,
+    produtorId: string,
+  ): Promise<Produto> {
     const nome = this.assertNome(input.nome);
     const descricao = this.assertDescricao(input.descricao);
     const categoria = this.assertCategoria(input.categoria);
@@ -101,6 +123,10 @@ export class ProdutoService implements IProdutoService {
   }
 
   async listCatalog(filtros: CatalogoFiltros = {}): Promise<CatalogoProdutos> {
+    const pageSize = this.assertPageSize(
+      filtros.pageSize ?? CATALOG_DEFAULT_PAGE_SIZE,
+      CATALOG_MAX_PAGE_SIZE,
+    );
     const categoria =
       filtros.categoria !== undefined
         ? this.assertCategoria(filtros.categoria)
@@ -109,79 +135,80 @@ export class ProdutoService implements IProdutoService {
       filtros.certificacao !== undefined
         ? this.assertCertificacao(filtros.certificacao)
         : undefined;
-    const produtos = await this.readRepository.list({
-      ativo: true,
-      status: "APROVADO",
+    const lastItemId = this.normalizeOptionalId(filtros.lastItemId);
+
+    const page = await this.readRepository.listCatalogCursor({
+      pageSize,
+      ...(lastItemId !== undefined ? { lastItemId } : {}),
       ...(categoria !== undefined ? { categoria } : {}),
-    });
-    const produtores = await this.produtorReadRepository.list({
-      ativo: true,
-      status: "APROVADO",
-    });
-    const produtoresPorId = new Map(
-      produtores.map((produtor) => [produtor.id, produtor]),
-    );
-    const busca = this.normalizeCatalogText(filtros.busca);
-    const municipio = filtros.municipio?.trim();
-
-    const produtosCatalogo = produtos.flatMap((produto) => {
-      const produtor = produtoresPorId.get(produto.produtorId);
-      const fotoDivulgacao = produto.fotosDivulgacao[0];
-
-      if (!produtor || !fotoDivulgacao) {
-        return [];
-      }
-
-      if (municipio && produtor.endereco.cidade !== municipio) {
-        return [];
-      }
-
-      if (busca) {
-        const conteudo = this.normalizeCatalogText(
-          `${produto.nome} ${produto.descricao} ${produtor.nomeEmpresa}`,
-        );
-
-        if (!conteudo.includes(busca)) {
-          return [];
-        }
-      }
-
-      if (certificacao) {
-        if (certificacao === "SIM") {
-          const temSim = produtor.registros.some(
-            (registro) => registro.tipo === "SIM",
-          );
-          if (!temSim) {
-            return [];
-          }
-        } else {
-          const temCertificacao = produto.registros.some(
-            (registro) => registro.tipo === certificacao,
-          );
-          if (!temCertificacao) {
-            return [];
-          }
-        }
-      }
-
-      return [
-        this.toProdutoCatalogo(produto, produtor, fotoDivulgacao),
-      ];
+      ...(certificacao !== undefined ? { certificacao } : {}),
+      ...(filtros.busca?.trim() ? { busca: filtros.busca.trim() } : {}),
+      ...(filtros.municipio?.trim()
+        ? { municipio: filtros.municipio.trim() }
+        : {}),
     });
 
-    const municipios = [
-      ...new Set(
-        produtores
-          .map((produtor) => produtor.endereco.cidade)
-          .filter((cidade) => cidade.length > 0),
-      ),
-    ].sort((cidadeA, cidadeB) => cidadeA.localeCompare(cidadeB, "pt-BR"));
+    const produtos = await this.mapProdutosCatalogo(page.items);
+    const municipios =
+      await this.produtorReadRepository.listMunicipiosAprovados();
 
     return {
-      produtos: produtosCatalogo,
+      produtos,
       categorias: [...listCategoriasProduto()],
       municipios,
       certificacoes: [...CERTIFICACAO_CATALOGO],
+      pageSize,
+      nextLastItemId: page.nextLastItemId,
+      hasNext: page.nextLastItemId !== null,
+    };
+  }
+
+  async listDestaques(): Promise<CatalogoDestaquesProdutos> {
+    const manuaisPage = await this.readRepository.listCatalogCursor({
+      pageSize: MAX_DESTAQUES,
+      destaque: true,
+    });
+    const selecionados = await this.mapProdutosCatalogo(manuaisPage.items);
+
+    if (selecionados.length >= MAX_DESTAQUES) {
+      return { produtos: selecionados };
+    }
+
+    const faltam = MAX_DESTAQUES - selecionados.length;
+    const aleatorios = await this.readRepository.sampleApproved(
+      selecionados.map((produto) => produto.id),
+      faltam,
+    );
+    const aleatoriosCatalogo = await this.mapProdutosCatalogo(aleatorios);
+
+    return { produtos: [...selecionados, ...aleatoriosCatalogo] };
+  }
+
+  async listSimilares(
+    filtros: CatalogoSimilaresFiltros,
+  ): Promise<CatalogoSimilaresProdutos> {
+    const categoria = this.assertCategoria(filtros.categoria);
+    const pageSize = this.assertPageSize(
+      filtros.pageSize ?? SIMILARES_DEFAULT_PAGE_SIZE,
+      SIMILARES_MAX_PAGE_SIZE,
+    );
+    const lastItemId = this.normalizeOptionalId(filtros.lastItemId);
+    const excludeId = filtros.excludeId?.trim();
+
+    const page = await this.readRepository.listCatalogCursor({
+      pageSize,
+      categoria,
+      ...(lastItemId !== undefined ? { lastItemId } : {}),
+      ...(excludeId ? { excludeIds: [excludeId] } : {}),
+    });
+
+    const produtos = await this.mapProdutosCatalogo(page.items);
+
+    return {
+      produtos,
+      pageSize,
+      nextLastItemId: page.nextLastItemId,
+      hasNext: page.nextLastItemId !== null,
     };
   }
 
@@ -214,6 +241,7 @@ export class ProdutoService implements IProdutoService {
       registros: produto.registros.map((registro) => ({ tipo: registro.tipo })),
       premiacoes: produto.premiacoes.map((premiacao) => ({
         nome: premiacao.nome,
+        descricao: premiacao.descricao,
         ano: premiacao.ano,
       })),
       ...(produto.observacoes !== undefined
@@ -224,6 +252,7 @@ export class ProdutoService implements IProdutoService {
         temRegistroSim: produtor.registros.some(
           (registro) => registro.tipo === "SIM",
         ),
+        ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
       },
     };
   }
@@ -255,6 +284,32 @@ export class ProdutoService implements IProdutoService {
     }
 
     const atualizado = await this.writeRepository.update(id, { destaque });
+
+    if (!atualizado) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    return atualizado;
+  }
+
+  async setAtivo(id: string, ativo: boolean): Promise<Produto> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    if (atual.status !== "APROVADO") {
+      throw new ValidationError(
+        "Somente produtos aprovados podem ser habilitados no catálogo",
+      );
+    }
+
+    const data = ativo
+      ? { ativo: true }
+      : { ativo: false, destaque: false };
+
+    const atualizado = await this.writeRepository.update(id, data);
 
     if (!atualizado) {
       throw new NotFoundError("Produto não encontrado");
@@ -438,7 +493,29 @@ export class ProdutoService implements IProdutoService {
     }
   }
 
+  async hardRemove(id: string): Promise<void> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const removed = await this.writeRepository.hardDelete(id);
+
+    if (!removed) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+  }
+
   private async assertProdutorAprovado(produtorId: string): Promise<void> {
+    const produtor = await this.assertProdutorAtivo(produtorId);
+
+    if (produtor.status !== "APROVADO") {
+      throw new ValidationError("Produtor deve estar aprovado");
+    }
+  }
+
+  private async assertProdutorAtivo(produtorId: string) {
     const produtor = await this.produtorReadRepository.findById(produtorId);
 
     if (!produtor) {
@@ -449,9 +526,7 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Produtor inativo");
     }
 
-    if (produtor.status !== "APROVADO") {
-      throw new ValidationError("Produtor deve estar aprovado");
-    }
+    return produtor;
   }
 
   private async assertRegistrosDisponiveis(numeros: string[]): Promise<void> {
@@ -478,18 +553,6 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Produtor é obrigatório");
     }
     return trimmed;
-  }
-
-  private normalizeCatalogText(value?: string): string {
-    if (!value) {
-      return "";
-    }
-
-    return value
-      .trim()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR");
   }
 
   private assertNome(nome: string): string {
@@ -522,6 +585,56 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Certificação inválida");
     }
     return certificacao as CertificacaoCatalogo;
+  }
+
+  private async mapProdutosCatalogo(
+    produtos: Produto[],
+  ): Promise<ProdutoCatalogo[]> {
+    if (produtos.length === 0) {
+      return [];
+    }
+
+    const produtores = await this.produtorReadRepository.findByIds(
+      produtos.map((produto) => produto.produtorId),
+    );
+    const produtoresPorId = new Map(
+      produtores.map((produtor) => [produtor.id, produtor]),
+    );
+
+    return produtos.flatMap((produto) => {
+      const produtor = produtoresPorId.get(produto.produtorId);
+      const fotoDivulgacao = produto.fotosDivulgacao[0];
+
+      if (!produtor || !produtor.ativo || produtor.status !== "APROVADO") {
+        return [];
+      }
+
+      if (!fotoDivulgacao) {
+        return [];
+      }
+
+      return [this.toProdutoCatalogo(produto, produtor, fotoDivulgacao)];
+    });
+  }
+
+  private assertPageSize(pageSize: number, maxPageSize: number): number {
+    if (!Number.isInteger(pageSize) || pageSize < 1) {
+      throw new ValidationError(
+        "pageSize deve ser um inteiro maior ou igual a 1",
+      );
+    }
+    if (pageSize > maxPageSize) {
+      throw new ValidationError(`pageSize máximo é ${maxPageSize}`);
+    }
+    return pageSize;
+  }
+
+  private normalizeOptionalId(id?: string): string | undefined {
+    const trimmed = id?.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    return trimmed;
   }
 
   private toProdutoCatalogo(

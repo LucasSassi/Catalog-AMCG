@@ -2,6 +2,7 @@ import type {
   RegistroProdutorTipo,
   StatusProdutor,
   TipoDocumento,
+  TipoRedeSocial,
   UfBrasil,
 } from "./produtor.constants";
 
@@ -29,6 +30,23 @@ export interface Endereco {
   estado: UfBrasil;
 }
 
+export interface Arquivo {
+  url: string;
+  contentType: string;
+  nomeOriginal: string;
+}
+
+export interface RedeSocialItem {
+  tipo: TipoRedeSocial;
+  handle: string;
+}
+
+export interface EnderecoCatalogo {
+  bairro: string;
+  cidade: string;
+  estado: UfBrasil;
+}
+
 export interface Produtor {
   id: string;
   nomeEmpresa: string;
@@ -37,6 +55,11 @@ export interface Produtor {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  historia: string;
+  logo?: Arquivo;
+  fotos: Arquivo[];
+  redesSociais: RedeSocialItem[];
+  site?: string;
   ativo: boolean;
   status: StatusProdutor;
   destaque: boolean;
@@ -51,9 +74,19 @@ export interface ProdutorCatalogo {
   municipio: string;
   telefone: string;
   destaque: boolean;
+  historia: string;
+  logo?: Arquivo;
+  fotos: Arquivo[];
+  endereco: EnderecoCatalogo;
+  redesSociais: RedeSocialItem[];
+  site?: string;
 }
 
 export interface CatalogoProdutores {
+  produtores: ProdutorCatalogo[];
+}
+
+export interface CatalogoDestaquesProdutores {
   produtores: ProdutorCatalogo[];
 }
 
@@ -64,6 +97,11 @@ export interface CadastrarProdutorInput {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  historia: string;
+  logo: Arquivo;
+  fotos: Arquivo[];
+  redesSociais?: RedeSocialItem[];
+  site?: string;
 }
 
 export interface AtualizarProdutorInput {
@@ -73,6 +111,11 @@ export interface AtualizarProdutorInput {
   registros?: RegistroProdutor[];
   contato?: Contato;
   endereco?: Endereco;
+  historia?: string;
+  logo?: Arquivo;
+  fotos?: Arquivo[];
+  redesSociais?: RedeSocialItem[];
+  site?: string | null;
   status?: StatusProdutor;
   motivoRejeicao?: string;
 }

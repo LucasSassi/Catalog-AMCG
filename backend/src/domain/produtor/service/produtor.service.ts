@@ -5,27 +5,38 @@ import {
 } from "../../common/errors/app-error";
 import {
   CNPJ_LENGTH,
+  CONTENT_TYPES_IMAGEM,
   CPF_LENGTH,
   E164_PHONE_REGEX,
   MAX_DESTAQUES,
+  MAX_FOTOS,
+  MAX_HISTORIA_LENGTH,
+  MAX_REDES_SOCIAIS,
+  MIN_FOTOS,
   REGISTRO_PRODUTOR_TIPO,
   STATUS_PRODUTOR,
   TIPO_DOCUMENTO,
+  isTipoRedeSocial,
   isUfBrasil,
   type RegistroProdutorTipo,
   type StatusProdutor,
   type TipoDocumento,
+  type TipoRedeSocial,
 } from "../entity/produtor.constants";
 import type { IProdutorService } from "../entity/interfaces/produtor.service.interface";
 import type {
+  Arquivo,
   AtualizarProdutorInput,
   CadastrarProdutorInput,
+  CatalogoDestaquesProdutores,
   CatalogoProdutores,
   Contato,
   Documento,
   Endereco,
   ListarProdutoresFiltros,
   Produtor,
+  ProdutorCatalogo,
+  RedeSocialItem,
   RegistroProdutor,
 } from "../entity/produtor.entity";
 import type { IProdutorRepositoryRead } from "../repository/produtor.repository.read";
@@ -52,6 +63,11 @@ export class ProdutorService implements IProdutorService {
     const registros = this.normalizeRegistros(input.registros);
     const contato = this.normalizeContato(input.contato);
     const endereco = this.normalizeEndereco(input.endereco);
+    const historia = this.assertHistoria(input.historia);
+    const logo = this.normalizeArquivo(input.logo);
+    const fotos = this.normalizeFotos(input.fotos);
+    const redesSociais = this.normalizeRedesSociais(input.redesSociais);
+    const site = this.normalizeOptionalSite(input.site);
 
     await this.assertDocumentoDisponivel(documento.numero);
     await this.assertRegistrosDisponiveis(registros.map((r) => r.numero));
@@ -63,6 +79,11 @@ export class ProdutorService implements IProdutorService {
       registros,
       contato,
       endereco,
+      historia,
+      logo,
+      fotos,
+      redesSociais,
+      ...(site !== undefined ? { site } : {}),
       ativo: true,
       status: "PENDENTE",
       destaque: false,
@@ -83,14 +104,48 @@ export class ProdutorService implements IProdutorService {
     });
 
     return {
-      produtores: produtores.map((produtor) => ({
-        id: produtor.id,
-        nome: produtor.nomeEmpresa,
-        municipio: produtor.endereco.cidade,
-        telefone: produtor.contato.telefone,
-        destaque: produtor.destaque,
-      })),
+      produtores: produtores.map((produtor) => this.toProdutorCatalogo(produtor)),
     };
+  }
+
+  async listDestaques(): Promise<CatalogoDestaquesProdutores> {
+    const manuais = await this.readRepository.listLimited(
+      {
+        ativo: true,
+        status: "APROVADO",
+        destaque: true,
+      },
+      MAX_DESTAQUES,
+    );
+    const selecionados = manuais.map((produtor) =>
+      this.toProdutorCatalogo(produtor),
+    );
+
+    if (selecionados.length >= MAX_DESTAQUES) {
+      return { produtores: selecionados };
+    }
+
+    const aleatorios = await this.readRepository.sampleApproved(
+      selecionados.map((produtor) => produtor.id),
+      MAX_DESTAQUES - selecionados.length,
+    );
+
+    return {
+      produtores: [
+        ...selecionados,
+        ...aleatorios.map((produtor) => this.toProdutorCatalogo(produtor)),
+      ],
+    };
+  }
+
+  async getCatalogById(id: string): Promise<ProdutorCatalogo> {
+    const produtor = await this.readRepository.findById(id);
+
+    if (!produtor || !produtor.ativo || produtor.status !== "APROVADO") {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+
+    return this.toProdutorCatalogo(produtor);
   }
 
   async getById(id: string): Promise<Produtor> {
@@ -146,6 +201,11 @@ export class ProdutorService implements IProdutorService {
       input.registros === undefined &&
       input.contato === undefined &&
       input.endereco === undefined &&
+      input.historia === undefined &&
+      input.logo === undefined &&
+      input.fotos === undefined &&
+      input.redesSociais === undefined &&
+      input.site === undefined &&
       input.status === undefined &&
       input.motivoRejeicao === undefined
     ) {
@@ -165,6 +225,11 @@ export class ProdutorService implements IProdutorService {
       registros?: RegistroProdutor[];
       contato?: Contato;
       endereco?: Endereco;
+      historia?: string;
+      logo?: Arquivo;
+      fotos?: Arquivo[];
+      redesSociais?: RedeSocialItem[];
+      site?: string | null;
       status?: StatusProdutor;
       motivoRejeicao?: string | null;
     } = {};
@@ -201,6 +266,29 @@ export class ProdutorService implements IProdutorService {
 
     if (input.endereco !== undefined) {
       data.endereco = this.normalizeEndereco(input.endereco);
+    }
+
+    if (input.historia !== undefined) {
+      data.historia = this.assertHistoria(input.historia);
+    }
+
+    if (input.logo !== undefined) {
+      data.logo = this.normalizeArquivo(input.logo);
+    }
+
+    if (input.fotos !== undefined) {
+      data.fotos = this.normalizeFotos(input.fotos);
+    }
+
+    if (input.redesSociais !== undefined) {
+      data.redesSociais = this.normalizeRedesSociais(input.redesSociais);
+    }
+
+    if (input.site !== undefined) {
+      data.site =
+        input.site === null
+          ? null
+          : (this.normalizeOptionalSite(input.site) ?? null);
     }
 
     if (input.status !== undefined) {
@@ -250,6 +338,40 @@ export class ProdutorService implements IProdutorService {
     }
   }
 
+  async hardRemove(id: string): Promise<void> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+
+    const removed = await this.writeRepository.hardDelete(id);
+
+    if (!removed) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+  }
+
+  private toProdutorCatalogo(produtor: Produtor): ProdutorCatalogo {
+    return {
+      id: produtor.id,
+      nome: produtor.nomeEmpresa,
+      municipio: produtor.endereco.cidade,
+      telefone: produtor.contato.telefone,
+      destaque: produtor.destaque,
+      historia: produtor.historia,
+      ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
+      fotos: produtor.fotos,
+      endereco: {
+        bairro: produtor.endereco.bairro,
+        cidade: produtor.endereco.cidade,
+        estado: produtor.endereco.estado,
+      },
+      redesSociais: produtor.redesSociais,
+      ...(produtor.site !== undefined ? { site: produtor.site } : {}),
+    };
+  }
+
   private async assertDocumentoDisponivel(numero: string): Promise<void> {
     const existing = await this.readRepository.findByDocumentoNumero(numero);
     if (existing) {
@@ -288,6 +410,123 @@ export class ProdutorService implements IProdutorService {
     if (!trimmed) {
       throw new ValidationError("Município é obrigatório");
     }
+    return trimmed;
+  }
+
+  private assertHistoria(historia: string): string {
+    const trimmed = historia.trim();
+    if (!trimmed) {
+      throw new ValidationError("História do produtor é obrigatória");
+    }
+    if (trimmed.length > MAX_HISTORIA_LENGTH) {
+      throw new ValidationError(
+        `História deve ter no máximo ${MAX_HISTORIA_LENGTH} caracteres`,
+      );
+    }
+    return trimmed;
+  }
+
+  private normalizeFotos(fotos: Arquivo[]): Arquivo[] {
+    if (!Array.isArray(fotos)) {
+      throw new ValidationError("Fotos inválidas");
+    }
+
+    if (fotos.length < MIN_FOTOS || fotos.length > MAX_FOTOS) {
+      throw new ValidationError(
+        `Fotos deve ter entre ${MIN_FOTOS} e ${MAX_FOTOS} itens`,
+      );
+    }
+
+    return fotos.map((foto) => this.normalizeArquivo(foto));
+  }
+
+  private normalizeArquivo(arquivo: Arquivo): Arquivo {
+    const url = arquivo.url.trim();
+    const contentType = arquivo.contentType.trim().toLowerCase();
+    const nomeOriginal = arquivo.nomeOriginal.trim();
+
+    if (!url) {
+      throw new ValidationError("URL do arquivo é obrigatória");
+    }
+
+    try {
+      new URL(url);
+    } catch {
+      throw new ValidationError("URL do arquivo inválida");
+    }
+
+    if (!(CONTENT_TYPES_IMAGEM as readonly string[]).includes(contentType)) {
+      throw new ValidationError("Tipo de conteúdo do arquivo inválido");
+    }
+
+    if (!nomeOriginal) {
+      throw new ValidationError("Nome original do arquivo é obrigatório");
+    }
+
+    return { url, contentType, nomeOriginal };
+  }
+
+  private normalizeRedesSociais(
+    redesSociais: RedeSocialItem[] | undefined,
+  ): RedeSocialItem[] {
+    if (redesSociais === undefined) {
+      return [];
+    }
+
+    if (!Array.isArray(redesSociais)) {
+      throw new ValidationError("Redes sociais inválidas");
+    }
+
+    if (redesSociais.length > MAX_REDES_SOCIAIS) {
+      throw new ValidationError(
+        `Máximo de ${MAX_REDES_SOCIAIS} redes sociais`,
+      );
+    }
+
+    const tipos = new Set<TipoRedeSocial>();
+
+    return redesSociais.map((rede) => {
+      if (!isTipoRedeSocial(rede.tipo)) {
+        throw new ValidationError("Tipo de rede social inválido");
+      }
+
+      if (tipos.has(rede.tipo)) {
+        throw new ValidationError(
+          "Não é permitido cadastrar o mesmo tipo de rede social mais de uma vez",
+        );
+      }
+      tipos.add(rede.tipo);
+
+      const handle = rede.handle.trim();
+      if (!handle) {
+        throw new ValidationError("Handle da rede social é obrigatório");
+      }
+
+      return { tipo: rede.tipo, handle };
+    });
+  }
+
+  private normalizeOptionalText(value?: string): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+
+  private normalizeOptionalSite(value?: string): string | undefined {
+    const trimmed = this.normalizeOptionalText(value);
+    if (trimmed === undefined) {
+      return undefined;
+    }
+
+    try {
+      new URL(trimmed);
+    } catch {
+      throw new ValidationError("Site inválido");
+    }
+
     return trimmed;
   }
 

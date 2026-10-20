@@ -1,33 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AwardSeal } from '../../features/produto/components/AwardSeal'
 import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
+import { SealBadge } from '../../features/produto/components/SealBadge'
+import { SimilarProductsCarousel } from '../../features/produto/components/SimilarProductsCarousel'
+import {
+  SEAL_INFO_TYPES,
+  type SealInfoType,
+} from '../../features/produto/constants'
 import { useCatalogProduct } from '../../features/produto/hooks/useCatalogProduct'
-import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
+import { useSimilarProducts } from '../../features/produto/hooks/useSimilarProducts'
 import { buildProductWhatsAppUrl } from '../../features/produto/lib/whatsapp'
-import { PRODUCT_CATEGORY_LABELS } from '../../features/produto/constants'
-import type { CatalogFilters } from '../../features/produto/types'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
-import premiadoBadge from '../../shared/assets/premiado.png'
 import { Feedback } from '../../shared/components/Feedback'
+import { WhatsAppIcon } from '../../shared/components/WhatsAppIcon'
 import {
   buildThumbnailUrl,
   THUMBNAIL_WIDTH,
 } from '../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../shared/lib/formatCurrency'
 
-const emptyFilters: CatalogFilters = {
-  busca: '',
-  categoria: '',
-  municipio: '',
-  certificacao: '',
+function isSealInfoType(tipo: string): tipo is SealInfoType {
+  return (SEAL_INFO_TYPES as readonly string[]).includes(tipo)
 }
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { product, isLoading, error } = useCatalogProduct(id)
-  const { products } = useCatalogProducts(emptyFilters)
+  const similares = useSimilarProducts(product?.categoria, product?.id)
   const [isProducerOpen, setIsProducerOpen] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
+
+  useEffect(() => {
+    setSelectedPhotoIndex(0)
+  }, [product?.id])
 
   if (isLoading) {
     return (
@@ -47,7 +53,7 @@ export function ProductDetailPage() {
         />
         <Link
           to="/"
-          className="mt-4 inline-flex text-sm font-semibold text-brand-700 hover:underline"
+          className="mt-4 inline-flex text-sm font-semibold text-primary-darker hover:underline"
         >
           Voltar ao catálogo
         </Link>
@@ -61,177 +67,174 @@ export function ProductDetailPage() {
       : [product.fotoDivulgacao]
   const mainPhoto = photos[selectedPhotoIndex] ?? photos[0]
   const whatsappUrl = buildProductWhatsAppUrl(product)
-  const categoryLabel =
-    PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
-  const producerProducts = products.filter(
-    (item) => item.produtor.id === product.produtor.id,
+  const producerLogoUrl = product.produtor.logo?.url
+  const sealTypes = [
+    ...new Set<SealInfoType>([
+      ...(product.produtor.temRegistroSim ? (['SIM'] as const) : []),
+      ...product.registros
+        .map((registro) => registro.tipo)
+        .filter(isSealInfoType),
+    ]),
+  ]
+  const otherRegistros = product.registros.filter(
+    (registro) => !isSealInfoType(registro.tipo),
   )
 
   return (
-    <main className="bg-stone-100 py-10">
+    <main className="bg-background-secondary py-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <p className="mb-6 text-center text-sm font-bold uppercase tracking-[0.25em] text-brand-700">
-          Campos Gerais
-        </p>
-
-        <div className="rounded-3xl bg-white p-5 shadow-sm sm:p-8">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="flex gap-3">
-              {photos.length > 1 ? (
-                <div className="flex w-16 shrink-0 flex-col gap-2">
-                  {photos.map((photo, index) => (
-                    <button
-                      key={`${photo.url}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedPhotoIndex(index)}
-                      className={`overflow-hidden rounded-lg border-2 ${
-                        index === selectedPhotoIndex
-                          ? 'border-brand-600'
-                          : 'border-transparent'
-                      }`}
-                    >
-                      <img
-                        src={buildThumbnailUrl(
-                          photo.url,
-                          THUMBNAIL_WIDTH.gallery,
-                        )}
-                        alt=""
-                        width={64}
-                        height={64}
-                        loading="lazy"
-                        decoding="async"
-                        className="aspect-square w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100">
-                <img
-                  src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
-                  alt={product.nome}
-                  width={1200}
-                  height={900}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                {product.premiado ? (
-                  <div className="group absolute right-3 top-3">
+        <div className="overflow-visible rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <div className="grid gap-8 overflow-visible lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+            <div className="relative flex flex-col gap-3 overflow-visible sm:flex-row">
+              <div className="flex shrink-0 flex-row gap-2 overflow-x-auto sm:w-[4.5rem] sm:flex-col sm:overflow-y-auto sm:overflow-x-visible">
+                {photos.map((photo, index) => (
+                  <button
+                    key={`${photo.url}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedPhotoIndex(index)}
+                    className={`h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border-2 ${
+                      index === selectedPhotoIndex
+                        ? 'border-primary'
+                        : 'border-transparent'
+                    }`}
+                  >
                     <img
-                      src={premiadoBadge}
-                      alt="Produto premiado"
-                      width={56}
-                      height={56}
+                      src={buildThumbnailUrl(
+                        photo.url,
+                        THUMBNAIL_WIDTH.gallery,
+                      )}
+                      alt=""
+                      width={72}
+                      height={72}
                       loading="lazy"
                       decoding="async"
-                      className="h-14 w-14 object-contain drop-shadow"
+                      className="aspect-square h-full w-full object-cover"
                     />
-                    <span className="pointer-events-none absolute right-0 top-16 z-10 hidden w-56 rounded-lg bg-slate-900 px-3 py-2 text-xs text-white group-hover:block">
-                      Ver produtos premiados. O produtor deve informar e
-                      comprovar prêmios.
-                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative min-w-0 flex-1 overflow-visible">
+                <div className="relative overflow-visible rounded-2xl bg-slate-100">
+                  <div className="overflow-hidden rounded-2xl">
+                    <img
+                      src={buildThumbnailUrl(
+                        mainPhoto.url,
+                        THUMBNAIL_WIDTH.detail,
+                      )}
+                      alt={product.nome}
+                      width={1200}
+                      height={900}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      className="aspect-[4/3] w-full object-cover lg:aspect-square"
+                    />
                   </div>
-                ) : null}
+                  {product.premiado ? (
+                    <div className="absolute -right-10 -top-10 z-10">
+                      <AwardSeal premiacoes={product.premiacoes} />
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-                {categoryLabel}
-              </p>
-              <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+            <div className="flex min-h-0 flex-col">
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                 {product.nome}
               </h1>
-              <p className="mt-4 text-sm leading-7 text-slate-600">
+              <p className="mt-4 text-sm leading-relaxed text-slate-600">
                 {product.descricao}
               </p>
-              <p className="mt-6 text-3xl font-bold text-slate-900">
-                {formatCurrency(product.valorCentavos)}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                por {product.unidadeMedida}
-              </p>
 
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-700 sm:w-auto"
-              >
-                WhatsApp
-              </a>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
-                <span
-                  className="group relative inline-flex rounded-md bg-stone-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-800"
-                  title={
-                    product.produtor.temRegistroSim
-                      ? 'SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios'
-                      : product.produtor.municipio
-                  }
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <p className="text-3xl font-bold text-slate-900">
+                  {formatCurrency(product.valorCentavos)}
+                </p>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-primary-darker"
                 >
-                  {product.produtor.municipio}
-                  {product.produtor.temRegistroSim ? (
-                    <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-64 rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-normal normal-case tracking-normal text-white group-hover:block">
-                      SIM – Inspeção Municipal: comercialização somente dentro
-                      dos respectivos municípios.
-                    </span>
-                  ) : null}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setIsProducerOpen(true)}
-                  className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-brand-500"
-                >
-                  <img
-                    src={logoPlaceholder}
-                    alt=""
-                    width={40}
-                    height={40}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-10 w-10 rounded-md bg-white object-contain"
-                  />
-                  <span>
-                    <span className="block text-xs uppercase tracking-wide text-slate-500">
-                      Produtor
-                    </span>
-                    <span className="block text-sm font-bold text-brand-900">
-                      {product.produtor.nome}
-                    </span>
-                  </span>
-                </button>
+                  <WhatsAppIcon size={16} />
+                  WhatsApp
+                </a>
               </div>
 
-              {product.registros.length > 0 ? (
-                <div className="mt-6">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Certificações do produto
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {product.registros.map((registro) => (
+              <div className="mt-auto border-t border-slate-200 pt-8 lg:mt-16">
+                <div className="rounded-2xl border border-slate-200 p-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-col gap-2">
+                      <span className="inline-flex min-h-9 items-center rounded-lg bg-[#d4c4a8] px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-white">
+                        {product.produtor.municipio}
+                      </span>
+                      {sealTypes.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {sealTypes.map((tipo) => (
+                            <SealBadge key={tipo} tipo={tipo} />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label={`Ver informações do produtor ${product.produtor.nome}`}
+                      onClick={() => setIsProducerOpen(true)}
+                      className="ml-auto inline-flex h-36 w-44 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 px-2 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    >
+                      <img
+                        src={
+                          producerLogoUrl
+                            ? buildThumbnailUrl(
+                                producerLogoUrl,
+                                THUMBNAIL_WIDTH.card,
+                              )
+                            : logoPlaceholder
+                        }
+                        alt=""
+                        width={176}
+                        height={144}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-contain"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {otherRegistros.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {otherRegistros.map((registro) => (
                       <span
                         key={registro.tipo}
-                        className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800"
+                        className="rounded-full bg-secondary-background px-3 py-1 text-xs font-semibold text-primary-dark"
                       >
                         {registro.tipo}
                       </span>
                     ))}
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
+        <SimilarProductsCarousel
+          products={similares.products}
+          hasPrevious={similares.hasPrevious}
+          hasNext={similares.hasNext}
+          onPrevious={similares.goToPreviousPage}
+          onNext={similares.goToNextPage}
+          isLoading={similares.isLoading}
+        />
+
         <div className="mt-6 text-center">
           <Link
             to="/#produtos"
-            className="text-sm font-semibold text-brand-700 hover:underline"
+            className="text-sm font-semibold text-primary-darker hover:underline"
           >
             Voltar ao catálogo
           </Link>
@@ -240,8 +243,7 @@ export function ProductDetailPage() {
 
       {isProducerOpen ? (
         <ProducerInfoModal
-          producer={product.produtor}
-          products={producerProducts}
+          producerId={product.produtor.id}
           onClose={() => setIsProducerOpen(false)}
         />
       ) : null}

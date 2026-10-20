@@ -1,17 +1,27 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
-import { hasAuthToken } from '../shared/api/auth-token'
+import {
+  isAdminAuthToken,
+  isAuthTokenValid,
+  removeAuthToken,
+} from '../shared/api/auth-token'
 import { BackofficePage } from '../pages/backoffice/BackofficePage'
 import { LoginPage } from '../pages/backoffice/LoginPage'
 import { AboutPage } from '../pages/catalog/AboutPage'
 import { CatalogPage } from '../pages/catalog/CatalogPage'
+import { InscriptionPage } from '../pages/catalog/InscriptionPage'
 import { ProductDetailPage } from '../pages/catalog/ProductDetailPage'
 import { ProducersPage } from '../pages/catalog/ProducersPage'
 import { BackofficeLayout } from './BackofficeLayout'
 import { CatalogLayout } from './CatalogLayout'
 
 function ProtectedRoute() {
-  if (!hasAuthToken()) {
+  if (!isAuthTokenValid()) {
+    removeAuthToken()
     return <Navigate to="/backoffice/login" replace />
+  }
+
+  if (!isAdminAuthToken()) {
+    return <Navigate to="/" replace />
   }
 
   return <Outlet />
@@ -26,6 +36,7 @@ export function AppRouter() {
           <Route path="quem-somos" element={<AboutPage />} />
           <Route path="produtores" element={<ProducersPage />} />
           <Route path="produtos/:id" element={<ProductDetailPage />} />
+          <Route path="inscricao" element={<InscriptionPage />} />
         </Route>
 
         <Route path="/backoffice/login" element={<LoginPage />} />

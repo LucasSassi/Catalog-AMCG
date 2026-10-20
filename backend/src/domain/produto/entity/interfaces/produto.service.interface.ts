@@ -1,7 +1,10 @@
 import type {
   AtualizarProdutoInput,
+  CatalogoDestaquesProdutos,
   CatalogoFiltros,
   CatalogoProdutos,
+  CatalogoSimilaresFiltros,
+  CatalogoSimilaresProdutos,
   CadastrarProdutoInput,
   ListarProdutosFiltros,
   Produto,
@@ -10,11 +13,18 @@ import type {
 
 export interface IProdutoService {
   create(input: CadastrarProdutoInput): Promise<Produto>;
+  createForPendingProducer(input: CadastrarProdutoInput): Promise<Produto>;
   listCatalog(filtros?: CatalogoFiltros): Promise<CatalogoProdutos>;
+  listDestaques(): Promise<CatalogoDestaquesProdutos>;
+  listSimilares(
+    filtros: CatalogoSimilaresFiltros,
+  ): Promise<CatalogoSimilaresProdutos>;
   getCatalogById(id: string): Promise<ProdutoCatalogoDetalhe>;
   list(filtros?: ListarProdutosFiltros): Promise<Produto[]>;
   getById(id: string): Promise<Produto>;
   update(id: string, input: AtualizarProdutoInput): Promise<Produto>;
   setDestaque(id: string, destaque: boolean): Promise<Produto>;
+  setAtivo(id: string, ativo: boolean): Promise<Produto>;
   remove(id: string): Promise<void>;
+  hardRemove(id: string): Promise<void>;
 }

@@ -19,6 +19,31 @@ export class InMemoryProdutorRepository
     return this.items.get(id) ?? null;
   }
 
+  async findByIds(ids: string[]): Promise<Produtor[]> {
+    const result: Produtor[] = [];
+    for (const id of ids) {
+      const produtor = this.items.get(id);
+      if (produtor) {
+        result.push(produtor);
+      }
+    }
+    return result;
+  }
+
+  async listMunicipiosAprovados(): Promise<string[]> {
+    const produtores = await this.list({
+      ativo: true,
+      status: "APROVADO",
+    });
+    return [
+      ...new Set(
+        produtores
+          .map((produtor) => produtor.endereco.cidade)
+          .filter((cidade) => cidade.length > 0),
+      ),
+    ].sort((cidadeA, cidadeB) => cidadeA.localeCompare(cidadeB, "pt-BR"));
+  }
+
   async list(filtros?: ListarProdutoresFiltros): Promise<Produtor[]> {
     let items = Array.from(this.items.values());
 
@@ -37,6 +62,37 @@ export class InMemoryProdutorRepository
     return items.sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
+  }
+
+  async listLimited(
+    filtros: ListarProdutoresFiltros,
+    limit: number,
+  ): Promise<Produtor[]> {
+    const items = await this.list(filtros);
+    return items.slice(0, limit);
+  }
+
+  async sampleApproved(
+    excludeIds: string[],
+    size: number,
+  ): Promise<Produtor[]> {
+    if (size <= 0) {
+      return [];
+    }
+
+    const excluded = new Set(excludeIds);
+    const candidatos = (await this.list({ ativo: true, status: "APROVADO" }))
+      .filter((produtor) => !excluded.has(produtor.id));
+
+    const shuffled = [...candidatos];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      const current = shuffled[index];
+      shuffled[index] = shuffled[swapIndex];
+      shuffled[swapIndex] = current;
+    }
+
+    return shuffled.slice(0, size);
   }
 
   async findByDocumentoNumero(numero: string): Promise<Produtor | null> {
@@ -76,6 +132,11 @@ export class InMemoryProdutorRepository
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      historia: data.historia,
+      logo: data.logo,
+      fotos: data.fotos,
+      redesSociais: data.redesSociais,
+      ...(data.site !== undefined ? { site: data.site } : {}),
       ativo: data.ativo,
       status: data.status,
       destaque: data.destaque,
@@ -105,11 +166,21 @@ export class InMemoryProdutorRepository
           }
         : atual.contato,
       endereco: data.endereco ?? atual.endereco,
+      historia: data.historia ?? atual.historia,
+      logo: data.logo ?? atual.logo,
+      fotos: data.fotos ?? atual.fotos,
+      redesSociais: data.redesSociais ?? atual.redesSociais,
       ativo: data.ativo ?? atual.ativo,
       status: data.status ?? atual.status,
       destaque: data.destaque ?? atual.destaque,
       updatedAt: new Date(),
     };
+
+    if (data.site === null) {
+      delete atualizado.site;
+    } else if (data.site !== undefined) {
+      atualizado.site = data.site;
+    }
 
     if (data.motivoRejeicao === null) {
       delete atualizado.motivoRejeicao;
@@ -122,6 +193,10 @@ export class InMemoryProdutorRepository
 
   async softDelete(id: string): Promise<Produtor | null> {
     return this.update(id, { ativo: false });
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+    return this.items.delete(id);
   }
 
   clear(): void {

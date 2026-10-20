@@ -4,18 +4,22 @@ import { useLogin } from '../hooks/useLogin'
 
 interface LoginFormProps {
   onSuccess: () => void
+  requireAdmin?: boolean
 }
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm({ onSuccess, requireAdmin = false }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { authenticate, error, isLoading } = useLogin()
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const didLogin = await authenticate({ email, senha: password })
+    const usuario = await authenticate(
+      { email, senha: password },
+      { requireAdmin },
+    )
 
-    if (didLogin) {
+    if (usuario) {
       onSuccess()
     }
   }
@@ -32,7 +36,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600"
+          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary"
           placeholder="nome@amcg.com.br"
         />
       </label>
@@ -47,7 +51,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-600"
+          className="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary"
           placeholder="Digite sua senha"
         />
       </label>

@@ -1,16 +1,25 @@
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import type { Product } from '../types'
 
 interface ProductReviewCardProps {
   product: Product
   onSelect: (product: Product) => void
+  onToggleAtivo?: (id: string, ativo: boolean) => Promise<boolean>
+  isUpdating?: boolean
 }
 
 export function ProductReviewCard({
   product,
   onSelect,
+  onToggleAtivo,
+  isUpdating = false,
 }: ProductReviewCardProps) {
   const image = product.fotosDivulgacao[0]
+  const isApproved = product.status === 'APROVADO'
   let statusClasses = 'bg-amber-100 text-amber-800'
   let statusLabel = 'Pendente'
 
@@ -19,7 +28,7 @@ export function ProductReviewCard({
     statusLabel = 'Rejeitado'
   }
 
-  if (product.status === 'APROVADO') {
+  if (isApproved) {
     statusClasses = 'bg-green-100 text-green-800'
     statusLabel = 'Aprovado'
   }
@@ -28,13 +37,17 @@ export function ProductReviewCard({
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-brand-500 hover:shadow-md"
+      className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-success hover:shadow-md"
     >
       <div className="flex gap-4">
         {image ? (
           <img
-            src={image.url}
+            src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.avatar)}
             alt=""
+            width={96}
+            height={96}
+            loading="lazy"
+            decoding="async"
             className="h-24 w-24 rounded-lg bg-slate-100 object-cover"
           />
         ) : null}
@@ -46,8 +59,19 @@ export function ProductReviewCard({
             >
               {statusLabel}
             </span>
+            {isApproved ? (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  product.ativo
+                    ? 'bg-secondary-background text-primary-dark'
+                    : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                {product.ativo ? 'No catálogo' : 'Oculto'}
+              </span>
+            ) : null}
             {product.destaque ? (
-              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-800">
+              <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-primary-dark">
                 Destaque
               </span>
             ) : null}
@@ -75,6 +99,26 @@ export function ProductReviewCard({
               </dd>
             </div>
           </dl>
+
+          {isApproved && onToggleAtivo ? (
+            <label
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                role="switch"
+                checked={product.ativo}
+                disabled={isUpdating}
+                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                onChange={(event) => {
+                  void onToggleAtivo(product.id, event.target.checked)
+                }}
+              />
+              No catálogo
+            </label>
+          ) : null}
         </div>
       </div>
 
@@ -84,7 +128,7 @@ export function ProductReviewCard({
         </p>
       ) : null}
 
-      <p className="mt-4 border-t border-slate-200 pt-3 text-sm font-semibold text-brand-700">
+      <p className="mt-4 border-t border-slate-200 pt-3 text-sm font-semibold text-primary-darker">
         Clique para analisar o cadastro
       </p>
     </button>

@@ -6,8 +6,14 @@ import { InMemoryProdutorRepository } from "../../mocks/produtor.repository.mock
 
 const JWT_SECRET = "test-secret";
 
-function authHeader(sub = "user-1", email = "admin@amcg.org"): string {
-  const token = jwt.sign({ sub, email }, JWT_SECRET, { expiresIn: "1h" });
+function authHeader(
+  sub = "user-1",
+  email = "admin@amcg.org",
+  role: "admin" | "usuario" = "admin",
+): string {
+  const token = jwt.sign({ sub, email, role }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
   return `Bearer ${token}`;
 }
 
@@ -26,6 +32,19 @@ const payloadBase = {
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
+  logo: {
+    url: "https://cdn.example.com/logo.jpg",
+    contentType: "image/jpeg",
+    nomeOriginal: "logo.jpg",
+  },
+  fotos: [
+    {
+      url: "https://cdn.example.com/foto-1.jpg",
+      contentType: "image/jpeg",
+      nomeOriginal: "foto-1.jpg",
+    },
+  ],
 };
 
 describe("Quando usar o ProdutorController (integration)", () => {
@@ -54,6 +73,28 @@ describe("Quando usar o ProdutorController (integration)", () => {
     expect(criarSemToken.status).toBe(401);
   });
 
+  it("Deve permitir cadastro com role usuario e bloquear listagem administrativa", async () => {
+    const usuarioAuth = authHeader("user-comum", "usuario@amcg.org", "usuario");
+
+    const cadastrar = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", usuarioAuth)
+      .send(payloadBase);
+
+    expect(cadastrar.status).toBe(201);
+
+    const listar = await request(app)
+      .get("/api/produtores")
+      .set("Authorization", usuarioAuth);
+    expect(listar.status).toBe(403);
+
+    const aprovar = await request(app)
+      .put(`/api/produtores/${cadastrar.body.id}`)
+      .set("Authorization", usuarioAuth)
+      .send({ status: "APROVADO" });
+    expect(aprovar.status).toBe(403);
+  });
+
   it("Deve retornar a lista de UFs brasileiras", async () => {
     const response = await request(app)
       .get("/api/produtores/ufs")
@@ -77,6 +118,9 @@ describe("Quando usar o ProdutorController (integration)", () => {
       nomeEmpresa: "Fazenda Campos Gerais",
       status: "PENDENTE",
       ativo: true,
+      historia: payloadBase.historia,
+      logo: payloadBase.logo,
+      fotos: payloadBase.fotos,
     });
 
     const listar = await request(app)
@@ -127,6 +171,19 @@ describe("Quando usar o ProdutorController (integration)", () => {
           cidade: "",
           estado: "XX",
         },
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  it("Deve rejeitar cadastro sem fotos", async () => {
+    const response = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", authHeader())
+      .send({
+        ...payloadBase,
+        fotos: [],
       });
 
     expect(response.status).toBe(400);
@@ -189,5 +246,76 @@ describe("Quando usar o ProdutorController (integration)", () => {
     expect(rejeitar.status).toBe(200);
     expect(rejeitar.body.status).toBe("REJEITADO");
     expect(rejeitar.body.motivoRejeicao).toBe("Documentação incompleta");
+  });
+
+  it("Deve expor o catálogo público com perfil completo", async () => {
+    const auth = authHeader();
+
+    const cadastrar = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", auth)
+      .send({
+        ...payloadBase,
+        fotos: [
+          ...payloadBase.fotos,
+          {
+            url: "https://cdn.example.com/foto-2.jpg",
+            contentType: "image/png",
+            nomeOriginal: "foto-2.png",
+          },
+        ],
+        redesSociais: [
+          { tipo: "INSTAGRAM", handle: "@fazenda" },
+          { tipo: "FACEBOOK", handle: "fazenda.oficial" },
+        ],
+        site: "https://fazenda.example.com",
+      });
+
+    await request(app)
+      .put(`/api/produtores/${cadastrar.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    const catalogo = await request(app).get("/api/produtores/catalogo");
+    expect(catalogo.status).toBe(200);
+    expect(catalogo.body.produtores).toHaveLength(1);
+    expect(catalogo.body.produtores[0]).toMatchObject({
+      id: cadastrar.body.id,
+      nome: "Fazenda Campos Gerais",
+      historia: payloadBase.historia,
+      logo: payloadBase.logo,
+      endereco: {
+        bairro: "Centro",
+        cidade: "Ponta Grossa",
+        estado: "PR",
+      },
+      redesSociais: [
+        { tipo: "INSTAGRAM", handle: "@fazenda" },
+        { tipo: "FACEBOOK", handle: "fazenda.oficial" },
+      ],
+      site: "https://fazenda.example.com",
+    });
+    expect(catalogo.body.produtores[0].fotos).toHaveLength(2);
+
+    const detalhe = await request(app).get(
+      `/api/produtores/catalogo/${cadastrar.body.id}`,
+    );
+    expect(detalhe.status).toBe(200);
+    expect(detalhe.body.fotos).toHaveLength(2);
+  });
+
+  it("Deve retornar 404 no catálogo para produtor não aprovado", async () => {
+    const auth = authHeader();
+
+    const cadastrar = await request(app)
+      .post("/api/produtores")
+      .set("Authorization", auth)
+      .send(payloadBase);
+
+    const response = await request(app).get(
+      `/api/produtores/catalogo/${cadastrar.body.id}`,
+    );
+
+    expect(response.status).toBe(404);
   });
 });

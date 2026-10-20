@@ -49,4 +49,5 @@ export interface IProdutoRepositoryWrite {
   create(data: CreateProdutoData): Promise<Produto>;
   update(id: string, data: UpdateProdutoData): Promise<Produto | null>;
   softDelete(id: string): Promise<Produto | null>;
+  hardDelete(id: string): Promise<boolean>;
 }

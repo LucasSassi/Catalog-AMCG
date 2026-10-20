@@ -1,3 +1,4 @@
+import type { RoleUsuario } from "../usuario.constants";
 import type {
   AtualizarUsuarioInput,
   CadastrarUsuarioInput,
@@ -13,4 +14,9 @@ export interface IUsuarioService {
   getById(id: string): Promise<UsuarioPublico>;
   update(id: string, input: AtualizarUsuarioInput): Promise<UsuarioPublico>;
   remove(id: string): Promise<void>;
+  alterarRole(
+    actorId: string,
+    targetId: string,
+    role: RoleUsuario,
+  ): Promise<UsuarioPublico>;
 }

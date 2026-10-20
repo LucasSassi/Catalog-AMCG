@@ -7,7 +7,7 @@ export function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-[#f7faf7] px-4 py-10">
       <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary-darker">
           Área restrita
         </p>
         <h1 className="mt-2 text-2xl font-bold uppercase tracking-wide text-slate-900 sm:text-3xl">
@@ -17,7 +17,10 @@ export function LoginPage() {
           Entre com sua conta para avaliar e cadastrar produtores e produtos.
         </p>
 
-        <LoginForm onSuccess={() => navigate('/backoffice')} />
+        <LoginForm
+          requireAdmin
+          onSuccess={() => navigate('/backoffice')}
+        />
       </section>
     </main>
   )
