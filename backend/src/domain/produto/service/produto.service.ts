@@ -227,6 +227,7 @@ export class ProdutoService implements IProdutoService {
       registros: produto.registros.map((registro) => ({ tipo: registro.tipo })),
       premiacoes: produto.premiacoes.map((premiacao) => ({
         nome: premiacao.nome,
+        descricao: premiacao.descricao,
         ano: premiacao.ano,
       })),
       ...(produto.observacoes !== undefined
@@ -237,6 +238,7 @@ export class ProdutoService implements IProdutoService {
         temRegistroSim: produtor.registros.some(
           (registro) => registro.tipo === "SIM",
         ),
+        ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
       },
     };
   }

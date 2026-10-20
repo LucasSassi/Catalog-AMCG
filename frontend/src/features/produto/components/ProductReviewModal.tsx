@@ -1,6 +1,10 @@
 import { Button } from '../../../shared/components/Button'
 import { Modal } from '../../../shared/components/Modal'
 import { ReviewActions } from '../../../shared/components/ReviewActions'
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import type { Product } from '../types'
 
@@ -184,8 +188,12 @@ function PhotoGallery({
         {images.map((image, index) => (
           <figure key={`${image.url}-${index}`}>
             <img
-              src={image.url}
+              src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.card)}
               alt={`${title} de ${productName}`}
+              width={600}
+              height={600}
+              loading="lazy"
+              decoding="async"
               className="aspect-square w-full rounded-lg bg-slate-100 object-cover"
             />
             <figcaption className="mt-1 truncate text-xs text-slate-500">

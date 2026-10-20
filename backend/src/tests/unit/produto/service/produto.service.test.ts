@@ -235,6 +235,59 @@ describe("Quando usar o ProdutoService", () => {
     });
   });
 
+  describe("Quando buscar o detalhe do catálogo público", () => {
+    it("Deve retornar fotos, registros, SIM, logo do produtor e premiações sem comprovante", async () => {
+      const produto = await service.create(
+        buildInput(produtorAprovadoId, {
+          registros: [
+            { tipo: "MAPA", numero: "REG-MAPA-001" },
+            { tipo: "SIF", numero: "REG-SIF-001" },
+          ],
+          fotosDivulgacao: [
+            arquivoValido,
+            {
+              url: "https://example.com/foto-2.jpg",
+              contentType: "image/jpeg",
+              nomeOriginal: "foto-2.jpg",
+            },
+          ],
+          premiacoes: [
+            {
+              nome: "Prêmio Campos Gerais",
+              descricao: "Melhor mel artesanal da região",
+              ano: 2024,
+              comprovante: arquivoValido,
+            },
+          ],
+        }),
+      );
+      await service.update(produto.id, { status: "APROVADO" });
+
+      const detalhe = await service.getCatalogById(produto.id);
+
+      expect(detalhe.fotosDivulgacao).toHaveLength(2);
+      expect(detalhe.registros).toEqual([
+        { tipo: "MAPA" },
+        { tipo: "SIF" },
+      ]);
+      expect(detalhe.premiacoes).toEqual([
+        {
+          nome: "Prêmio Campos Gerais",
+          descricao: "Melhor mel artesanal da região",
+          ano: 2024,
+        },
+      ]);
+      expect(detalhe.premiacoes[0]).not.toHaveProperty("comprovante");
+      expect(detalhe.premiado).toBe(true);
+      expect(detalhe.produtor).toMatchObject({
+        nome: "Fazenda Campos Gerais",
+        municipio: "Ponta Grossa",
+        temRegistroSim: true,
+        logo: arquivoValido,
+      });
+    });
+  });
+
   describe("Quando listar produtos", () => {
     it("Deve filtrar por produtorId e categoria", async () => {
       await service.create(buildInput(produtorAprovadoId));

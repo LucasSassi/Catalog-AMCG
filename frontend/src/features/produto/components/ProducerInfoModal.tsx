@@ -7,8 +7,10 @@ import {
   formatSocialHandle,
 } from '../../produtor/lib/social-url'
 import type { ProducerFile } from '../../produtor/types'
+import logoPlaceholder from '../../../shared/assets/logo-catalogo-campos-gerais.png'
 import { Feedback } from '../../../shared/components/Feedback'
 import { Modal } from '../../../shared/components/Modal'
+import { WhatsAppIcon } from '../../../shared/components/WhatsAppIcon'
 import {
   buildThumbnailUrl,
   THUMBNAIL_WIDTH,
@@ -35,14 +37,18 @@ export function ProducerInfoModal({
     setThumbStartIndex(0)
   }, [producerId, producer?.id])
 
-  const fotos = producer?.fotos ?? []
-  const hasGallery = fotos.length > 0
-  const hasMultiplePhotos = fotos.length > 1
-  const mainPhoto = fotos[selectedPhotoIndex] ?? fotos[0]
+  const gallery = producer?.logo
+    ? [producer.logo, ...(producer.fotos ?? [])]
+    : (producer?.fotos ?? [])
+  const hasLogo = Boolean(producer?.logo)
+  const hasGallery = gallery.length > 0
+  const hasMultiplePhotos = gallery.length > 1
+  const mainPhoto = gallery[selectedPhotoIndex] ?? gallery[0]
+  const isLogoSelected = hasLogo && selectedPhotoIndex === 0
   const canScrollThumbsDown =
-    hasMultiplePhotos && thumbStartIndex + THUMBNAILS_VISIBLE < fotos.length
+    hasMultiplePhotos && thumbStartIndex + THUMBNAILS_VISIBLE < gallery.length
   const visibleThumbs = hasMultiplePhotos
-    ? fotos.slice(thumbStartIndex, thumbStartIndex + THUMBNAILS_VISIBLE)
+    ? gallery.slice(thumbStartIndex, thumbStartIndex + THUMBNAILS_VISIBLE)
     : []
 
   const whatsappUrl = producer
@@ -69,7 +75,7 @@ export function ProducerInfoModal({
     }
 
     setThumbStartIndex((current) =>
-      Math.min(current + 1, fotos.length - THUMBNAILS_VISIBLE),
+      Math.min(current + 1, gallery.length - THUMBNAILS_VISIBLE),
     )
   }
 
@@ -107,9 +113,31 @@ export function ProducerInfoModal({
             ) : null}
 
             <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-              <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">
-                {producer.municipio}
-              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">
+                  {producer.municipio}
+                </span>
+                <div className="ml-auto inline-flex h-16 min-w-[8.5rem] max-w-[11rem] items-center justify-center overflow-hidden rounded-md bg-slate-900 px-2">
+                  <img
+                    src={
+                      producer.logo
+                        ? buildThumbnailUrl(
+                            producer.logo.url,
+                            THUMBNAIL_WIDTH.gallery,
+                          )
+                        : logoPlaceholder
+                    }
+                    alt={
+                      producer.logo ? `Logo de ${producer.nome}` : ''
+                    }
+                    width={140}
+                    height={56}
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-14 w-full object-contain"
+                  />
+                </div>
+              </div>
 
               <dl className="mt-4 space-y-3 text-sm">
                 <ContactRow label="Endereço">
@@ -181,18 +209,28 @@ export function ProducerInfoModal({
                   hasMultiplePhotos ? 'flex-row' : ''
                 }`}
               >
-                <div className="min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100">
+                <div
+                  className={`min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 ${
+                    isLogoSelected ? 'p-6' : ''
+                  }`}
+                >
                   <img
                     src={buildThumbnailUrl(
                       mainPhoto.url,
                       THUMBNAIL_WIDTH.detail,
                     )}
-                    alt={`Foto de ${producer.nome}`}
+                    alt={
+                      isLogoSelected
+                        ? `Logo de ${producer.nome}`
+                        : `Foto de ${producer.nome}`
+                    }
                     width={900}
                     height={900}
                     loading="eager"
                     decoding="async"
-                    className="aspect-square w-full object-cover"
+                    className={`aspect-square w-full ${
+                      isLogoSelected ? 'object-contain' : 'object-cover'
+                    }`}
                   />
                 </div>
 
@@ -201,6 +239,7 @@ export function ProducerInfoModal({
                     <div className="flex w-full flex-col gap-2">
                       {visibleThumbs.map((photo, visibleIndex) => {
                         const absoluteIndex = thumbStartIndex + visibleIndex
+                        const isLogoThumb = hasLogo && absoluteIndex === 0
                         return (
                           <ThumbnailButton
                             key={`${photo.url}-${absoluteIndex}`}
@@ -209,13 +248,18 @@ export function ProducerInfoModal({
                             onSelect={() =>
                               setSelectedPhotoIndex(absoluteIndex)
                             }
-                            alt={`Miniatura ${absoluteIndex + 1} de ${producer.nome}`}
+                            alt={
+                              isLogoThumb
+                                ? `Logo de ${producer.nome}`
+                                : `Miniatura ${absoluteIndex + 1} de ${producer.nome}`
+                            }
+                            contain={isLogoThumb}
                           />
                         )
                       })}
                     </div>
 
-                    {fotos.length > THUMBNAILS_VISIBLE ? (
+                    {gallery.length > THUMBNAILS_VISIBLE ? (
                       <button
                         type="button"
                         onClick={handleScrollThumbs}
@@ -260,19 +304,21 @@ function ThumbnailButton({
   selected,
   onSelect,
   alt,
+  contain = false,
 }: {
   photo: ProducerFile
   selected: boolean
   onSelect: () => void
   alt: string
+  contain?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`aspect-square w-full overflow-hidden rounded-xl border-2 ${
+      className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-slate-100 ${
         selected ? 'border-primary' : 'border-transparent'
-      }`}
+      } ${contain ? 'p-1.5' : ''}`}
     >
       <img
         src={buildThumbnailUrl(photo.url, THUMBNAIL_WIDTH.gallery)}
@@ -281,7 +327,7 @@ function ThumbnailButton({
         height={96}
         loading="lazy"
         decoding="async"
-        className="h-full w-full object-cover"
+        className={`h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
       />
     </button>
   )
@@ -308,14 +354,6 @@ function MapPinIcon() {
     >
       <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z" />
       <circle cx="12" cy="11" r="2.2" />
-    </svg>
-  )
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-      <path d="M17.5 14.4c-.3-.1-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.8 1-.2.1-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.5-1-.9-1.5-1.9-1.7-2.2-.2-.3 0-.4.1-.6.1-.1.2-.3.3-.4.1-.1.1-.2.2-.4 0-.1 0-.3-.1-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.3c.1.2 1.6 2.5 3.9 3.4 1.4.6 1.9.6 2.6.5.4-.1 1.3-.5 1.5-1 .2-.5.2-.9.1-1 0-.1-.2-.2-.5-.3ZM12 2.1A9.9 9.9 0 0 0 2.1 12c0 1.7.5 3.4 1.3 4.9L2 22l5.2-1.4A9.9 9.9 0 1 0 12 2.1Zm0 18a8.1 8.1 0 0 1-4.1-1.1l-.3-.2-3.1.8.8-3-.2-.3A8.1 8.1 0 1 1 12 20.1Z" />
     </svg>
   )
 }

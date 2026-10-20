@@ -83,10 +83,11 @@ export interface CatalogProduct {
 export interface CatalogProductDetail extends CatalogProduct {
   fotosDivulgacao: ProductFile[]
   registros: Array<{ tipo: ProductRegistration['tipo'] }>
-  premiacoes: Array<{ nome: string; ano: number }>
+  premiacoes: Array<{ nome: string; descricao: string; ano: number }>
   observacoes?: string
   produtor: CatalogProduct['produtor'] & {
     temRegistroSim: boolean
+    logo?: ProductFile
   }
 }
 

@@ -1,3 +1,7 @@
+import {
+  buildThumbnailUrl,
+  THUMBNAIL_WIDTH,
+} from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import type { Product } from '../types'
 
@@ -33,8 +37,12 @@ export function ProductReviewCard({
       <div className="flex gap-4">
         {image ? (
           <img
-            src={image.url}
+            src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.avatar)}
             alt=""
+            width={96}
+            height={96}
+            loading="lazy"
+            decoding="async"
             className="h-24 w-24 rounded-lg bg-slate-100 object-cover"
           />
         ) : null}

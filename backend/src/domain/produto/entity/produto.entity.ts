@@ -145,10 +145,11 @@ export interface ProdutoCatalogo {
 export interface ProdutoCatalogoDetalhe extends ProdutoCatalogo {
   fotosDivulgacao: Arquivo[];
   registros: Array<{ tipo: RegistroProdutoTipo }>;
-  premiacoes: Array<{ nome: string; ano: number }>;
+  premiacoes: Array<{ nome: string; descricao: string; ano: number }>;
   observacoes?: string;
   produtor: ProdutoCatalogo["produtor"] & {
     temRegistroSim: boolean;
+    logo?: Arquivo;
   };
 }
 

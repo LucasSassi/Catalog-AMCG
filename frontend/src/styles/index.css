@@ -3,6 +3,7 @@
 @theme {
   /* Colors — semantic roles (aligned with design-token vocabulary) */
   --color-background: #f7faf7;
+  --color-background-secondary: #f5f0e8;
   --color-text: #1c2a20;
   --color-secondary-background: #eef8f1;
   --color-surface: #d7eddd;
