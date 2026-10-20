@@ -1,4 +1,10 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type RequestHandler,
+  type Response,
+} from "express";
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
@@ -10,6 +16,11 @@ import {
   createRequireAdmin,
   type AuthenticatedRequest,
 } from "../middleware/auth.middleware";
+import {
+  CADASTRAR_RATE_LIMIT,
+  createRateLimiter,
+  LOGIN_RATE_LIMIT,
+} from "../middleware/rate-limit.middleware";
 
 const cadastrarSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório"),
@@ -67,6 +78,8 @@ function getRouteId(request: Request): string {
 export interface CreateUsuarioControllerOptions {
   usuarioService: IUsuarioService;
   jwtSecret: string;
+  loginLimiter?: RequestHandler;
+  cadastrarLimiter?: RequestHandler;
 }
 
 export function createUsuarioController(
@@ -75,9 +88,14 @@ export function createUsuarioController(
   const router = Router();
   const { usuarioService, jwtSecret } = options;
   const requireAdmin = createRequireAdmin(jwtSecret);
+  const loginLimiter =
+    options.loginLimiter ?? createRateLimiter(LOGIN_RATE_LIMIT);
+  const cadastrarLimiter =
+    options.cadastrarLimiter ?? createRateLimiter(CADASTRAR_RATE_LIMIT);
 
   router.post(
     "/cadastrar",
+    cadastrarLimiter,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(cadastrarSchema, request.body);
@@ -91,6 +109,7 @@ export function createUsuarioController(
 
   router.post(
     "/login",
+    loginLimiter,
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(loginSchema, request.body);
