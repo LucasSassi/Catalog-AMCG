@@ -8,6 +8,7 @@ import { BackofficePage } from '../pages/backoffice/BackofficePage'
 import { LoginPage } from '../pages/backoffice/LoginPage'
 import { AboutPage } from '../pages/catalog/AboutPage'
 import { CatalogPage } from '../pages/catalog/CatalogPage'
+import { InscriptionPage } from '../pages/catalog/InscriptionPage'
 import { ProductDetailPage } from '../pages/catalog/ProductDetailPage'
 import { ProducersPage } from '../pages/catalog/ProducersPage'
 import { BackofficeLayout } from './BackofficeLayout'
@@ -35,6 +36,7 @@ export function AppRouter() {
           <Route path="quem-somos" element={<AboutPage />} />
           <Route path="produtores" element={<ProducersPage />} />
           <Route path="produtos/:id" element={<ProductDetailPage />} />
+          <Route path="inscricao" element={<InscriptionPage />} />
         </Route>
 
         <Route path="/backoffice/login" element={<LoginPage />} />

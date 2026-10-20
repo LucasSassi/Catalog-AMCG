@@ -1,3 +1,11 @@
+import type {
+  MeasurementUnit,
+  Product,
+  ProductAward,
+  ProductCategory,
+  ProductRegistration,
+} from '../produto/types'
+
 export type ProducerStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 
 export type SocialNetworkType = 'INSTAGRAM' | 'FACEBOOK'
@@ -94,4 +102,66 @@ export interface CreateProducerInput {
   fotos: ProducerFile[]
   redesSociais?: ProducerSocialNetwork[]
   site?: string
+}
+
+export type YesNoOption = 'Sim' | 'Não'
+
+export interface InscriptionProductDraft {
+  id: string
+  nome: string
+  categoria: ProductCategory
+  descricaoBreve: string
+  seloArte: YesNoOption | ''
+  numeroRegistro: string
+  descricaoCompleta: string
+  premiado: YesNoOption | ''
+  comprovantePremiacao?: ProducerFile
+  fotosAvaliacao: ProducerFile[]
+  fotosDivulgacao: ProducerFile[]
+  valorReais: string
+  outrasInformacoes: string
+}
+
+export interface InscriptionFormState {
+  municipio: string
+  logo?: ProducerFile
+  fotosDivulgacao: ProducerFile[]
+  nomeEmpresa: string
+  documentoNumero: string
+  tipoRegistro: 'SIM' | 'Outro' | ''
+  tipoRegistroOutro: string
+  numeroRegistro: string
+  cep: string
+  endereco: string
+  informarEnderecoNoSite: YesNoOption | ''
+  telefone: string
+  email: string
+  instagram: string
+  facebook: string
+  site: string
+  historia: string
+  produtos: InscriptionProductDraft[]
+}
+
+export interface CreateInscriptionProductInput {
+  nome: string
+  descricao: string
+  categoria: ProductCategory
+  unidadeMedida: MeasurementUnit
+  registros: ProductRegistration[]
+  fotosAvaliacao: ProducerFile[]
+  fotosDivulgacao: ProducerFile[]
+  premiacoes: ProductAward[]
+  valorCentavos: number
+  observacoes?: string
+}
+
+export interface CreateInscriptionInput {
+  produtor: CreateProducerInput
+  produtos: CreateInscriptionProductInput[]
+}
+
+export interface InscriptionResponse {
+  produtor: Producer
+  produtos: Product[]
 }

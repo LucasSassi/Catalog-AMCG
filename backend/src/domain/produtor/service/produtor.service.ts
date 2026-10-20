@@ -338,6 +338,20 @@ export class ProdutorService implements IProdutorService {
     }
   }
 
+  async hardRemove(id: string): Promise<void> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+
+    const removed = await this.writeRepository.hardDelete(id);
+
+    if (!removed) {
+      throw new NotFoundError("Produtor não encontrado");
+    }
+  }
+
   private toProdutorCatalogo(produtor: Produtor): ProdutorCatalogo {
     return {
       id: produtor.id,

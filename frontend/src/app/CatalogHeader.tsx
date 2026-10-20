@@ -10,14 +10,10 @@ import { BackToCatalogLink } from './BackToCatalogLink'
 
 const CATALOG_HOME_PATH = '/'
 
-interface CatalogHeaderProps {
-  onRegisterClick: () => void
-}
-
 const linkClassName =
   'block min-h-11 px-4 py-3 text-sm text-surface transition hover:text-accent-yellow-soft'
 
-export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
+export function CatalogHeader() {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const { pathname } = useLocation()
   const showBackLink = pathname !== CATALOG_HOME_PATH
@@ -41,7 +37,7 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
   ]
 
   const joinItems: NavDropdownItem[] = [
-    { label: 'Cadastrar', onClick: onRegisterClick },
+    { label: 'Cadastrar', to: '/inscricao' },
     { label: 'Dúvidas e Contato', to: '/quem-somos#contato' },
   ]
 
@@ -155,16 +151,13 @@ export function CatalogHeader({ onRegisterClick }: CatalogHeaderProps) {
             </Link>
           </MobileNavGroup>
           <MobileNavGroup label="Faça parte do Catálogo">
-            <button
-              type="button"
+            <Link
+              to="/inscricao"
               className={linkClassName}
-              onClick={() => {
-                onRegisterClick()
-                closeMobile()
-              }}
+              onClick={closeMobile}
             >
               Cadastrar
-            </button>
+            </Link>
             <Link
               to="/quem-somos#contato"
               className={linkClassName}

@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { type Express } from "express";
+import { createInscricaoController } from "./application/controllers/inscricao.controller";
 import { createProdutorController } from "./application/controllers/produtor.controller";
 import { createProdutoController } from "./application/controllers/produto.controller";
 import { createUsuarioController } from "./application/controllers/usuario.controller";
@@ -17,6 +18,8 @@ import { createUsuarioService } from "./configuration/factory/usuario.factory";
 import type { IProdutorService } from "./domain/produtor/entity/interfaces/produtor.service.interface";
 import type { IProdutoService } from "./domain/produto/entity/interfaces/produto.service.interface";
 import type { IUsuarioService } from "./domain/usuario/entity/interfaces/usuario.service.interface";
+
+const JSON_BODY_LIMIT = "10mb";
 
 export interface CreateAppRateLimits {
   login?: RateLimitPreset;
@@ -46,7 +49,7 @@ export function createApp(options: CreateAppOptions): Express {
   );
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.get("/api/health", (_request, response) => {
     response.json({ status: "ok" });
@@ -64,6 +67,15 @@ export function createApp(options: CreateAppOptions): Express {
       cadastrarLimiter: createRateLimiter(
         rateLimits.cadastrar ?? CADASTRAR_RATE_LIMIT,
       ),
+    }),
+  );
+
+  app.use(
+    "/api/inscricoes",
+    createInscricaoController({
+      produtorService,
+      produtoService,
+      jwtSecret: options.jwtSecret,
     }),
   );
 

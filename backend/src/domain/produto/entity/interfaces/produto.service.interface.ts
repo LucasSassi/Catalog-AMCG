@@ -13,6 +13,7 @@ import type {
 
 export interface IProdutoService {
   create(input: CadastrarProdutoInput): Promise<Produto>;
+  createForPendingProducer(input: CadastrarProdutoInput): Promise<Produto>;
   listCatalog(filtros?: CatalogoFiltros): Promise<CatalogoProdutos>;
   listDestaques(): Promise<CatalogoDestaquesProdutos>;
   listSimilares(
@@ -25,4 +26,5 @@ export interface IProdutoService {
   setDestaque(id: string, destaque: boolean): Promise<Produto>;
   setAtivo(id: string, ativo: boolean): Promise<Produto>;
   remove(id: string): Promise<void>;
+  hardRemove(id: string): Promise<void>;
 }

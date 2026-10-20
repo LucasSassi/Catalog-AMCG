@@ -53,4 +53,9 @@ export class ProdutoRepositoryWrite implements IProdutoRepositoryWrite {
 
     return document ? toProdutoEntity(document) : null;
   }
+
+  async hardDelete(id: string): Promise<boolean> {
+    const document = await ProdutoModel.findByIdAndDelete(id).exec();
+    return document !== null;
+  }
 }

@@ -70,7 +70,21 @@ export class ProdutoService implements IProdutoService {
   async create(input: CadastrarProdutoInput): Promise<Produto> {
     const produtorId = this.assertProdutorId(input.produtorId);
     await this.assertProdutorAprovado(produtorId);
+    return this.createPendingProduct(input, produtorId);
+  }
 
+  async createForPendingProducer(
+    input: CadastrarProdutoInput,
+  ): Promise<Produto> {
+    const produtorId = this.assertProdutorId(input.produtorId);
+    await this.assertProdutorAtivo(produtorId);
+    return this.createPendingProduct(input, produtorId);
+  }
+
+  private async createPendingProduct(
+    input: CadastrarProdutoInput,
+    produtorId: string,
+  ): Promise<Produto> {
     const nome = this.assertNome(input.nome);
     const descricao = this.assertDescricao(input.descricao);
     const categoria = this.assertCategoria(input.categoria);
@@ -479,7 +493,29 @@ export class ProdutoService implements IProdutoService {
     }
   }
 
+  async hardRemove(id: string): Promise<void> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const removed = await this.writeRepository.hardDelete(id);
+
+    if (!removed) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+  }
+
   private async assertProdutorAprovado(produtorId: string): Promise<void> {
+    const produtor = await this.assertProdutorAtivo(produtorId);
+
+    if (produtor.status !== "APROVADO") {
+      throw new ValidationError("Produtor deve estar aprovado");
+    }
+  }
+
+  private async assertProdutorAtivo(produtorId: string) {
     const produtor = await this.produtorReadRepository.findById(produtorId);
 
     if (!produtor) {
@@ -490,9 +526,7 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError("Produtor inativo");
     }
 
-    if (produtor.status !== "APROVADO") {
-      throw new ValidationError("Produtor deve estar aprovado");
-    }
+    return produtor;
   }
 
   private async assertRegistrosDisponiveis(numeros: string[]): Promise<void> {

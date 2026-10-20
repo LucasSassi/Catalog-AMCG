@@ -73,4 +73,9 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
 
     return document ? toProdutorEntity(document) : null;
   }
+
+  async hardDelete(id: string): Promise<boolean> {
+    const document = await ProdutorModel.findByIdAndDelete(id).exec();
+    return document !== null;
+  }
 }

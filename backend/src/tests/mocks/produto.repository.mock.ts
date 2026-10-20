@@ -204,6 +204,10 @@ export class InMemoryProdutoRepository
     return this.update(id, { ativo: false });
   }
 
+  async hardDelete(id: string): Promise<boolean> {
+    return this.items.delete(id);
+  }
+
   clear(): void {
     this.items.clear();
     this.sequence = 1;

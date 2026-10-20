@@ -50,3 +50,32 @@ export const SOCIAL_NETWORK_LABELS: Record<
   INSTAGRAM: 'Instagram',
   FACEBOOK: 'Facebook',
 }
+
+export const AMCG_MUNICIPIOS = [
+  'Arapoti',
+  'Carambeí',
+  'Castro',
+  'Curiúva',
+  'Imbaú',
+  'Ipiranga',
+  'Ivaí',
+  'Jaguariaíva',
+  'Ortigueira',
+  'Palmeira',
+  'Piraí do Sul',
+  'Porto Amazonas',
+  'Ponta Grossa',
+  'Reserva',
+  'São João do Triunfo',
+  'Sengés',
+  'Telêmaco Borba',
+  'Tibagi',
+  'Ventania',
+] as const
+
+export const COMPANY_REGISTRATION_TYPE_OPTIONS = [
+  'SIM',
+  'Outro',
+] as const
+
+export const YES_NO_OPTIONS = ['Sim', 'Não'] as const

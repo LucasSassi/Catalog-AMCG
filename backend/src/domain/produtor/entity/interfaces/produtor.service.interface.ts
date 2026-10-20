@@ -18,4 +18,5 @@ export interface IProdutorService {
   update(id: string, input: AtualizarProdutorInput): Promise<Produtor>;
   setDestaque(id: string, destaque: boolean): Promise<Produtor>;
   remove(id: string): Promise<void>;
+  hardRemove(id: string): Promise<void>;
 }

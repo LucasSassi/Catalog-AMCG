@@ -48,4 +48,5 @@ export interface IProdutorRepositoryWrite {
   create(data: CreateProdutorData): Promise<Produtor>;
   update(id: string, data: UpdateProdutorData): Promise<Produtor | null>;
   softDelete(id: string): Promise<Produtor | null>;
+  hardDelete(id: string): Promise<boolean>;
 }
