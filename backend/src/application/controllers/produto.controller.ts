@@ -162,6 +162,10 @@ const destaqueSchema = z.object({
   destaque: z.boolean(),
 });
 
+const ativoSchema = z.object({
+  ativo: z.boolean(),
+});
+
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
@@ -328,6 +332,23 @@ export function createProdutoController(
         const produto = await produtoService.setDestaque(
           getRouteId(request),
           body.destaque,
+        );
+        response.status(200).json(produto);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.patch(
+    "/:id/ativo",
+    requireAdmin,
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const body = parseOrThrow(ativoSchema, request.body);
+        const produto = await produtoService.setAtivo(
+          getRouteId(request),
+          body.ativo,
         );
         response.status(200).json(produto);
       } catch (error) {

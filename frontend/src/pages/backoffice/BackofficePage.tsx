@@ -63,7 +63,9 @@ export function BackofficePage() {
         status={reviewStatus}
         isLoading={products.isLoading}
         error={products.error}
+        isUpdating={products.isUpdating}
         onSelect={setSelectedProduct}
+        onToggleAtivo={products.toggleAtivo}
       />
     )
   }
@@ -156,6 +158,7 @@ export function BackofficePage() {
           onApprove={products.approve}
           onReject={products.reject}
           onToggleDestaque={products.toggleDestaque}
+          onToggleAtivo={products.toggleAtivo}
           onEdit={() => {
             setEditingProduct(
               products.products.find(

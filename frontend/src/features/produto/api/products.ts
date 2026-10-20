@@ -142,3 +142,11 @@ export function setProductDestaque(
     body: { destaque },
   })
 }
+
+export function setProductAtivo(id: string, ativo: boolean): Promise<Product> {
+  return apiRequest<Product>(`/api/produtos/${id}/ativo`, {
+    method: 'PATCH',
+    authenticated: true,
+    body: { ativo },
+  })
+}

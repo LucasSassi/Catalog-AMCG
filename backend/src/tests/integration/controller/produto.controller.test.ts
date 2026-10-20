@@ -328,4 +328,90 @@ describe("Quando usar o ProdutoController (integration)", () => {
     expect(aprovar.status).toBe(404);
     expect(rejeitar.status).toBe(404);
   });
+
+  it("Deve bloquear PATCH /ativo para role usuario", async () => {
+    const adminAuth = authHeader();
+    const usuarioAuth = authHeader("user-comum", "usuario@amcg.org", "usuario");
+
+    const cadastrar = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", adminAuth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    await request(app)
+      .put(`/api/produtos/${cadastrar.body.id}`)
+      .set("Authorization", adminAuth)
+      .send({ status: "APROVADO" });
+
+    const response = await request(app)
+      .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
+      .set("Authorization", usuarioAuth)
+      .send({ ativo: false });
+
+    expect(response.status).toBe(403);
+  });
+
+  it("Deve habilitar e desabilitar produto aprovado no catálogo", async () => {
+    const auth = authHeader();
+
+    const cadastrar = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    await request(app)
+      .put(`/api/produtos/${cadastrar.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    await request(app)
+      .patch(`/api/produtos/${cadastrar.body.id}/destaque`)
+      .set("Authorization", auth)
+      .send({ destaque: true });
+
+    const desativar = await request(app)
+      .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
+      .set("Authorization", auth)
+      .send({ ativo: false });
+
+    expect(desativar.status).toBe(200);
+    expect(desativar.body).toMatchObject({
+      ativo: false,
+      destaque: false,
+      status: "APROVADO",
+    });
+
+    const catalogoOculto = await request(app).get("/api/produtos/catalogo");
+    expect(catalogoOculto.status).toBe(200);
+    expect(catalogoOculto.body.produtos).toHaveLength(0);
+
+    const ativar = await request(app)
+      .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
+      .set("Authorization", auth)
+      .send({ ativo: true });
+
+    expect(ativar.status).toBe(200);
+    expect(ativar.body.ativo).toBe(true);
+
+    const catalogoVisivel = await request(app).get("/api/produtos/catalogo");
+    expect(catalogoVisivel.status).toBe(200);
+    expect(catalogoVisivel.body.produtos).toHaveLength(1);
+  });
+
+  it("Deve rejeitar PATCH /ativo para produto pendente", async () => {
+    const auth = authHeader();
+
+    const cadastrar = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    const response = await request(app)
+      .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
+      .set("Authorization", auth)
+      .send({ ativo: false });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toMatch(/aprovados/i);
+  });
 });

@@ -3,6 +3,7 @@ import {
   approveProduct,
   listProducts,
   rejectProduct,
+  setProductAtivo,
   setProductDestaque,
   type ProductListFilter,
 } from '../api/products'
@@ -84,6 +85,30 @@ export function useReviewProducts(status: ProductListFilter) {
     }
   }
 
+  async function toggleAtivo(id: string, ativo: boolean): Promise<boolean> {
+    setIsUpdating(true)
+    setError('')
+
+    try {
+      const updated = await setProductAtivo(id, ativo)
+      setProducts((currentProducts) =>
+        currentProducts.map((product) =>
+          product.id === id ? updated : product,
+        ),
+      )
+      return true
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setError(requestError.message)
+      } else {
+        setError('Não foi possível atualizar a visibilidade no catálogo.')
+      }
+      return false
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   async function updateProduct(
     request: () => Promise<Product>,
     id: string,
@@ -122,6 +147,7 @@ export function useReviewProducts(status: ProductListFilter) {
     approve,
     reject,
     toggleDestaque,
+    toggleAtivo,
     reload,
   }
 }

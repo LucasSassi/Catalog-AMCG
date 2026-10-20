@@ -278,6 +278,32 @@ export class ProdutoService implements IProdutoService {
     return atualizado;
   }
 
+  async setAtivo(id: string, ativo: boolean): Promise<Produto> {
+    const atual = await this.readRepository.findById(id);
+
+    if (!atual) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    if (atual.status !== "APROVADO") {
+      throw new ValidationError(
+        "Somente produtos aprovados podem ser habilitados no catálogo",
+      );
+    }
+
+    const data = ativo
+      ? { ativo: true }
+      : { ativo: false, destaque: false };
+
+    const atualizado = await this.writeRepository.update(id, data);
+
+    if (!atualizado) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    return atualizado;
+  }
+
   async list(filtros?: ListarProdutosFiltros): Promise<Produto[]> {
     if (filtros?.status !== undefined) {
       this.assertStatus(filtros.status);
