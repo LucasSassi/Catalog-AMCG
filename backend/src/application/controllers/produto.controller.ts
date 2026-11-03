@@ -158,6 +158,13 @@ const similaresQuerySchema = z.object({
   lastItemId: z.string().trim().min(1).optional(),
 });
 
+const doProdutorQuerySchema = z.object({
+  produtorId: z.string().trim().min(1, "Produtor é obrigatório"),
+  excludeId: z.string().trim().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(10).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
+});
+
 const destaqueSchema = z.object({
   destaque: z.boolean(),
 });
@@ -226,6 +233,19 @@ export function createProdutoController(
         const filtros = parseOrThrow(similaresQuerySchema, request.query);
         const similares = await produtoService.listSimilares(filtros);
         response.status(200).json(similares);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/do-produtor",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const filtros = parseOrThrow(doProdutorQuerySchema, request.query);
+        const produtos = await produtoService.listDoProdutor(filtros);
+        response.status(200).json(produtos);
       } catch (error) {
         next(error);
       }

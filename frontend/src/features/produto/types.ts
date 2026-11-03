@@ -128,6 +128,20 @@ export interface SimilarProductsResponse {
   hasNext: boolean
 }
 
+export interface ProducerProductsFilters {
+  produtorId: string
+  excludeId: string
+  pageSize?: number
+  lastItemId?: string
+}
+
+export interface ProducerProductsResponse {
+  produtos: CatalogProduct[]
+  pageSize: number
+  nextLastItemId: string | null
+  hasNext: boolean
+}
+
 export interface CreateProductInput {
   produtorId: string
   nome: string

@@ -102,11 +102,19 @@ export interface CatalogoSimilaresFiltros {
   lastItemId?: string;
 }
 
+export interface CatalogoDoProdutorFiltros {
+  produtorId: string;
+  excludeId?: string;
+  pageSize?: number;
+  lastItemId?: string;
+}
+
 export interface CatalogoCursorFiltros {
   busca?: string;
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  produtorId?: string;
   pageSize: number;
   lastItemId?: string;
   destaque?: boolean;
@@ -165,5 +173,9 @@ export interface CatalogoDestaquesProdutos {
 }
 
 export interface CatalogoSimilaresProdutos extends CatalogoCursorMeta {
+  produtos: ProdutoCatalogo[];
+}
+
+export interface CatalogoDoProdutorProdutos extends CatalogoCursorMeta {
   produtos: ProdutoCatalogo[];
 }

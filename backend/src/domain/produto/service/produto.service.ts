@@ -30,6 +30,8 @@ import type {
   Arquivo,
   AtualizarProdutoInput,
   CatalogoDestaquesProdutos,
+  CatalogoDoProdutorFiltros,
+  CatalogoDoProdutorProdutos,
   CatalogoFiltros,
   CatalogoProdutos,
   CatalogoSimilaresFiltros,
@@ -47,6 +49,8 @@ const CATALOG_DEFAULT_PAGE_SIZE = 12;
 const CATALOG_MAX_PAGE_SIZE = 12;
 const SIMILARES_DEFAULT_PAGE_SIZE = 10;
 const SIMILARES_MAX_PAGE_SIZE = 10;
+const DO_PRODUTOR_DEFAULT_PAGE_SIZE = 3;
+const DO_PRODUTOR_MAX_PAGE_SIZE = 10;
 import type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
 import type { IProdutoRepositoryWrite } from "../repository/produto.repository.write";
 
@@ -198,6 +202,34 @@ export class ProdutoService implements IProdutoService {
     const page = await this.readRepository.listCatalogCursor({
       pageSize,
       categoria,
+      ...(lastItemId !== undefined ? { lastItemId } : {}),
+      ...(excludeId ? { excludeIds: [excludeId] } : {}),
+    });
+
+    const produtos = await this.mapProdutosCatalogo(page.items);
+
+    return {
+      produtos,
+      pageSize,
+      nextLastItemId: page.nextLastItemId,
+      hasNext: page.nextLastItemId !== null,
+    };
+  }
+
+  async listDoProdutor(
+    filtros: CatalogoDoProdutorFiltros,
+  ): Promise<CatalogoDoProdutorProdutos> {
+    const produtorId = this.assertProdutorId(filtros.produtorId);
+    const pageSize = this.assertPageSize(
+      filtros.pageSize ?? DO_PRODUTOR_DEFAULT_PAGE_SIZE,
+      DO_PRODUTOR_MAX_PAGE_SIZE,
+    );
+    const lastItemId = this.normalizeOptionalId(filtros.lastItemId);
+    const excludeId = filtros.excludeId?.trim();
+
+    const page = await this.readRepository.listCatalogCursor({
+      pageSize,
+      produtorId,
       ...(lastItemId !== undefined ? { lastItemId } : {}),
       ...(excludeId ? { excludeIds: [excludeId] } : {}),
     });

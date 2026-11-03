@@ -4,6 +4,8 @@ import type {
   CatalogProductDetail,
   CreateProductInput,
   FeaturedProductsResponse,
+  ProducerProductsFilters,
+  ProducerProductsResponse,
   Product,
   ProductCatalog,
   ProductStatus,
@@ -75,6 +77,26 @@ export function listSimilarProducts(
 
   return apiRequest<SimilarProductsResponse>(
     `/api/produtos/catalogo/similares?${searchParams.toString()}`,
+  )
+}
+
+export function listProducerProducts(
+  filters: ProducerProductsFilters,
+): Promise<ProducerProductsResponse> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('produtorId', filters.produtorId)
+  searchParams.set('excludeId', filters.excludeId)
+
+  if (filters.pageSize !== undefined) {
+    searchParams.set('pageSize', String(filters.pageSize))
+  }
+
+  if (filters.lastItemId) {
+    searchParams.set('lastItemId', filters.lastItemId)
+  }
+
+  return apiRequest<ProducerProductsResponse>(
+    `/api/produtos/catalogo/do-produtor?${searchParams.toString()}`,
   )
 }
 

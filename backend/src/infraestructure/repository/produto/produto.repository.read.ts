@@ -63,6 +63,10 @@ function buildCatalogMatch(
     match.destaque = filtros.destaque;
   }
 
+  if (filtros.produtorId !== undefined) {
+    match.produtorId = filtros.produtorId;
+  }
+
   if (filtros.certificacao !== undefined && filtros.certificacao !== "SIM") {
     match["registros.tipo"] = filtros.certificacao;
   }

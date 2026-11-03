@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AwardSeal } from '../../features/produto/components/AwardSeal'
-import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
 import { SealBadge } from '../../features/produto/components/SealBadge'
 import { SimilarProductsCarousel } from '../../features/produto/components/SimilarProductsCarousel'
 import {
@@ -9,6 +8,7 @@ import {
   type SealInfoType,
 } from '../../features/produto/constants'
 import { useCatalogProduct } from '../../features/produto/hooks/useCatalogProduct'
+import { useProducerProducts } from '../../features/produto/hooks/useProducerProducts'
 import { useSimilarProducts } from '../../features/produto/hooks/useSimilarProducts'
 import { buildProductWhatsAppUrl } from '../../features/produto/lib/whatsapp'
 import logoPlaceholder from '../../shared/assets/logo-catalogo-campos-gerais.png'
@@ -28,7 +28,7 @@ export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { product, isLoading, error } = useCatalogProduct(id)
   const similares = useSimilarProducts(product?.categoria, product?.id)
-  const [isProducerOpen, setIsProducerOpen] = useState(false)
+  const doProdutor = useProducerProducts(product?.produtor.id, product?.id)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
 
   useEffect(() => {
@@ -179,10 +179,9 @@ export function ProductDetailPage() {
                       ) : null}
                     </div>
 
-                    <button
-                      type="button"
+                    <Link
+                      to={`/produtores/${product.produtor.id}`}
                       aria-label={`Ver informações do produtor ${product.produtor.nome}`}
-                      onClick={() => setIsProducerOpen(true)}
                       className="ml-auto inline-flex h-36 w-44 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 px-2 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                       <img
@@ -201,7 +200,7 @@ export function ProductDetailPage() {
                         decoding="async"
                         className="h-full w-full object-contain"
                       />
-                    </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -223,12 +222,29 @@ export function ProductDetailPage() {
         </div>
 
         <SimilarProductsCarousel
+          title="Produtos similares"
+          previousLabel="Página anterior de produtos similares"
+          nextLabel="Próxima página de produtos similares"
+          loadingLabel="Carregando produtos similares..."
           products={similares.products}
           hasPrevious={similares.hasPrevious}
           hasNext={similares.hasNext}
           onPrevious={similares.goToPreviousPage}
           onNext={similares.goToNextPage}
           isLoading={similares.isLoading}
+        />
+
+        <SimilarProductsCarousel
+          title="Outros produtos do produtor"
+          previousLabel="Página anterior de produtos do produtor"
+          nextLabel="Próxima página de produtos do produtor"
+          loadingLabel="Carregando produtos do produtor..."
+          products={doProdutor.products}
+          hasPrevious={doProdutor.hasPrevious}
+          hasNext={doProdutor.hasNext}
+          onPrevious={doProdutor.goToPreviousPage}
+          onNext={doProdutor.goToNextPage}
+          isLoading={doProdutor.isLoading}
         />
 
         <div className="mt-6 text-center">
@@ -240,13 +256,6 @@ export function ProductDetailPage() {
           </Link>
         </div>
       </div>
-
-      {isProducerOpen ? (
-        <ProducerInfoModal
-          producerId={product.produtor.id}
-          onClose={() => setIsProducerOpen(false)}
-        />
-      ) : null}
     </main>
   )
 }

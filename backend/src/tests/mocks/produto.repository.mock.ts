@@ -59,6 +59,9 @@ export class InMemoryProdutoRepository
         ? { categoria: filtros.categoria }
         : {}),
       ...(filtros.destaque !== undefined ? { destaque: filtros.destaque } : {}),
+      ...(filtros.produtorId !== undefined
+        ? { produtorId: filtros.produtorId }
+        : {}),
     });
 
     items = items.filter((produto) => produto.fotosDivulgacao.length > 0);

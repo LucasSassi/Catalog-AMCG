@@ -288,6 +288,72 @@ describe("Quando usar o ProdutoService", () => {
     });
   });
 
+  describe("Quando listar produtos do produtor no catálogo público", () => {
+    it("Deve retornar apenas produtos aprovados do produtor, excluir o id informado e paginar de 3", async () => {
+      const outrosProdutor = await produtorService.create(
+        buildProdutorInput({
+          nomeEmpresa: "Outra Fazenda",
+          documento: { tipo: "CNPJ", numero: "98765432000188" },
+          registros: [{ tipo: "SIM", numero: "REG-OUTRO-001" }],
+          contato: {
+            telefone: "+5542888888888",
+            email: "outra@fazenda.com",
+          },
+        }),
+      );
+      await produtorService.update(outrosProdutor.id, { status: "APROVADO" });
+
+      const produtosDoProdutor = [];
+      for (let index = 1; index <= 5; index += 1) {
+        const produto = await service.create(
+          buildInput(produtorAprovadoId, {
+            nome: `Produto ${index}`,
+            registros: [{ tipo: "SELO ARTE", numero: `REG-DO-PROD-${index}` }],
+          }),
+        );
+        await service.update(produto.id, { status: "APROVADO" });
+        produtosDoProdutor.push(produto);
+      }
+
+      const pendente = await service.create(
+        buildInput(produtorAprovadoId, {
+          nome: "Produto Pendente",
+          registros: [{ tipo: "SELO ARTE", numero: "REG-DO-PROD-PENDENTE" }],
+        }),
+      );
+
+      const deOutro = await service.create(
+        buildInput(outrosProdutor.id, {
+          nome: "Produto de Outro",
+          registros: [{ tipo: "SELO ARTE", numero: "REG-OUTRO-PROD-001" }],
+        }),
+      );
+      await service.update(deOutro.id, { status: "APROVADO" });
+
+      const excludeId = produtosDoProdutor[0].id;
+      const pagina = await service.listDoProdutor({
+        produtorId: produtorAprovadoId,
+        excludeId,
+        pageSize: 3,
+      });
+
+      expect(pagina.pageSize).toBe(3);
+      expect(pagina.produtos).toHaveLength(3);
+      expect(pagina.hasNext).toBe(true);
+      expect(
+        pagina.produtos.every(
+          (produto) =>
+            produto.produtor.id === produtorAprovadoId &&
+            produto.id !== excludeId &&
+            produto.id !== pendente.id,
+        ),
+      ).toBe(true);
+      expect(
+        pagina.produtos.some((produto) => produto.id === deOutro.id),
+      ).toBe(false);
+    });
+  });
+
   describe("Quando listar produtos", () => {
     it("Deve filtrar por produtorId e categoria", async () => {
       await service.create(buildInput(produtorAprovadoId));

@@ -20,7 +20,7 @@ export function FeaturedProducersStrip({
         return (
           <Link
             key={producer.id}
-            to="/produtores"
+            to={`/produtores/${producer.id}`}
             className="flex min-w-[80%] snap-start items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-w-0"
           >
             <img

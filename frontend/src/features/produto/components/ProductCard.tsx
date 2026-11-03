@@ -18,36 +18,44 @@ export function ProductCard({ product }: ProductCardProps) {
     PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
 
   return (
-    <article className="[contain-intrinsic-size:auto_360px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_480px]">
+    <article
+      className={
+        product.premiado
+          ? undefined
+          : '[contain-intrinsic-size:auto_360px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_480px]'
+      }
+    >
       <Link
         to={`/produtos/${product.id}`}
         className="group flex h-full w-full flex-col rounded-2xl border border-slate-300 bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-3xl sm:p-3"
       >
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 sm:rounded-2xl">
-          <img
-            src={buildThumbnailUrl(
-              product.fotoDivulgacao.url,
-              THUMBNAIL_WIDTH.card,
-            )}
-            alt={product.nome}
-            width={600}
-            height={600}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-          />
-          <span className="absolute left-2 top-2 rounded-full bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-primary-darker shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
-            {categoryLabel}
-          </span>
+        <div className="relative">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 sm:rounded-2xl">
+            <img
+              src={buildThumbnailUrl(
+                product.fotoDivulgacao.url,
+                THUMBNAIL_WIDTH.card,
+              )}
+              alt={product.nome}
+              width={600}
+              height={600}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            />
+            <span className="absolute left-2 top-2 rounded-full bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-primary-darker shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
+              {categoryLabel}
+            </span>
+          </div>
           {product.premiado ? (
             <img
               src={premiadoBadge}
               alt="Produto premiado"
-              width={40}
-              height={40}
+              width={64}
+              height={64}
               loading="lazy"
               decoding="async"
-              className="absolute right-1.5 top-1.5 h-8 w-8 object-contain drop-shadow sm:right-2 sm:top-2 sm:h-10 sm:w-10"
+              className="absolute -right-4 -top-4 z-10 h-12 w-12 object-contain drop-shadow sm:-right-5 sm:-top-5 sm:h-16 sm:w-16"
             />
           ) : null}
         </div>

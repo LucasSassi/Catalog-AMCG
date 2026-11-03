@@ -414,4 +414,58 @@ describe("Quando usar o ProdutoController (integration)", () => {
     expect(response.status).toBe(400);
     expect(response.body.error).toMatch(/aprovados/i);
   });
+
+  it("Deve listar produtos do produtor no catálogo público", async () => {
+    const auth = authHeader();
+
+    const primeiro = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    const segundo = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send({
+        ...buildProdutoPayload(produtorAprovadoId),
+        nome: "Mel Floral",
+        registros: [{ tipo: "SELO ARTE", numero: "REG-PROD-002" }],
+      });
+
+    await request(app)
+      .put(`/api/produtos/${primeiro.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    await request(app)
+      .put(`/api/produtos/${segundo.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO" });
+
+    const response = await request(app)
+      .get("/api/produtos/catalogo/do-produtor")
+      .query({
+        produtorId: produtorAprovadoId,
+        excludeId: primeiro.body.id,
+        pageSize: 3,
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.pageSize).toBe(3);
+    expect(response.body.produtos).toHaveLength(1);
+    expect(response.body.produtos[0]).toMatchObject({
+      id: segundo.body.id,
+      nome: "Mel Floral",
+      produtor: { id: produtorAprovadoId },
+    });
+    expect(response.body.hasNext).toBe(false);
+  });
+
+  it("Deve rejeitar listagem do produtor sem produtorId", async () => {
+    const response = await request(app).get(
+      "/api/produtos/catalogo/do-produtor",
+    );
+
+    expect(response.status).toBe(400);
+  });
 });
