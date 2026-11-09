@@ -71,9 +71,9 @@ export function ProductDetailPage() {
   const sealTypes = [
     ...new Set<SealInfoType>([
       ...(product.produtor.temRegistroSim ? (['SIM'] as const) : []),
-      ...product.registros
-        .map((registro) => registro.tipo)
-        .filter(isSealInfoType),
+      ...product.registros.flatMap((registro) =>
+        isSealInfoType(registro.tipo) ? [registro.tipo] : [],
+      ),
     ]),
   ]
   const otherRegistros = product.registros.filter(
