@@ -46,6 +46,8 @@ Layered: controller → service → repository contract → Mongo implementation
 
 Key domain rules (in services): producers and products have `status` (`PENDENTE` → `APROVADO`/`REJEITADO`) set by admin curation, plus `ativo` (admin can hide an approved item from the catalog) and `destaque` (featured, capped by `MAX_DESTAQUES`). Only `ativo && APROVADO` items — whose producer is also `ativo && APROVADO` — appear in public `/catalogo` endpoints. Deactivating clears `destaque`.
 
+Banners (`domain/banner`, `/api/banners`) control the catalog carousel: admin CRUD, `ativo` (capped by `MAX_BANNERS_ATIVOS`), `ordem` (`PUT /api/banners/ordem`) and optional `inicioEm`/`fimEm`. Images are stored as data URLs but the public `/catalogo` endpoint returns `/api/banners/:id/imagem?v=…` URLs that stream the decoded bytes with long cache headers.
+
 Files (logos, photos, comprovantes) are sent as JSON `{ url, contentType, nomeOriginal }` where `url` is a base64 data URL (frontend caps files at 700 KB; backend JSON body limit is 10 MB). There is no separate upload service.
 
 ### Tests
@@ -58,8 +60,8 @@ Files (logos, photos, comprovantes) are sent as JSON `{ url, contentType, nomeOr
 
 Feature-based: `pages/` (route composition) → `features/<contexto>/hooks` (loading/error state) → `features/<contexto>/api` (typed HTTP calls) → `shared/api/client.ts` (`apiRequest`). Pages should not call `fetch` directly; business rules stay in the backend.
 
-- Features: `produto`, `produtor`, `auth` (covers backend `usuario`). Each has `api/`, `components/`, `hooks/`, `lib/`, `types.ts` (API DTOs, not backend entities). Catalog and backoffice share the same features; only pages differ.
-- Routes (`app/router.tsx`): public under `CatalogLayout` (`/`, `/produtores`, `/produtores/:id`, `/produtos/:id`, `/inscricao`, `/quem-somos`); `/backoffice/login`; `/backoffice` behind auth.
+- Features: `produto`, `produtor`, `banner`, `auth` (covers backend `usuario`). Each has `api/`, `components/`, `hooks/`, `lib/`, `types.ts` (API DTOs, not backend entities). Catalog and backoffice share the same features; only pages differ.
+- Routes (`app/router.tsx`): public under `CatalogLayout` (`/`, `/produtores`, `/produtores/:id`, `/produtos/:id`, `/inscricao`, `/quem-somos`); `/backoffice/login`; `/backoffice` behind auth (`produtores`, `produtos`, `destaques`, `banners`). `BackofficeLayout` loads producers/products once and shares them plus undo-able actions via Outlet context (`useBackofficeData`).
 - Auth: JWT stored in `localStorage` (`shared/api/auth-token.ts`); `apiRequest(path, { authenticated: true })` attaches it and on 401 clears it and redirects to `/backoffice/login`. API errors surface as `ApiError` with `status`.
 - Vite proxies `/api` to the backend in dev; Nginx does it in the packaged build. Styling is Tailwind v4 utilities with `@theme` tokens (no `tailwind.config.js`).
 
