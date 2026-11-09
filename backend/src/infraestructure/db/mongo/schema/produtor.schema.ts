@@ -25,12 +25,15 @@ export interface DocumentoDocument {
 
 export interface RegistroProdutorDocument {
   tipo: RegistroProdutorTipo;
+  tipoOutros?: string;
   numero: string;
   dataEmissao?: Date;
   dataValidade?: Date;
 }
 
 export interface EnderecoDocument {
+  /** Opcional em documentos antigos, cadastrados antes do CEP ser exigido. */
+  cep?: string;
   rua: string;
   bairro: string;
   cidade: string;
@@ -55,6 +58,7 @@ export interface ProdutorDocument {
   registros: RegistroProdutorDocument[];
   contato: ContatoDocument;
   endereco: EnderecoDocument;
+  exibirEndereco?: boolean;
   historia: string;
   logo?: ArquivoDocument;
   fotos: ArquivoDocument[];
@@ -89,6 +93,7 @@ const documentoSchema = new Schema<DocumentoDocument>(
 const registroProdutorSchema = new Schema<RegistroProdutorDocument>(
   {
     tipo: { type: String, required: true, enum: REGISTRO_PRODUTOR_TIPO },
+    tipoOutros: { type: String, trim: true },
     numero: { type: String, required: true, trim: true },
     dataEmissao: { type: Date },
     dataValidade: { type: Date },
@@ -98,6 +103,7 @@ const registroProdutorSchema = new Schema<RegistroProdutorDocument>(
 
 const enderecoSchema = new Schema<EnderecoDocument>(
   {
+    cep: { type: String, trim: true },
     rua: { type: String, required: true, trim: true },
     bairro: { type: String, required: true, trim: true },
     cidade: { type: String, required: true, trim: true },
@@ -131,6 +137,7 @@ export const produtorSchema = new Schema<ProdutorDocument>(
     registros: { type: [registroProdutorSchema], default: [] },
     contato: { type: contatoSchema, required: true },
     endereco: { type: enderecoSchema, required: true },
+    exibirEndereco: { type: Boolean, required: true, default: false },
     historia: { type: String, required: true, trim: true, default: "" },
     logo: { type: arquivoSchema },
     fotos: { type: [arquivoSchema], default: [] },

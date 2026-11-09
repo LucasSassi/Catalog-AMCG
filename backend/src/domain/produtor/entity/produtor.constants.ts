@@ -6,7 +6,15 @@ export type StatusProdutor = (typeof STATUS_PRODUTOR)[number];
 export const TIPO_DOCUMENTO = ["CNPJ", "CPF", "CAD_PRO"] as const;
 export type TipoDocumento = (typeof TIPO_DOCUMENTO)[number];
 
-export const REGISTRO_PRODUTOR_TIPO = ["SIM"] as const;
+export const REGISTRO_PRODUTOR_TIPO = [
+  "SIM",
+  "SUSAF",
+  "SIF",
+  "SELO ARTE",
+  "MAPA",
+  "VIGILÂNCIA SANITÁRIA",
+  "Outro",
+] as const;
 export type RegistroProdutorTipo = (typeof REGISTRO_PRODUTOR_TIPO)[number];
 
 export const MAX_DESTAQUES = 3;
@@ -51,6 +59,8 @@ export function listUfsBrasil(): readonly UfBrasil[] {
 }
 
 export const E164_PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
+
+export const CEP_LENGTH = 8;
 
 export const CPF_LENGTH = 11;
 export const CNPJ_LENGTH = 14;

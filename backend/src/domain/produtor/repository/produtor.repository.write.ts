@@ -16,6 +16,7 @@ export interface CreateProdutorData {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  exibirEndereco: boolean;
   historia: string;
   logo: Arquivo;
   fotos: Arquivo[];
@@ -33,6 +34,7 @@ export interface UpdateProdutorData {
   registros?: RegistroProdutor[];
   contato?: Contato;
   endereco?: Endereco;
+  exibirEndereco?: boolean;
   historia?: string;
   logo?: Arquivo;
   fotos?: Arquivo[];

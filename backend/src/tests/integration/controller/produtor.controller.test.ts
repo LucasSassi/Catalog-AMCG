@@ -27,11 +27,13 @@ const payloadBase = {
     email: "contato@fazenda.com",
   },
   endereco: {
+    cep: "84010000",
     rua: "Rua das Flores",
     bairro: "Centro",
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  exibirEndereco: true,
   historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
   logo: {
     url: "https://cdn.example.com/logo.jpg",
@@ -166,6 +168,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
         registros: [],
         contato: { telefone: "123", email: "invalido" },
         endereco: {
+          cep: "84010000",
           rua: "",
           bairro: "",
           cidade: "",

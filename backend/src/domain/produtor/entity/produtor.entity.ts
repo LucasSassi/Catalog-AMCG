@@ -18,12 +18,14 @@ export interface Documento {
 
 export interface RegistroProdutor {
   tipo: RegistroProdutorTipo;
+  tipoOutros?: string;
   numero: string;
   dataEmissao?: Date;
   dataValidade?: Date;
 }
 
 export interface Endereco {
+  cep: string;
   rua: string;
   bairro: string;
   cidade: string;
@@ -42,6 +44,8 @@ export interface RedeSocialItem {
 }
 
 export interface EnderecoCatalogo {
+  cep: string;
+  rua: string;
   bairro: string;
   cidade: string;
   estado: UfBrasil;
@@ -55,6 +59,7 @@ export interface Produtor {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  exibirEndereco: boolean;
   historia: string;
   logo?: Arquivo;
   fotos: Arquivo[];
@@ -77,7 +82,7 @@ export interface ProdutorCatalogo {
   historia: string;
   logo?: Arquivo;
   fotos: Arquivo[];
-  endereco: EnderecoCatalogo;
+  endereco?: EnderecoCatalogo;
   redesSociais: RedeSocialItem[];
   site?: string;
 }
@@ -97,6 +102,7 @@ export interface CadastrarProdutorInput {
   registros: RegistroProdutor[];
   contato: Contato;
   endereco: Endereco;
+  exibirEndereco: boolean;
   historia: string;
   logo: Arquivo;
   fotos: Arquivo[];
@@ -111,6 +117,7 @@ export interface AtualizarProdutorInput {
   registros?: RegistroProdutor[];
   contato?: Contato;
   endereco?: Endereco;
+  exibirEndereco?: boolean;
   historia?: string;
   logo?: Arquivo;
   fotos?: Arquivo[];

@@ -2,6 +2,7 @@ import { Router, type NextFunction, type Request, type Response } from "express"
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
+  CEP_LENGTH,
   E164_PHONE_REGEX,
   MAX_FOTOS,
   MAX_HISTORIA_LENGTH,
@@ -25,12 +26,23 @@ const documentoSchema = z.object({
   numero: z.string().trim().min(1, "Número do documento é obrigatório"),
 });
 
-const registroSchema = z.object({
-  tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
-  numero: z.string().trim().min(1, "Número do registro é obrigatório"),
-  dataEmissao: z.coerce.date().optional(),
-  dataValidade: z.coerce.date().optional(),
-});
+const registroSchema = z
+  .object({
+    tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
+    tipoOutros: z.string().trim().optional(),
+    numero: z.string().trim().min(1, "Número do registro é obrigatório"),
+    dataEmissao: z.coerce.date().optional(),
+    dataValidade: z.coerce.date().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "Outro" && !data.tipoOutros?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe qual é o tipo de registro quando o tipo for Outro",
+        path: ["tipoOutros"],
+      });
+    }
+  });
 
 const contatoSchema = z.object({
   telefone: z
@@ -41,6 +53,13 @@ const contatoSchema = z.object({
 });
 
 const enderecoSchema = z.object({
+  cep: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === CEP_LENGTH, {
+      message: `CEP deve ter ${CEP_LENGTH} dígitos`,
+    }),
   rua: z.string().trim().min(1, "Rua é obrigatória"),
   bairro: z.string().trim().min(1, "Bairro é obrigatório"),
   cidade: z.string().trim().min(1, "Cidade é obrigatória"),
@@ -105,6 +124,9 @@ const cadastrarSchema = z.object({
   registros: z.array(registroSchema).min(1, "Ao menos um registro é obrigatório"),
   contato: contatoSchema,
   endereco: enderecoSchema,
+  exibirEndereco: z.boolean({
+    error: "Informe se o endereço deve ser exibido no site",
+  }),
   historia: historiaSchema,
   logo: arquivoSchema,
   fotos: fotosSchema,
@@ -127,6 +149,7 @@ const atualizarSchema = z
       .optional(),
     contato: contatoSchema.optional(),
     endereco: enderecoSchema.optional(),
+    exibirEndereco: z.boolean().optional(),
     historia: historiaSchema.optional(),
     logo: arquivoSchema.optional(),
     fotos: fotosSchema.optional(),
@@ -154,6 +177,7 @@ const atualizarSchema = z
       data.registros !== undefined ||
       data.contato !== undefined ||
       data.endereco !== undefined ||
+      data.exibirEndereco !== undefined ||
       data.historia !== undefined ||
       data.logo !== undefined ||
       data.fotos !== undefined ||

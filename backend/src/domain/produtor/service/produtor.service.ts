@@ -4,6 +4,7 @@ import {
   ValidationError,
 } from "../../common/errors/app-error";
 import {
+  CEP_LENGTH,
   CNPJ_LENGTH,
   CONTENT_TYPES_IMAGEM,
   CPF_LENGTH,
@@ -63,6 +64,7 @@ export class ProdutorService implements IProdutorService {
     const registros = this.normalizeRegistros(input.registros);
     const contato = this.normalizeContato(input.contato);
     const endereco = this.normalizeEndereco(input.endereco);
+    const exibirEndereco = this.assertExibirEndereco(input.exibirEndereco);
     const historia = this.assertHistoria(input.historia);
     const logo = this.normalizeArquivo(input.logo);
     const fotos = this.normalizeFotos(input.fotos);
@@ -79,6 +81,7 @@ export class ProdutorService implements IProdutorService {
       registros,
       contato,
       endereco,
+      exibirEndereco,
       historia,
       logo,
       fotos,
@@ -201,6 +204,7 @@ export class ProdutorService implements IProdutorService {
       input.registros === undefined &&
       input.contato === undefined &&
       input.endereco === undefined &&
+      input.exibirEndereco === undefined &&
       input.historia === undefined &&
       input.logo === undefined &&
       input.fotos === undefined &&
@@ -225,6 +229,7 @@ export class ProdutorService implements IProdutorService {
       registros?: RegistroProdutor[];
       contato?: Contato;
       endereco?: Endereco;
+      exibirEndereco?: boolean;
       historia?: string;
       logo?: Arquivo;
       fotos?: Arquivo[];
@@ -266,6 +271,10 @@ export class ProdutorService implements IProdutorService {
 
     if (input.endereco !== undefined) {
       data.endereco = this.normalizeEndereco(input.endereco);
+    }
+
+    if (input.exibirEndereco !== undefined) {
+      data.exibirEndereco = this.assertExibirEndereco(input.exibirEndereco);
     }
 
     if (input.historia !== undefined) {
@@ -362,11 +371,17 @@ export class ProdutorService implements IProdutorService {
       historia: produtor.historia,
       ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
       fotos: produtor.fotos,
-      endereco: {
-        bairro: produtor.endereco.bairro,
-        cidade: produtor.endereco.cidade,
-        estado: produtor.endereco.estado,
-      },
+      ...(produtor.exibirEndereco
+        ? {
+            endereco: {
+              cep: produtor.endereco.cep,
+              rua: produtor.endereco.rua,
+              bairro: produtor.endereco.bairro,
+              cidade: produtor.endereco.cidade,
+              estado: produtor.endereco.estado,
+            },
+          }
+        : {}),
       redesSociais: produtor.redesSociais,
       ...(produtor.site !== undefined ? { site: produtor.site } : {}),
     };
@@ -573,8 +588,16 @@ export class ProdutorService implements IProdutorService {
       throw new ValidationError("Número do registro é obrigatório");
     }
 
+    const tipoOutros = registro.tipoOutros?.trim();
+    if (registro.tipo === "Outro" && !tipoOutros) {
+      throw new ValidationError(
+        "Informe qual é o tipo de registro quando o tipo for Outro",
+      );
+    }
+
     return {
       tipo: registro.tipo as RegistroProdutorTipo,
+      ...(registro.tipo === "Outro" && tipoOutros ? { tipoOutros } : {}),
       numero,
       ...(registro.dataEmissao !== undefined
         ? { dataEmissao: registro.dataEmissao }
@@ -601,12 +624,25 @@ export class ProdutorService implements IProdutorService {
     return { telefone, email };
   }
 
+  private assertExibirEndereco(exibirEndereco: boolean): boolean {
+    if (typeof exibirEndereco !== "boolean") {
+      throw new ValidationError(
+        "Informe se o endereço deve ser exibido no site",
+      );
+    }
+    return exibirEndereco;
+  }
+
   private normalizeEndereco(endereco: Endereco): Endereco {
+    const cep = (endereco.cep ?? "").replace(/\D/g, "");
     const rua = endereco.rua.trim();
     const bairro = endereco.bairro.trim();
     const cidade = endereco.cidade.trim();
     const estado = endereco.estado;
 
+    if (cep.length !== CEP_LENGTH) {
+      throw new ValidationError(`CEP deve ter ${CEP_LENGTH} dígitos`);
+    }
     if (!rua) {
       throw new ValidationError("Rua é obrigatória");
     }
@@ -621,6 +657,7 @@ export class ProdutorService implements IProdutorService {
     }
 
     return {
+      cep,
       rua,
       bairro,
       cidade,

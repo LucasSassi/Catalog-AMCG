@@ -12,6 +12,9 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
     },
     registros: document.registros.map((registro) => ({
       tipo: registro.tipo,
+      ...(registro.tipoOutros !== undefined && registro.tipoOutros !== ""
+        ? { tipoOutros: registro.tipoOutros }
+        : {}),
       numero: registro.numero,
       ...(registro.dataEmissao !== undefined
         ? { dataEmissao: registro.dataEmissao }
@@ -25,11 +28,13 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
       email: document.contato.email,
     },
     endereco: {
+      cep: document.endereco.cep ?? "",
       rua: document.endereco.rua,
       bairro: document.endereco.bairro,
       cidade: document.endereco.cidade,
       estado: document.endereco.estado,
     },
+    exibirEndereco: document.exibirEndereco ?? false,
     historia: document.historia ?? "",
     ...(document.logo !== undefined
       ? {

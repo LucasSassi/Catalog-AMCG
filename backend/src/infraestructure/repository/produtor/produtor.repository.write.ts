@@ -19,6 +19,7 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      exibirEndereco: data.exibirEndereco,
       historia: data.historia,
       logo: data.logo,
       fotos: data.fotos,

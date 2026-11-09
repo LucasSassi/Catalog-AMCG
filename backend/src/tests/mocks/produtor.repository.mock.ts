@@ -132,6 +132,7 @@ export class InMemoryProdutorRepository
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      exibirEndereco: data.exibirEndereco,
       historia: data.historia,
       logo: data.logo,
       fotos: data.fotos,
@@ -166,6 +167,7 @@ export class InMemoryProdutorRepository
           }
         : atual.contato,
       endereco: data.endereco ?? atual.endereco,
+      exibirEndereco: data.exibirEndereco ?? atual.exibirEndereco,
       historia: data.historia ?? atual.historia,
       logo: data.logo ?? atual.logo,
       fotos: data.fotos ?? atual.fotos,

@@ -27,11 +27,13 @@ function buildInput(
       email: "contato@fazenda.com",
     },
     endereco: {
+      cep: "84010000",
       rua: "Rua das Flores",
       bairro: "Centro",
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    exibirEndereco: true,
     historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
     logo: logoPadrao,
     fotos: [fotoPadrao],
@@ -96,8 +98,84 @@ describe("Quando usar o ProdutorService", () => {
       await expect(
         service.create(
           buildInput({
-            registros: [{ tipo: "SIF" as "SIM", numero: "REG-OUTRO" }],
+            registros: [{ tipo: "XYZ" as "SIM", numero: "REG-OUTRO" }],
           }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve aceitar registros de produtor além do SIM", async () => {
+      const produtor = await service.create(
+        buildInput({
+          registros: [
+            { tipo: "SIF", numero: "SIF-001" },
+            { tipo: "VIGILÂNCIA SANITÁRIA", numero: "VISA-001" },
+          ],
+        }),
+      );
+
+      expect(produtor.registros.map((registro) => registro.tipo)).toEqual([
+        "SIF",
+        "VIGILÂNCIA SANITÁRIA",
+      ]);
+    });
+
+    it("Deve exigir tipoOutros quando o registro do produtor for Outro", async () => {
+      await expect(
+        service.create(
+          buildInput({ registros: [{ tipo: "Outro", numero: "REG-OUTRO" }] }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+
+      const produtor = await service.create(
+        buildInput({
+          registros: [
+            { tipo: "Outro", tipoOutros: "SESA-PR", numero: "REG-OUTRO" },
+          ],
+        }),
+      );
+      expect(produtor.registros[0]).toMatchObject({
+        tipo: "Outro",
+        tipoOutros: "SESA-PR",
+      });
+    });
+
+    it("Deve normalizar o CEP para 8 dígitos", async () => {
+      const produtor = await service.create(
+        buildInput({
+          endereco: {
+            cep: "84010-000",
+            rua: "Rua das Flores",
+            bairro: "Centro",
+            cidade: "Ponta Grossa",
+            estado: "PR",
+          },
+        }),
+      );
+
+      expect(produtor.endereco.cep).toBe("84010000");
+    });
+
+    it("Deve rejeitar CEP com quantidade de dígitos inválida", async () => {
+      await expect(
+        service.create(
+          buildInput({
+            endereco: {
+              cep: "8401",
+              rua: "Rua das Flores",
+              bairro: "Centro",
+              cidade: "Ponta Grossa",
+              estado: "PR",
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve exigir a resposta sobre exibir o endereço no site", async () => {
+      await expect(
+        service.create(
+          buildInput({ exibirEndereco: undefined as unknown as boolean }),
         ),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
@@ -120,6 +198,7 @@ describe("Quando usar o ProdutorService", () => {
         service.create(
           buildInput({
             endereco: {
+              cep: "84010000",
               rua: "Rua das Flores",
               bairro: "Centro",
               cidade: "Ponta Grossa",
@@ -258,6 +337,29 @@ describe("Quando usar o ProdutorService", () => {
       const catalogo = await service.getCatalogById(criado.id);
       expect(catalogo.nome).toBe("Fazenda Campos Gerais");
       expect(catalogo.fotos).toHaveLength(1);
+    });
+
+    it("Deve exibir o endereço completo quando o produtor autorizou", async () => {
+      const criado = await service.create(buildInput({ exibirEndereco: true }));
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.getCatalogById(criado.id);
+      expect(catalogo.endereco).toEqual({
+        cep: "84010000",
+        rua: "Rua das Flores",
+        bairro: "Centro",
+        cidade: "Ponta Grossa",
+        estado: "PR",
+      });
+    });
+
+    it("Deve omitir o endereço quando o produtor não autorizou", async () => {
+      const criado = await service.create(buildInput({ exibirEndereco: false }));
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.getCatalogById(criado.id);
+      expect(catalogo.endereco).toBeUndefined();
+      expect(catalogo.municipio).toBe("Ponta Grossa");
     });
 
     it("Deve lançar not found quando o produtor não está aprovado", async () => {
