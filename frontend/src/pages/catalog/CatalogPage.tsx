@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useCatalogBanners } from '../../features/banner/hooks/useCatalogBanners'
 import { CatalogFilterBar } from '../../features/produto/components/CatalogFilterBar'
 import { CatalogPagination } from '../../features/produto/components/CatalogPagination'
 import { FeaturedProductsStrip } from '../../features/produto/components/FeaturedProductsStrip'
@@ -9,7 +10,6 @@ import { useFeaturedProducts } from '../../features/produto/hooks/useFeaturedPro
 import type { CatalogFilters as CatalogFiltersValue } from '../../features/produto/types'
 import { FeaturedProducersStrip } from '../../features/produtor/components/FeaturedProducersStrip'
 import { useFeaturedProducers } from '../../features/produtor/hooks/useFeaturedProducers'
-import { bannerImages } from '../../shared/assets/banners'
 import { BannerCarousel } from '../../shared/components/BannerCarousel'
 import { Feedback } from '../../shared/components/Feedback'
 import {
@@ -141,6 +141,7 @@ const whyBuyItems = [
 ]
 
 export function CatalogPage() {
+  const catalogBanners = useCatalogBanners()
   const [filters, setFilters] =
     useState<CatalogFiltersValue>(initialFilters)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
@@ -229,7 +230,7 @@ export function CatalogPage() {
 
   return (
     <>
-      <BannerCarousel images={bannerImages} />
+      <BannerCarousel banners={catalogBanners.banners} isLoading={catalogBanners.isLoading} />
       <h1 className="sr-only">
         Catálogo de Produtos dos Campos Gerais — AMCG
       </h1>

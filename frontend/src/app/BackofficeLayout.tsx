@@ -82,6 +82,12 @@ function BackofficeShell() {
             Produtos
           </SidebarLink>
           <p className="px-3 pb-1.5 pt-6 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+            Vitrine
+          </p>
+          <SidebarLink to="/backoffice/banners" icon={<ImageIcon />} badge={0}>
+            Banners
+          </SidebarLink>
+          <p className="px-3 pb-1.5 pt-6 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
             Atalhos
           </p>
           <a
@@ -163,7 +169,7 @@ function BackofficeShell() {
 
       <nav
         aria-label="Navegação do backoffice"
-        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-3 border-t border-border-soft bg-white lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-4 border-t border-border-soft bg-white lg:hidden"
       >
         <BottomLink
           to="/backoffice/produtores"
@@ -178,6 +184,9 @@ function BackofficeShell() {
           badge={pendingProducts}
         >
           Produtos
+        </BottomLink>
+        <BottomLink to="/backoffice/banners" icon={<ImageIcon />} badge={0}>
+          Banners
         </BottomLink>
         <a
           href="/"
@@ -302,6 +311,16 @@ function EyeIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function ImageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="10" r="1.5" />
+      <path d="m21 16-5-5-9 8" />
     </svg>
   )
 }
