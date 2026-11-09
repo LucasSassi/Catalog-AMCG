@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   CATEGORIA_PRODUTO,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_FOTOS as MAX_FOTOS_PRODUTO,
   MAX_REGISTROS,
   MIN_FOTOS as MIN_FOTOS_PRODUTO,
@@ -13,6 +14,7 @@ import {
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
 import type { CadastrarProdutoInput } from "../../domain/produto/entity/produto.entity";
 import {
+  CEP_LENGTH,
   E164_PHONE_REGEX,
   MAX_FOTOS as MAX_FOTOS_PRODUTOR,
   MAX_HISTORIA_LENGTH,
@@ -38,12 +40,23 @@ const documentoSchema = z.object({
   numero: z.string().trim().min(1, "Número do documento é obrigatório"),
 });
 
-const registroProdutorSchema = z.object({
-  tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
-  numero: z.string().trim().min(1, "Número do registro é obrigatório"),
-  dataEmissao: z.coerce.date().optional(),
-  dataValidade: z.coerce.date().optional(),
-});
+const registroProdutorSchema = z
+  .object({
+    tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
+    tipoOutros: z.string().trim().optional(),
+    numero: z.string().trim().min(1, "Número do registro é obrigatório"),
+    dataEmissao: z.coerce.date().optional(),
+    dataValidade: z.coerce.date().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "Outro" && !data.tipoOutros?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe qual é o tipo de registro quando o tipo for Outro",
+        path: ["tipoOutros"],
+      });
+    }
+  });
 
 const contatoSchema = z.object({
   telefone: z
@@ -54,6 +67,13 @@ const contatoSchema = z.object({
 });
 
 const enderecoSchema = z.object({
+  cep: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === CEP_LENGTH, {
+      message: `CEP deve ter ${CEP_LENGTH} dígitos`,
+    }),
   rua: z.string().trim().min(1, "Rua é obrigatória"),
   bairro: z.string().trim().min(1, "Bairro é obrigatório"),
   cidade: z.string().trim().min(1, "Cidade é obrigatória"),
@@ -102,6 +122,9 @@ const produtorSchema = z.object({
     .min(1, "Ao menos um registro é obrigatório"),
   contato: contatoSchema,
   endereco: enderecoSchema,
+  exibirEndereco: z.boolean({
+    error: "Informe se o endereço deve ser exibido no site",
+  }),
   historia: z
     .string()
     .trim()
@@ -146,7 +169,15 @@ const premiacaoSchema = z.object({
 
 const produtoSchema = z.object({
   nome: z.string().trim().min(1, "Nome do produto é obrigatório"),
-  descricao: z.string().trim().min(1, "Descrição é obrigatória"),
+  descricaoBreve: z
+    .string()
+    .trim()
+    .min(1, "Descrição breve é obrigatória")
+    .max(
+      MAX_DESCRICAO_BREVE_LENGTH,
+      `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+    ),
+  descricao: z.string().trim().min(1, "Descrição completa é obrigatória"),
   categoria: z.enum(CATEGORIA_PRODUTO),
   unidadeMedida: z.enum(UNIDADE_MEDIDA),
   registros: z

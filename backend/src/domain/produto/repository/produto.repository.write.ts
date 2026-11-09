@@ -13,6 +13,7 @@ import type {
 export interface CreateProdutoData {
   produtorId: string;
   nome: string;
+  descricaoBreve: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -30,6 +31,7 @@ export interface CreateProdutoData {
 export interface UpdateProdutoData {
   produtorId?: string;
   nome?: string;
+  descricaoBreve?: string;
   descricao?: string;
   categoria?: CategoriaProduto;
   unidadeMedida?: UnidadeMedida;

@@ -43,6 +43,7 @@ export function toProdutoEntity(document: ProdutoModelDocument): Produto {
     id: document._id.toString(),
     produtorId: document.produtorId,
     nome: document.nome,
+    descricaoBreve: document.descricaoBreve || document.descricao,
     descricao: document.descricao,
     categoria: document.categoria,
     unidadeMedida: document.unidadeMedida,

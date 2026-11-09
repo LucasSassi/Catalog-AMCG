@@ -4,6 +4,7 @@ import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   CATEGORIA_PRODUTO,
   CERTIFICACAO_CATALOGO,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_FOTOS,
   MAX_REGISTROS,
   MIN_FOTOS,
@@ -48,10 +49,20 @@ const premiacaoSchema = z.object({
   comprovante: arquivoSchema,
 });
 
+const descricaoBreveSchema = z
+    .string()
+    .trim()
+    .min(1, "Descrição breve é obrigatória")
+    .max(
+      MAX_DESCRICAO_BREVE_LENGTH,
+      `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+    );
+
 const cadastrarSchema = z.object({
   produtorId: z.string().trim().min(1, "Produtor é obrigatório"),
   nome: z.string().trim().min(1, "Nome do produto é obrigatório"),
-  descricao: z.string().trim().min(1, "Descrição é obrigatória"),
+  descricaoBreve: descricaoBreveSchema,
+  descricao: z.string().trim().min(1, "Descrição completa é obrigatória"),
   categoria: z.enum(CATEGORIA_PRODUTO),
   unidadeMedida: z.enum(UNIDADE_MEDIDA),
   registros: z
@@ -75,7 +86,12 @@ const atualizarSchema = z
   .object({
     produtorId: z.string().trim().min(1, "Produtor é obrigatório").optional(),
     nome: z.string().trim().min(1, "Nome do produto é obrigatório").optional(),
-    descricao: z.string().trim().min(1, "Descrição é obrigatória").optional(),
+    descricaoBreve: descricaoBreveSchema.optional(),
+    descricao: z
+      .string()
+      .trim()
+      .min(1, "Descrição completa é obrigatória")
+      .optional(),
     categoria: z.enum(CATEGORIA_PRODUTO).optional(),
     unidadeMedida: z.enum(UNIDADE_MEDIDA).optional(),
     registros: z
@@ -116,6 +132,7 @@ const atualizarSchema = z
     (data) =>
       data.produtorId !== undefined ||
       data.nome !== undefined ||
+      data.descricaoBreve !== undefined ||
       data.descricao !== undefined ||
       data.categoria !== undefined ||
       data.unidadeMedida !== undefined ||
@@ -147,7 +164,13 @@ const catalogQuerySchema = z.object({
   categoria: z.enum(CATEGORIA_PRODUTO).optional(),
   municipio: z.string().trim().optional(),
   certificacao: z.enum(CERTIFICACAO_CATALOGO).optional(),
-  pageSize: z.coerce.number().int().min(1).max(12).optional(),
+  premiado: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : value === "true",
+    ),
+  pageSize: z.coerce.number().int().min(1).max(20).optional(),
   lastItemId: z.string().trim().min(1).optional(),
 });
 

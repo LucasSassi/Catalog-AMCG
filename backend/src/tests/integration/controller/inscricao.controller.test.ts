@@ -37,11 +37,13 @@ function buildInscricaoPayload() {
         email: "contato@fazenda.com",
       },
       endereco: {
+        cep: "84010000",
         rua: "Rua das Flores, CEP 84010-000",
         bairro: "Ponta Grossa",
         cidade: "Ponta Grossa",
         estado: "PR",
       },
+      exibirEndereco: true,
       historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
       logo: arquivoValido,
       fotos: [arquivoValido],
@@ -51,6 +53,7 @@ function buildInscricaoPayload() {
     produtos: [
       {
         nome: "Mel Artesanal",
+        descricaoBreve: "Produto artesanal dos Campos Gerais",
         descricao: "Mel puro de Campos Gerais",
         categoria: "MEL_E_DERIVADOS",
         unidadeMedida: "UNIDADE",
@@ -121,11 +124,22 @@ describe("Quando usar o InscricaoController (integration)", () => {
   });
 
   it("Deve reverter produtor quando um produto da inscrição falhar", async () => {
+    await produtoRepository.create({
+      ...buildInscricaoPayload().produtos[0],
+      produtorId: "produtor-existente",
+      categoria: "MEL_E_DERIVADOS",
+      unidadeMedida: "UNIDADE",
+      registros: [{ tipo: "SELO ARTE", numero: "REG-JA-USADO" }],
+      ativo: true,
+      status: "APROVADO",
+      destaque: false,
+    });
+
     const payload = buildInscricaoPayload();
     payload.produtos.push({
       ...payload.produtos[0],
       nome: "Produto inválido",
-      registros: [{ tipo: "SELO ARTE", numero: "REG-PROD-INSCR-001" }],
+      registros: [{ tipo: "SELO ARTE", numero: "REG-JA-USADO" }],
     });
 
     const response = await request(app)
@@ -139,7 +153,8 @@ describe("Quando usar o InscricaoController (integration)", () => {
     const produtos = await produtoRepository.list();
 
     expect(produtores).toHaveLength(0);
-    expect(produtos).toHaveLength(0);
+    expect(produtos).toHaveLength(1);
+    expect(produtos[0].produtorId).toBe("produtor-existente");
   });
 
   it("Deve manter POST /api/produtos restrito a admin", async () => {
@@ -163,6 +178,7 @@ describe("Quando usar o InscricaoController (integration)", () => {
       .send({
         produtorId: inscricao.body.produtor.id,
         nome: "Queijo",
+        descricaoBreve: "Produto artesanal dos Campos Gerais",
         descricao: "Queijo artesanal",
         categoria: "QUEIJOS_E_LACTEOS",
         unidadeMedida: "KG",

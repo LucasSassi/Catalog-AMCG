@@ -12,6 +12,7 @@ export class ProdutoRepositoryWrite implements IProdutoRepositoryWrite {
     const document = await ProdutoModel.create({
       produtorId: data.produtorId,
       nome: data.nome,
+      descricaoBreve: data.descricaoBreve,
       descricao: data.descricao,
       categoria: data.categoria,
       unidadeMedida: data.unidadeMedida,

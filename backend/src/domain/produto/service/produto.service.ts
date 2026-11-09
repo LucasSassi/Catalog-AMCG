@@ -11,6 +11,7 @@ import {
   CONTENT_TYPES_IMAGEM,
   MAX_DESTAQUES,
   MAX_FOTOS,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_REGISTROS,
   MIN_FOTOS,
   MIN_REGISTROS,
@@ -46,7 +47,7 @@ import type {
 } from "../entity/produto.entity";
 
 const CATALOG_DEFAULT_PAGE_SIZE = 12;
-const CATALOG_MAX_PAGE_SIZE = 12;
+const CATALOG_MAX_PAGE_SIZE = 20;
 const SIMILARES_DEFAULT_PAGE_SIZE = 10;
 const SIMILARES_MAX_PAGE_SIZE = 10;
 const DO_PRODUTOR_DEFAULT_PAGE_SIZE = 3;
@@ -90,6 +91,7 @@ export class ProdutoService implements IProdutoService {
     produtorId: string,
   ): Promise<Produto> {
     const nome = this.assertNome(input.nome);
+    const descricaoBreve = this.assertDescricaoBreve(input.descricaoBreve);
     const descricao = this.assertDescricao(input.descricao);
     const categoria = this.assertCategoria(input.categoria);
     const unidadeMedida = this.assertUnidadeMedida(input.unidadeMedida);
@@ -106,11 +108,15 @@ export class ProdutoService implements IProdutoService {
     const valorCentavos = this.assertValorCentavos(input.valorCentavos);
     const observacoes = this.normalizeObservacoes(input.observacoes);
 
-    await this.assertRegistrosDisponiveis(registros.map((r) => r.numero));
+    await this.assertRegistrosDisponiveis(
+      registros.map((r) => r.numero),
+      produtorId,
+    );
 
     return this.writeRepository.create({
       produtorId,
       nome,
+      descricaoBreve,
       descricao,
       categoria,
       unidadeMedida,
@@ -146,6 +152,7 @@ export class ProdutoService implements IProdutoService {
       ...(lastItemId !== undefined ? { lastItemId } : {}),
       ...(categoria !== undefined ? { categoria } : {}),
       ...(certificacao !== undefined ? { certificacao } : {}),
+      ...(filtros.premiado === true ? { premiado: true } : {}),
       ...(filtros.busca?.trim() ? { busca: filtros.busca.trim() } : {}),
       ...(filtros.municipio?.trim()
         ? { municipio: filtros.municipio.trim() }
@@ -270,7 +277,13 @@ export class ProdutoService implements IProdutoService {
     return {
       ...base,
       fotosDivulgacao: produto.fotosDivulgacao,
-      registros: produto.registros.map((registro) => ({ tipo: registro.tipo })),
+      descricao: produto.descricao,
+      registros: produto.registros.map((registro) => ({
+        tipo: registro.tipo,
+        ...(registro.tipo === "Outro" && registro.tipoOutros
+          ? { tipoOutros: registro.tipoOutros }
+          : {}),
+      })),
       premiacoes: produto.premiacoes.map((premiacao) => ({
         nome: premiacao.nome,
         descricao: premiacao.descricao,
@@ -380,6 +393,7 @@ export class ProdutoService implements IProdutoService {
     if (
       input.produtorId === undefined &&
       input.nome === undefined &&
+      input.descricaoBreve === undefined &&
       input.descricao === undefined &&
       input.categoria === undefined &&
       input.unidadeMedida === undefined &&
@@ -404,6 +418,7 @@ export class ProdutoService implements IProdutoService {
     const data: {
       produtorId?: string;
       nome?: string;
+      descricaoBreve?: string;
       descricao?: string;
       categoria?: CategoriaProduto;
       unidadeMedida?: UnidadeMedida;
@@ -427,6 +442,10 @@ export class ProdutoService implements IProdutoService {
       data.nome = this.assertNome(input.nome);
     }
 
+    if (input.descricaoBreve !== undefined) {
+      data.descricaoBreve = this.assertDescricaoBreve(input.descricaoBreve);
+    }
+
     if (input.descricao !== undefined) {
       data.descricao = this.assertDescricao(input.descricao);
     }
@@ -441,11 +460,10 @@ export class ProdutoService implements IProdutoService {
 
     if (input.registros !== undefined) {
       const registros = this.normalizeRegistros(input.registros);
-      const numerosAtuais = new Set(atual.registros.map((r) => r.numero));
-      const novosNumeros = registros
-        .map((r) => r.numero)
-        .filter((numero) => !numerosAtuais.has(numero));
-      await this.assertRegistrosDisponiveis(novosNumeros);
+      await this.assertRegistrosDisponiveis(
+        registros.map((r) => r.numero),
+        data.produtorId ?? atual.produtorId,
+      );
       data.registros = registros;
     }
 
@@ -561,7 +579,14 @@ export class ProdutoService implements IProdutoService {
     return produtor;
   }
 
-  private async assertRegistrosDisponiveis(numeros: string[]): Promise<void> {
+  /**
+   * O mesmo número de registro pode se repetir entre produtos do MESMO
+   * produtor (ex.: SIM do estabelecimento), mas não entre produtores.
+   */
+  private async assertRegistrosDisponiveis(
+    numeros: string[],
+    produtorId: string,
+  ): Promise<void> {
     const unique = new Set<string>();
 
     for (const numero of numeros) {
@@ -572,9 +597,15 @@ export class ProdutoService implements IProdutoService {
       }
       unique.add(numero);
 
-      const existing = await this.readRepository.findByRegistroNumero(numero);
+      const existing =
+        await this.readRepository.findByRegistroNumeroDeOutroProdutor(
+          numero,
+          produtorId,
+        );
       if (existing) {
-        throw new ConflictError("Número de registro já cadastrado");
+        throw new ConflictError(
+          "Número de registro já cadastrado por outro produtor",
+        );
       }
     }
   }
@@ -591,6 +622,19 @@ export class ProdutoService implements IProdutoService {
     const trimmed = nome.trim();
     if (!trimmed) {
       throw new ValidationError("Nome do produto é obrigatório");
+    }
+    return trimmed;
+  }
+
+  private assertDescricaoBreve(descricaoBreve: string): string {
+    const trimmed = (descricaoBreve ?? "").trim();
+    if (!trimmed) {
+      throw new ValidationError("Descrição breve é obrigatória");
+    }
+    if (trimmed.length > MAX_DESCRICAO_BREVE_LENGTH) {
+      throw new ValidationError(
+        `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+      );
     }
     return trimmed;
   }
@@ -682,7 +726,7 @@ export class ProdutoService implements IProdutoService {
     return {
       id: produto.id,
       nome: produto.nome,
-      descricao: produto.descricao,
+      descricaoBreve: produto.descricaoBreve,
       categoria: produto.categoria,
       unidadeMedida: produto.unidadeMedida,
       valorCentavos: produto.valorCentavos,

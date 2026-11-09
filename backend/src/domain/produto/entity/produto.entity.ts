@@ -31,6 +31,7 @@ export interface Produto {
   id: string;
   produtorId: string;
   nome: string;
+  descricaoBreve: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -51,6 +52,7 @@ export interface Produto {
 export interface CadastrarProdutoInput {
   produtorId: string;
   nome: string;
+  descricaoBreve: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -65,6 +67,7 @@ export interface CadastrarProdutoInput {
 export interface AtualizarProdutoInput {
   produtorId?: string;
   nome?: string;
+  descricaoBreve?: string;
   descricao?: string;
   categoria?: CategoriaProduto;
   unidadeMedida?: UnidadeMedida;
@@ -91,6 +94,7 @@ export interface CatalogoFiltros {
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  premiado?: boolean;
   pageSize?: number;
   lastItemId?: string;
 }
@@ -114,6 +118,7 @@ export interface CatalogoCursorFiltros {
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  premiado?: boolean;
   produtorId?: string;
   pageSize: number;
   lastItemId?: string;
@@ -135,7 +140,7 @@ export interface CatalogoCursorMeta {
 export interface ProdutoCatalogo {
   id: string;
   nome: string;
-  descricao: string;
+  descricaoBreve: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
   valorCentavos: number;
@@ -151,8 +156,9 @@ export interface ProdutoCatalogo {
 }
 
 export interface ProdutoCatalogoDetalhe extends ProdutoCatalogo {
+  descricao: string;
   fotosDivulgacao: Arquivo[];
-  registros: Array<{ tipo: RegistroProdutoTipo }>;
+  registros: Array<{ tipo: RegistroProdutoTipo; tipoOutros?: string }>;
   premiacoes: Array<{ nome: string; descricao: string; ano: number }>;
   observacoes?: string;
   produtor: ProdutoCatalogo["produtor"] & {

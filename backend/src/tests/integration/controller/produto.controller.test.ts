@@ -35,11 +35,13 @@ const produtorPayload = {
     email: "contato@fazenda.com",
   },
   endereco: {
+    cep: "84010000",
     rua: "Rua das Flores",
     bairro: "Centro",
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  exibirEndereco: true,
   historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
   logo: arquivoValido,
   fotos: [arquivoValido],
@@ -49,6 +51,7 @@ function buildProdutoPayload(produtorId: string) {
   return {
     produtorId,
     nome: "Mel Artesanal",
+    descricaoBreve: "Produto artesanal dos Campos Gerais",
     descricao: "Mel puro de Campos Gerais",
     categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",

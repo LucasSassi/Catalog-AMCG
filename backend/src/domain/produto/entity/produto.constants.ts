@@ -64,6 +64,8 @@ export const CONTENT_TYPES_COMPROVANTE = [
 
 export const ANO_MIN = 1900;
 
+export const MAX_DESCRICAO_BREVE_LENGTH = 200;
+
 export function listCategoriasProduto(): readonly CategoriaProduto[] {
   return CATEGORIA_PRODUTO;
 }

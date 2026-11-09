@@ -24,11 +24,13 @@ function buildProdutorInput(
       email: "contato@fazenda.com",
     },
     endereco: {
+      cep: "84010000",
       rua: "Rua das Flores",
       bairro: "Centro",
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    exibirEndereco: true,
     historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
     logo: arquivoValido,
     fotos: [arquivoValido],
@@ -43,6 +45,7 @@ function buildInput(
   return {
     produtorId,
     nome: "Mel Artesanal",
+    descricaoBreve: "Produto artesanal dos Campos Gerais",
     descricao: "Mel puro de Campos Gerais",
     categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",
@@ -164,16 +167,48 @@ describe("Quando usar o ProdutoService", () => {
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    it("Deve lançar conflito quando o número de registro já existe", async () => {
+    it("Deve lançar conflito quando o número de registro já é de outro produtor", async () => {
       await service.create(buildInput(produtorAprovadoId));
+
+      const outroProdutor = await produtorService.create(
+        buildProdutorInput({
+          documento: { tipo: "CNPJ", numero: "98765432000155" },
+          registros: [{ tipo: "SIM", numero: "REG-OUTRO-PRODUTOR" }],
+        }),
+      );
+      await produtorService.update(outroProdutor.id, { status: "APROVADO" });
 
       await expect(
         service.create(
-          buildInput(produtorAprovadoId, {
+          buildInput(outroProdutor.id, {
             registros: [{ tipo: "MAPA", numero: "REG-PROD-001" }],
           }),
         ),
       ).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+    it("Deve permitir o mesmo número de registro em produtos do mesmo produtor", async () => {
+      await service.create(buildInput(produtorAprovadoId));
+
+      const segundo = await service.create(
+        buildInput(produtorAprovadoId, { nome: "Mel Silvestre" }),
+      );
+
+      expect(segundo.registros[0].numero).toBe("REG-PROD-001");
+    });
+
+    it("Deve exigir descrição breve", async () => {
+      await expect(
+        service.create(buildInput(produtorAprovadoId, { descricaoBreve: "  " })),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar descrição breve acima do limite", async () => {
+      await expect(
+        service.create(
+          buildInput(produtorAprovadoId, { descricaoBreve: "a".repeat(201) }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
 
     it("Deve aceitar premiacoes vazio", async () => {
@@ -232,6 +267,35 @@ describe("Quando usar o ProdutoService", () => {
       expect(catalogo.municipios).toEqual(["Ponta Grossa"]);
       expect(catalogo.pageSize).toBe(12);
       expect(catalogo.hasNext).toBe(false);
+    });
+
+    it("Deve retornar apenas produtos premiados quando filtrar por premiado", async () => {
+      const comum = await service.create(buildInput(produtorAprovadoId));
+      await service.update(comum.id, { status: "APROVADO" });
+      const premiado = await service.create(
+        buildInput(produtorAprovadoId, {
+          nome: "Mel Premiado",
+          registros: [{ tipo: "MAPA", numero: "REG-PREMIADO-001" }],
+          premiacoes: [
+            {
+              nome: "Prêmio Campos Gerais",
+              descricao: "Melhor mel artesanal da região",
+              ano: 2024,
+              comprovante: arquivoValido,
+            },
+          ],
+        }),
+      );
+      await service.update(premiado.id, { status: "APROVADO" });
+
+      const filtrado = await service.listCatalog({ premiado: true });
+      const todos = await service.listCatalog({});
+
+      expect(filtrado.produtos.map((produto) => produto.nome)).toEqual([
+        "Mel Premiado",
+      ]);
+      expect(filtrado.produtos[0]?.premiado).toBe(true);
+      expect(todos.produtos).toHaveLength(2);
     });
   });
 

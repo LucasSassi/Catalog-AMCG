@@ -71,6 +71,10 @@ export class InMemoryProdutoRepository
       items = items.filter((produto) => !excluded.has(produto.id));
     }
 
+    if (filtros.premiado === true) {
+      items = items.filter((produto) => produto.premiacoes.length > 0);
+    }
+
     if (filtros.certificacao && filtros.certificacao !== "SIM") {
       items = items.filter((produto) =>
         produto.registros.some(
@@ -127,9 +131,15 @@ export class InMemoryProdutoRepository
     return shuffled.slice(0, size);
   }
 
-  async findByRegistroNumero(numero: string): Promise<Produto | null> {
+  async findByRegistroNumeroDeOutroProdutor(
+    numero: string,
+    produtorId: string,
+  ): Promise<Produto | null> {
     for (const produto of this.items.values()) {
-      if (produto.registros.some((registro) => registro.numero === numero)) {
+      if (
+        produto.produtorId !== produtorId &&
+        produto.registros.some((registro) => registro.numero === numero)
+      ) {
         return produto;
       }
     }
@@ -148,6 +158,7 @@ export class InMemoryProdutoRepository
       id: String(this.sequence++),
       produtorId: data.produtorId,
       nome: data.nome,
+      descricaoBreve: data.descricaoBreve,
       descricao: data.descricao,
       categoria: data.categoria,
       unidadeMedida: data.unidadeMedida,
@@ -177,6 +188,7 @@ export class InMemoryProdutoRepository
       ...atual,
       produtorId: data.produtorId ?? atual.produtorId,
       nome: data.nome ?? atual.nome,
+      descricaoBreve: data.descricaoBreve ?? atual.descricaoBreve,
       descricao: data.descricao ?? atual.descricao,
       categoria: data.categoria ?? atual.categoria,
       unidadeMedida: data.unidadeMedida ?? atual.unidadeMedida,
