@@ -4,3 +4,4 @@ dist
 dist-ssr
 *.local
 npm-debug.log*
+backend/scripts/
