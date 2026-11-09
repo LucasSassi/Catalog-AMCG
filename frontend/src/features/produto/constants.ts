@@ -81,6 +81,8 @@ export const IMAGE_CONTENT_TYPES = [
   'image/webp',
 ] as const
 
+export const MAX_DESCRICAO_BREVE_LENGTH = 200
+
 export const MAX_PRODUCT_PHOTOS = 5
 export const MIN_PRODUCT_PHOTOS = 1
 

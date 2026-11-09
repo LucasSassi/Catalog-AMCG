@@ -222,6 +222,9 @@ export function ProductDetailsPanel({
             <h3 id="product-info-title" className="text-sm font-bold text-foreground">
               Informações
             </h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
+              {product.descricaoBreve}
+            </p>
             <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
               {product.descricao}
             </p>

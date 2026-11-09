@@ -9,8 +9,10 @@ import {
   BRAZILIAN_STATES,
   DOCUMENT_TYPES,
   IMAGE_CONTENT_TYPES,
+  MAX_CEP_DIGITS,
   MAX_HISTORIA_LENGTH,
   MAX_PRODUCER_PHOTOS,
+  REGISTRATION_TYPES,
 } from '../constants'
 import { useRegisterProducer } from '../hooks/useRegisterProducer'
 import { useUpdateProducer } from '../hooks/useUpdateProducer'
@@ -57,7 +59,8 @@ function buildInitialForm(producer?: Producer): ProducerFormState {
       documento: { tipo: 'CNPJ', numero: '' },
       registros: [{ ...emptyRegistration }],
       contato: { telefone: '', email: '' },
-      endereco: { rua: '', bairro: '', cidade: '', estado: 'PR' },
+      endereco: { cep: '', rua: '', bairro: '', cidade: '', estado: 'PR' },
+      exibirEndereco: false,
       historia: '',
       logo: [],
       fotos: [],
@@ -77,6 +80,7 @@ function buildInitialForm(producer?: Producer): ProducerFormState {
         : [{ ...emptyRegistration }],
     contato: { ...producer.contato },
     endereco: { ...producer.endereco },
+    exibirEndereco: producer.exibirEndereco,
     historia: producer.historia,
     logo: producer.logo?.url ? [{ ...producer.logo }] : [],
     fotos: (producer.fotos ?? [])
@@ -122,12 +126,22 @@ export function ProducerRegistrationForm({
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  function updateRegistration(index: number, numero: string) {
+  function updateRegistration(
+    index: number,
+    changes: Partial<ProducerRegistration>,
+  ) {
     setForm((current) => ({
       ...current,
-      registros: current.registros.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, numero } : item,
-      ),
+      registros: current.registros.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item
+        }
+        const next = { ...item, ...changes }
+        if (next.tipo !== 'Outro') {
+          delete next.tipoOutros
+        }
+        return next
+      }),
     }))
   }
 
@@ -154,6 +168,7 @@ export function ProducerRegistrationForm({
       registros: form.registros,
       contato: form.contato,
       endereco: form.endereco,
+      exibirEndereco: form.exibirEndereco,
       historia: form.historia,
       logo,
       fotos: form.fotos,
@@ -230,6 +245,9 @@ export function ProducerRegistrationForm({
       status: filled(
         form.documento.numero,
         ...form.registros.map((registro) => registro.numero),
+        ...form.registros
+          .filter((registro) => registro.tipo === 'Outro')
+          .map((registro) => registro.tipoOutros ?? ''),
       )
         ? 'ok'
         : 'incompleto',
@@ -271,17 +289,53 @@ export function ProducerRegistrationForm({
             </FormField>
           </div>
           {form.registros.map((registro, index) => (
-            <div key={index} className="flex items-end gap-2">
+            <div
+              key={index}
+              className="flex flex-wrap items-end gap-2 sm:flex-nowrap"
+            >
               <FormField
-                label={`Registro SIM ${form.registros.length > 1 ? index + 1 : ''}`.trim()}
-                hint="Serviço de Inspeção Municipal"
-                className="flex-1"
+                label={`Tipo de registro ${form.registros.length > 1 ? index + 1 : ''}`.trim()}
+                className="w-full sm:w-52 sm:shrink-0"
               >
+                <select
+                  required
+                  value={registro.tipo}
+                  onChange={(event) =>
+                    updateRegistration(index, {
+                      tipo: event.target.value as ProducerRegistration['tipo'],
+                    })
+                  }
+                  className={formInputClassName}
+                >
+                  {REGISTRATION_TYPES.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              {registro.tipo === 'Outro' ? (
+                <FormField label="Qual registro?" className="flex-1">
+                  <input
+                    required
+                    type="text"
+                    value={registro.tipoOutros ?? ''}
+                    onChange={(event) =>
+                      updateRegistration(index, { tipoOutros: event.target.value })
+                    }
+                    className={formInputClassName}
+                    placeholder="Ex.: SESA-PR"
+                  />
+                </FormField>
+              ) : null}
+              <FormField label="Número do registro" className="flex-1">
                 <input
                   required
                   type="text"
                   value={registro.numero}
-                  onChange={(event) => updateRegistration(index, event.target.value)}
+                  onChange={(event) =>
+                    updateRegistration(index, { numero: event.target.value })
+                  }
                   className={formInputClassName}
                 />
               </FormField>
@@ -386,11 +440,42 @@ export function ProducerRegistrationForm({
     {
       id: 'endereco',
       label: 'Endereço',
-      status: filled(form.endereco.rua, form.endereco.bairro, form.endereco.cidade)
-        ? 'ok'
-        : 'incompleto',
+      description: 'O produtor escolhe se o endereço aparece no site.',
+      status:
+        filled(form.endereco.rua, form.endereco.bairro, form.endereco.cidade) &&
+        form.endereco.cep.replace(/\D/g, '').length === MAX_CEP_DIGITS
+          ? 'ok'
+          : 'incompleto',
       content: (
         <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="CEP" hint="8 dígitos">
+            <input
+              required
+              type="text"
+              inputMode="numeric"
+              pattern="\d{5}-?\d{3}"
+              title="CEP com 8 dígitos (ex.: 84010-000)"
+              value={form.endereco.cep}
+              onChange={(event) =>
+                updateField('endereco', { ...form.endereco, cep: event.target.value })
+              }
+              className={formInputClassName}
+              placeholder="84010-000"
+            />
+          </FormField>
+          <FormField label="Exibir endereço no site?">
+            <select
+              required
+              value={form.exibirEndereco ? 'Sim' : 'Não'}
+              onChange={(event) =>
+                updateField('exibirEndereco', event.target.value === 'Sim')
+              }
+              className={formInputClassName}
+            >
+              <option value="Sim">Sim, mostrar na página do produtor</option>
+              <option value="Não">Não, mostrar só o município</option>
+            </select>
+          </FormField>
           <FormField label="Rua e número" className="sm:col-span-2">
             <input
               required

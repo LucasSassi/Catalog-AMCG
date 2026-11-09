@@ -19,6 +19,11 @@ export function getProductChecklist(product: Product): ReviewChecklistItem[] {
       detail: `${product.fotosAvaliacao.length} enviada${product.fotosAvaliacao.length === 1 ? '' : 's'}`,
     },
     {
+      id: 'descricao-breve',
+      label: 'Descrição breve',
+      ok: product.descricaoBreve.trim().length > 0,
+    },
+    {
       id: 'descricao',
       label: 'Descrição completa',
       ok: product.descricao.trim().length >= MIN_DESCRICAO_LENGTH,

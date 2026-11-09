@@ -5,6 +5,7 @@ import type {
   ProductCategory,
   ProductRegistration,
 } from '../produto/types'
+import type { REGISTRATION_TYPES } from './constants'
 
 export type ProducerStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 
@@ -15,8 +16,11 @@ export interface ProducerDocument {
   numero: string
 }
 
+export type ProducerRegistrationType = (typeof REGISTRATION_TYPES)[number]
+
 export interface ProducerRegistration {
-  tipo: 'SIM'
+  tipo: ProducerRegistrationType
+  tipoOutros?: string
   numero: string
   dataEmissao?: string
   dataValidade?: string
@@ -28,6 +32,7 @@ export interface ProducerContact {
 }
 
 export interface ProducerAddress {
+  cep: string
   rua: string
   bairro: string
   cidade: string
@@ -46,6 +51,8 @@ export interface ProducerSocialNetwork {
 }
 
 export interface CatalogProducerAddress {
+  cep: string
+  rua: string
   bairro: string
   cidade: string
   estado: string
@@ -59,6 +66,7 @@ export interface Producer {
   registros: ProducerRegistration[]
   contato: ProducerContact
   endereco: ProducerAddress
+  exibirEndereco: boolean
   historia: string
   logo?: ProducerFile
   fotos: ProducerFile[]
@@ -81,7 +89,8 @@ export interface CatalogProducer {
   historia: string
   logo?: ProducerFile
   fotos: ProducerFile[]
-  endereco: CatalogProducerAddress
+  /** Ausente quando o produtor optou por não exibir o endereço no site. */
+  endereco?: CatalogProducerAddress
   redesSociais: ProducerSocialNetwork[]
   site?: string
 }
@@ -97,6 +106,7 @@ export interface CreateProducerInput {
   registros: ProducerRegistration[]
   contato: ProducerContact
   endereco: ProducerAddress
+  exibirEndereco: boolean
   historia: string
   logo: ProducerFile
   fotos: ProducerFile[]
@@ -128,7 +138,7 @@ export interface InscriptionFormState {
   fotosDivulgacao: ProducerFile[]
   nomeEmpresa: string
   documentoNumero: string
-  tipoRegistro: 'SIM' | 'Outro' | ''
+  tipoRegistro: ProducerRegistrationType | ''
   tipoRegistroOutro: string
   numeroRegistro: string
   cep: string
@@ -145,6 +155,7 @@ export interface InscriptionFormState {
 
 export interface CreateInscriptionProductInput {
   nome: string
+  descricaoBreve: string
   descricao: string
   categoria: ProductCategory
   unidadeMedida: MeasurementUnit

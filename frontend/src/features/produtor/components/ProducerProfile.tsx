@@ -48,10 +48,18 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
     nomeProdutor: producer.nome,
   })
 
-  const addressLabel = `${producer.endereco.bairro}, ${producer.endereco.cidade} - ${producer.endereco.estado}`
+  // Sem `endereco`: o produtor optou por não exibir o endereço; mostra só o município.
+  const endereco = producer.endereco
+  const addressLabel = endereco
+    ? `${endereco.rua}, ${endereco.bairro}, ${endereco.cidade} - ${endereco.estado}${
+        endereco.cep ? `, CEP ${formatCep(endereco.cep)}` : ''
+      }`
+    : `${producer.municipio} - PR`
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${producer.endereco.bairro}, ${producer.endereco.cidade} - ${producer.endereco.estado}`,
+    endereco
+      ? `${endereco.rua}, ${endereco.cidade} - ${endereco.estado}`
+      : `${producer.municipio} - PR`,
   )}`
 
   function handleScrollThumbs() {
@@ -106,8 +114,11 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
           </div>
 
           <dl className="mt-4 space-y-3 text-sm">
-            <ContactRow label="Endereço">
-              <span className="min-w-0 flex-1 truncate text-slate-800">
+            <ContactRow label={endereco ? 'Endereço' : 'Município'}>
+              <span
+                className="min-w-0 flex-1 truncate text-slate-800"
+                title={addressLabel}
+              >
                 {addressLabel}
               </span>
               <a
@@ -329,4 +340,9 @@ function ChevronDownIcon() {
       <path d="m6 9 6 6 6-6" />
     </svg>
   )
+}
+
+function formatCep(cep: string): string {
+  const digits = cep.replace(/\D/g, '')
+  return digits.length === 8 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : cep
 }

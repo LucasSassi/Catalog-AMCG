@@ -30,7 +30,17 @@ export const BRAZILIAN_STATES = [
 
 export const DOCUMENT_TYPES = ['CNPJ', 'CPF', 'CAD_PRO'] as const
 
-export const REGISTRATION_TYPES = ['SIM'] as const
+export const REGISTRATION_TYPES = [
+  'SIM',
+  'SUSAF',
+  'SIF',
+  'SELO ARTE',
+  'MAPA',
+  'VIGILÂNCIA SANITÁRIA',
+  'Outro',
+] as const
+
+export const MAX_CEP_DIGITS = 8
 
 export const IMAGE_CONTENT_TYPES = [
   'image/jpeg',
@@ -73,10 +83,7 @@ export const AMCG_MUNICIPIOS = [
   'Ventania',
 ] as const
 
-export const COMPANY_REGISTRATION_TYPE_OPTIONS = [
-  'SIM',
-  'Outro',
-] as const
+export const COMPANY_REGISTRATION_TYPE_OPTIONS = REGISTRATION_TYPES
 
 export const YES_NO_OPTIONS = ['Sim', 'Não'] as const
 

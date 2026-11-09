@@ -213,13 +213,6 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
       return
     }
 
-    if (form.tipoRegistro !== 'SIM') {
-      setLocalError(
-        'O tipo de registro da empresa aceito no catálogo é SIM (Inspeção Municipal).',
-      )
-      return
-    }
-
     try {
       const payload = buildInscriptionPayload(form)
       const didSubmit = await submit(payload)
@@ -315,8 +308,9 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             </select>
           </InscriptionField>
 
-          <InscriptionField label="Outro">
+          <InscriptionField label="Outro" required={form.tipoRegistro === 'Outro'}>
             <input
+              required={form.tipoRegistro === 'Outro'}
               type="text"
               value={form.tipoRegistroOutro}
               onChange={(event) =>
@@ -345,9 +339,13 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-[0.7fr_1.3fr_1fr]">
-          <InscriptionField label="CEP">
+          <InscriptionField label="CEP" required>
             <input
+              required
               type="text"
+              inputMode="numeric"
+              pattern="\d{5}-?\d{3}"
+              title="CEP com 8 dígitos (ex.: 84010-000)"
               value={form.cep}
               onChange={(event) => updateField('cep', event.target.value)}
               className={inscriptionControlClassName}
@@ -366,8 +364,9 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             />
           </InscriptionField>
 
-          <InscriptionField label="Deseja informar o endereço no site?">
+          <InscriptionField label="Deseja informar o endereço no site?" required>
             <select
+              required
               value={form.informarEnderecoNoSite}
               onChange={(event) =>
                 updateField(

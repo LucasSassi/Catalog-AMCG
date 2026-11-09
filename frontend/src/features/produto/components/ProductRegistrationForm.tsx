@@ -11,6 +11,7 @@ import { ImageDropzone } from '../../produtor/components/ImageDropzone'
 import type { Producer } from '../../produtor/types'
 import {
   IMAGE_CONTENT_TYPES,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_PRODUCT_PHOTOS,
   MEASUREMENT_UNITS,
   PRODUCT_CATEGORIES,
@@ -46,6 +47,7 @@ function buildInitialForm(product?: Product): CreateProductInput {
     return {
       produtorId: '',
       nome: '',
+      descricaoBreve: '',
       descricao: '',
       categoria: 'MEL_E_DERIVADOS',
       unidadeMedida: 'KG',
@@ -61,6 +63,7 @@ function buildInitialForm(product?: Product): CreateProductInput {
   return {
     produtorId: product.produtorId,
     nome: product.nome,
+    descricaoBreve: product.descricaoBreve,
     descricao: product.descricao,
     categoria: product.categoria,
     unidadeMedida: product.unidadeMedida,
@@ -264,7 +267,10 @@ export function ProductRegistrationForm({
       label: 'Produto',
       description: 'Nome, produtor e descrição exibidos no catálogo.',
       status:
-        form.produtorId && form.nome.trim() && form.descricao.trim()
+        form.produtorId &&
+        form.nome.trim() &&
+        form.descricaoBreve.trim() &&
+        form.descricao.trim()
           ? form.descricao.trim().length < 40
             ? 'aviso'
             : 'ok'
@@ -302,7 +308,21 @@ export function ProductRegistrationForm({
             />
           </FormField>
           <FormField
-            label="Descrição"
+            label="Descrição breve"
+            hint={`Aparece nos cards do catálogo · ${form.descricaoBreve.length}/${MAX_DESCRICAO_BREVE_LENGTH} caracteres`}
+          >
+            <input
+              required
+              type="text"
+              maxLength={MAX_DESCRICAO_BREVE_LENGTH}
+              value={form.descricaoBreve}
+              onChange={(event) => updateField('descricaoBreve', event.target.value)}
+              className={formInputClassName}
+              placeholder="Resumo do produto em uma frase"
+            />
+          </FormField>
+          <FormField
+            label="Descrição completa"
             hint={
               form.descricao.trim().length > 0 && form.descricao.trim().length < 40
                 ? 'Dica: descrições com mais detalhes (ingredientes, modo de produção) vendem melhor.'
