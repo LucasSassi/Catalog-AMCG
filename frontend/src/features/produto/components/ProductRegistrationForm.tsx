@@ -1,10 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { listProducers } from '../../produtor/api/producers'
-import type { Producer } from '../../produtor/types'
-import { Button } from '../../../shared/components/Button'
+import { useEffect, useMemo, useState } from 'react'
 import { Feedback } from '../../../shared/components/Feedback'
 import {
+  FormField,
+  formInputClassName,
+  SectionedForm,
+  type FormSection,
+} from '../../../shared/components/SectionedForm'
+import { listProducers } from '../../produtor/api/producers'
+import { ImageDropzone } from '../../produtor/components/ImageDropzone'
+import type { Producer } from '../../produtor/types'
+import {
   IMAGE_CONTENT_TYPES,
+  MAX_PRODUCT_PHOTOS,
   MEASUREMENT_UNITS,
   PRODUCT_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
@@ -12,28 +19,26 @@ import {
 } from '../constants'
 import { useRegisterProduct } from '../hooks/useRegisterProduct'
 import { useUpdateProduct } from '../hooks/useUpdateProduct'
-import type {
-  CreateProductInput,
-  Product,
-  ProductFile,
-  ProductRegistration,
-} from '../types'
+import type { CreateProductInput, Product, ProductRegistration } from '../types'
 
 interface ProductRegistrationFormProps {
   onSuccess?: () => void
+  onCancel?: () => void
+  onDirtyChange?: (dirty: boolean) => void
   approveAfterCreate?: boolean
   product?: Product
 }
 
+interface ProductFormSnapshot {
+  form: CreateProductInput
+  priceReais: string
+}
+
+const MAX_REGISTRATIONS = 5
+
 const emptyRegistration: ProductRegistration = {
   tipo: 'SELO ARTE',
   numero: '',
-}
-
-const emptyPhoto: ProductFile = {
-  url: '',
-  contentType: 'image/jpeg',
-  nomeOriginal: '',
 }
 
 function buildInitialForm(product?: Product): CreateProductInput {
@@ -45,7 +50,7 @@ function buildInitialForm(product?: Product): CreateProductInput {
       categoria: 'MEL_E_DERIVADOS',
       unidadeMedida: 'KG',
       registros: [{ ...emptyRegistration }],
-      fotosAvaliacao: [{ ...emptyPhoto }],
+      fotosAvaliacao: [],
       fotosDivulgacao: [],
       premiacoes: [],
       valorCentavos: 0,
@@ -63,10 +68,9 @@ function buildInitialForm(product?: Product): CreateProductInput {
       product.registros.length > 0
         ? product.registros.map((registro) => ({ ...registro }))
         : [{ ...emptyRegistration }],
-    fotosAvaliacao:
-      product.fotosAvaliacao.length > 0
-        ? product.fotosAvaliacao.map((foto) => ({ ...foto }))
-        : [{ ...emptyPhoto }],
+    fotosAvaliacao: product.fotosAvaliacao
+      .filter((foto) => foto.url)
+      .map((foto) => ({ ...foto })),
     fotosDivulgacao: product.fotosDivulgacao.map((foto) => ({ ...foto })),
     premiacoes: product.premiacoes.map((premiacao) => ({ ...premiacao })),
     valorCentavos: product.valorCentavos,
@@ -74,11 +78,25 @@ function buildInitialForm(product?: Product): CreateProductInput {
   }
 }
 
-const inputClassName =
-  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary'
+function parsePrice(value: string): number | null {
+  const trimmed = value.trim()
+  // "1.234,56" (pt-BR) ou "25.90" / "25,90"
+  const normalized = trimmed.includes(',')
+    ? trimmed.replace(/\./g, '').replace(',', '.')
+    : trimmed
+
+  if (!normalized) {
+    return null
+  }
+
+  const reais = Number(normalized)
+  return Number.isNaN(reais) || reais < 0 ? null : Math.round(reais * 100)
+}
 
 export function ProductRegistrationForm({
   onSuccess,
+  onCancel,
+  onDirtyChange,
   approveAfterCreate = true,
   product,
 }: ProductRegistrationFormProps) {
@@ -86,22 +104,28 @@ export function ProductRegistrationForm({
   const [approvedProducers, setApprovedProducers] = useState<Producer[]>([])
   const [isLoadingProducers, setIsLoadingProducers] = useState(true)
   const [producersError, setProducersError] = useState('')
-  const [priceReais, setPriceReais] = useState(() => {
-    if (!product) {
-      return ''
-    }
-    return (product.valorCentavos / 100).toFixed(2).replace('.', ',')
-  })
-  const [form, setForm] = useState<CreateProductInput>(() =>
-    buildInitialForm(product),
-  )
+  const [snapshot, setSnapshot] = useState<ProductFormSnapshot>(() => ({
+    form: buildInitialForm(product),
+    priceReais: product
+      ? (product.valorCentavos / 100).toFixed(2).replace('.', ',')
+      : '',
+  }))
+  const [form, setForm] = useState<CreateProductInput>(snapshot.form)
+  const [priceReais, setPriceReais] = useState(snapshot.priceReais)
 
-  const register = useRegisterProduct({
-    approveAfterCreate,
-  })
+  const register = useRegisterProduct({ approveAfterCreate })
   const update = useUpdateProduct()
   const error = isEditMode ? update.error : register.error
   const isLoading = isEditMode ? update.isLoading : register.isLoading
+  const isDirty = useMemo(
+    () =>
+      JSON.stringify({ form, priceReais }) !== JSON.stringify(snapshot),
+    [form, priceReais, snapshot],
+  )
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   useEffect(() => {
     let isCurrent = true
@@ -116,21 +140,27 @@ export function ProductRegistrationForm({
         setProducersError('')
 
         if (producers.length > 0) {
+          const fallbackId = producers[0].id
           setForm((current) => ({
             ...current,
-            produtorId: current.produtorId || producers[0].id,
+            produtorId: current.produtorId || fallbackId,
+          }))
+          setSnapshot((current) => ({
+            ...current,
+            form: {
+              ...current.form,
+              produtorId: current.form.produtorId || fallbackId,
+            },
           }))
         }
       })
       .catch((requestError) => {
-        if (!isCurrent) {
-          return
-        }
-
-        if (requestError instanceof Error) {
-          setProducersError(requestError.message)
-        } else {
-          setProducersError('Não foi possível carregar os produtores.')
+        if (isCurrent) {
+          setProducersError(
+            requestError instanceof Error
+              ? requestError.message
+              : 'Não foi possível carregar os produtores.',
+          )
         }
       })
       .finally(() => {
@@ -144,51 +174,28 @@ export function ProductRegistrationForm({
     }
   }, [])
 
+  function updateField<K extends keyof CreateProductInput>(
+    field: K,
+    value: CreateProductInput[K],
+  ) {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
   function updateRegistration(
     index: number,
     field: keyof ProductRegistration,
     value: string,
   ) {
-    setForm((current) => {
-      const registros = current.registros.map((item, itemIndex) => {
-        if (itemIndex !== index) {
-          return item
-        }
-
-        return { ...item, [field]: value }
-      })
-
-      return { ...current, registros }
-    })
+    setForm((current) => ({
+      ...current,
+      registros: current.registros.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }))
   }
 
-  function updatePhoto(
-    index: number,
-    field: keyof ProductFile,
-    value: string,
-  ) {
-    setForm((current) => {
-      const fotosAvaliacao = current.fotosAvaliacao.map((item, itemIndex) => {
-        if (itemIndex !== index) {
-          return item
-        }
-
-        return { ...item, [field]: value }
-      })
-
-      return { ...current, fotosAvaliacao }
-    })
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const reais = Number(priceReais.replace(',', '.'))
-    let valorCentavos = 0
-
-    if (!Number.isNaN(reais) && reais >= 0) {
-      valorCentavos = Math.round(reais * 100)
-    }
+  async function handleSubmit() {
+    const valorCentavos = parsePrice(priceReais) ?? 0
 
     const payload: CreateProductInput = {
       ...form,
@@ -197,444 +204,344 @@ export function ProductRegistrationForm({
         form.fotosDivulgacao.length > 0
           ? form.fotosDivulgacao
           : form.fotosAvaliacao,
-      observacoes: form.observacoes?.trim()
-        ? form.observacoes.trim()
-        : undefined,
+      observacoes: form.observacoes?.trim() ? form.observacoes.trim() : undefined,
       premiacoes: isEditMode ? form.premiacoes : [],
     }
 
     if (isEditMode && product) {
       const updated = await update.submit(product.id, payload, product.status)
+
       if (updated) {
         onSuccess?.()
       }
       return
     }
 
-    const didSubmit = await register.submit(payload)
-
-    if (didSubmit) {
+    if (await register.submit(payload)) {
       onSuccess?.()
     }
   }
 
   if (isLoadingProducers) {
-    return <Feedback title="Carregando produtores aprovados..." />
+    return (
+      <div className="p-6">
+        <Feedback title="Carregando produtores aprovados..." />
+      </div>
+    )
   }
 
   if (producersError) {
     return (
-      <Feedback
-        tone="error"
-        title="Não foi possível carregar produtores"
-        description={producersError}
-      />
+      <div className="p-6">
+        <Feedback
+          tone="error"
+          title="Não foi possível carregar produtores"
+          description={producersError}
+        />
+      </div>
     )
   }
 
   if (approvedProducers.length === 0) {
     return (
-      <Feedback
-        title="Nenhum produtor aprovado"
-        description="Cadastre e aprove um produtor antes de cadastrar um produto."
-      />
+      <div className="p-6">
+        <Feedback
+          title="Nenhum produtor aprovado"
+          description="Cadastre e aprove um produtor antes de cadastrar um produto."
+        />
+      </div>
     )
   }
 
-  return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Produtor
-        </legend>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Produtor aprovado
-          </span>
-          <select
-            required
-            value={form.produtorId}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                produtorId: event.target.value,
-              }))
-            }
-            className={inputClassName}
-          >
-            {approvedProducers.map((producer) => (
-              <option key={producer.id} value={producer.id}>
-                {producer.nomeEmpresa} — {producer.endereco.cidade}
-              </option>
-            ))}
-          </select>
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Dados do produto
-        </legend>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Nome
-          </span>
-          <input
-            required
-            type="text"
-            value={form.nome}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, nome: event.target.value }))
-            }
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Descrição
-          </span>
-          <textarea
-            required
-            rows={3}
-            value={form.descricao}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                descricao: event.target.value,
-              }))
-            }
-            className={`${inputClassName} min-h-24`}
-          />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Categoria
-            </span>
-            <select
-              required
-              value={form.categoria}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  categoria: event.target
-                    .value as CreateProductInput['categoria'],
-                }))
-              }
-              className={inputClassName}
-            >
-              {PRODUCT_CATEGORIES.map((categoria) => (
-                <option key={categoria} value={categoria}>
-                  {PRODUCT_CATEGORY_LABELS[categoria]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Unidade
-            </span>
-            <select
-              required
-              value={form.unidadeMedida}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  unidadeMedida: event.target
-                    .value as CreateProductInput['unidadeMedida'],
-                }))
-              }
-              className={inputClassName}
-            >
-              {MEASUREMENT_UNITS.map((unidade) => (
-                <option key={unidade} value={unidade}>
-                  {unidade}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Valor (R$)
-          </span>
-          <input
-            required
-            type="text"
-            inputMode="decimal"
-            value={priceReais}
-            onChange={(event) => setPriceReais(event.target.value)}
-            className={inputClassName}
-            placeholder="Ex.: 25,90"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Observações (opcional)
-          </span>
-          <textarea
-            rows={2}
-            value={form.observacoes ?? ''}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                observacoes: event.target.value,
-              }))
-            }
-            className={`${inputClassName} min-h-20`}
-          />
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Registros
-        </legend>
-
-        {form.registros.map((registro, index) => (
-          <div
-            key={index}
-            className="space-y-3 rounded-lg border border-slate-200 p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-700">
-                Registro {index + 1}
-              </p>
-              {form.registros.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      registros: current.registros.filter(
-                        (_, itemIndex) => itemIndex !== index,
-                      ),
-                    }))
-                  }
-                >
-                  Remover
-                </Button>
-              ) : null}
-            </div>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Tipo
-              </span>
-              <select
-                required
-                value={registro.tipo}
-                onChange={(event) =>
-                  updateRegistration(index, 'tipo', event.target.value)
-                }
-                className={inputClassName}
-              >
-                {PRODUCT_REGISTRATION_TYPES.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {tipo}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {registro.tipo === 'Outro' ? (
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Descreva o tipo
-                </span>
-                <input
-                  required
-                  type="text"
-                  value={registro.tipoOutros ?? ''}
-                  onChange={(event) =>
-                    updateRegistration(index, 'tipoOutros', event.target.value)
-                  }
-                  className={inputClassName}
-                />
-              </label>
-            ) : null}
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Número
-              </span>
-              <input
-                required
-                type="text"
-                value={registro.numero}
-                onChange={(event) =>
-                  updateRegistration(index, 'numero', event.target.value)
-                }
-                className={inputClassName}
-              />
-            </label>
-          </div>
-        ))}
-
-        {form.registros.length < 5 ? (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              setForm((current) => ({
-                ...current,
-                registros: [...current.registros, { ...emptyRegistration }],
-              }))
-            }
-          >
-            Adicionar registro
-          </Button>
-        ) : null}
-      </fieldset>
-
-      <PhotoFields
-        title="Fotos"
-        photos={form.fotosAvaliacao}
-        onChange={updatePhoto}
-        onAdd={() =>
-          setForm((current) => ({
-            ...current,
-            fotosAvaliacao: [...current.fotosAvaliacao, { ...emptyPhoto }],
-          }))
-        }
-        onRemove={(index) =>
-          setForm((current) => ({
-            ...current,
-            fotosAvaliacao: current.fotosAvaliacao.filter(
-              (_, itemIndex) => itemIndex !== index,
-            ),
-          }))
-        }
-      />
-
-      {error ? (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <Button type="submit" fullWidth disabled={isLoading}>
-        {isLoading
-          ? isEditMode
-            ? 'Salvando...'
-            : 'Enviando cadastro...'
-          : isEditMode
-            ? 'Salvar alterações'
-            : 'Enviar cadastro'}
-      </Button>
-    </form>
+  const price = parsePrice(priceReais)
+  const selectedProducer = approvedProducers.find(
+    (producer) => producer.id === form.produtorId,
   )
-}
 
-function PhotoFields({
-  title,
-  photos,
-  onChange,
-  onAdd,
-  onRemove,
-}: {
-  title: string
-  photos: ProductFile[]
-  onChange: (
-    index: number,
-    field: keyof ProductFile,
-    value: string,
-  ) => void
-  onAdd: () => void
-  onRemove: (index: number) => void
-}) {
-  return (
-    <fieldset className="space-y-4">
-      <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-        {title}
-      </legend>
-
-      {photos.map((photo, index) => (
-        <div
-          key={index}
-          className="space-y-3 rounded-lg border border-slate-200 p-4"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-slate-700">
-              Foto {index + 1}
-            </p>
-            {photos.length > 1 ? (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onRemove(index)}
-              >
-                Remover
-              </Button>
-            ) : null}
-          </div>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              URL
-            </span>
-            <input
-              required
-              type="url"
-              value={photo.url}
-              onChange={(event) =>
-                onChange(index, 'url', event.target.value)
-              }
-              className={inputClassName}
-              placeholder="https://..."
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Content-Type
-            </span>
+  const sections: FormSection[] = [
+    {
+      id: 'produto',
+      label: 'Produto',
+      description: 'Nome, produtor e descrição exibidos no catálogo.',
+      status:
+        form.produtorId && form.nome.trim() && form.descricao.trim()
+          ? form.descricao.trim().length < 40
+            ? 'aviso'
+            : 'ok'
+          : 'incompleto',
+      content: (
+        <>
+          <FormField
+            label="Produtor"
+            hint={
+              selectedProducer
+                ? `${selectedProducer.endereco.cidade}/${selectedProducer.endereco.estado}`
+                : undefined
+            }
+          >
             <select
               required
-              value={photo.contentType}
-              onChange={(event) =>
-                onChange(index, 'contentType', event.target.value)
-              }
-              className={inputClassName}
+              value={form.produtorId}
+              onChange={(event) => updateField('produtorId', event.target.value)}
+              className={formInputClassName}
             >
-              {IMAGE_CONTENT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
+              {approvedProducers.map((producer) => (
+                <option key={producer.id} value={producer.id}>
+                  {producer.nomeEmpresa}
                 </option>
               ))}
             </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Nome original
-            </span>
+          </FormField>
+          <FormField label="Nome do produto">
             <input
               required
               type="text"
-              value={photo.nomeOriginal}
-              onChange={(event) =>
-                onChange(index, 'nomeOriginal', event.target.value)
-              }
-              className={inputClassName}
-              placeholder="foto.jpg"
+              value={form.nome}
+              onChange={(event) => updateField('nome', event.target.value)}
+              className={formInputClassName}
             />
-          </label>
-        </div>
-      ))}
+          </FormField>
+          <FormField
+            label="Descrição"
+            hint={
+              form.descricao.trim().length > 0 && form.descricao.trim().length < 40
+                ? 'Dica: descrições com mais detalhes (ingredientes, modo de produção) vendem melhor.'
+                : `${form.descricao.length} caracteres`
+            }
+          >
+            <textarea
+              required
+              rows={4}
+              value={form.descricao}
+              onChange={(event) => updateField('descricao', event.target.value)}
+              className={formInputClassName}
+            />
+          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Categoria">
+              <select
+                required
+                value={form.categoria}
+                onChange={(event) =>
+                  updateField(
+                    'categoria',
+                    event.target.value as CreateProductInput['categoria'],
+                  )
+                }
+                className={formInputClassName}
+              >
+                {PRODUCT_CATEGORIES.map((categoria) => (
+                  <option key={categoria} value={categoria}>
+                    {PRODUCT_CATEGORY_LABELS[categoria]}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Unidade">
+              <select
+                required
+                value={form.unidadeMedida}
+                onChange={(event) =>
+                  updateField(
+                    'unidadeMedida',
+                    event.target.value as CreateProductInput['unidadeMedida'],
+                  )
+                }
+                className={formInputClassName}
+              >
+                {MEASUREMENT_UNITS.map((unidade) => (
+                  <option key={unidade} value={unidade}>
+                    {unidade}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'preco',
+      label: 'Preço',
+      status: price !== null && price > 0 ? 'ok' : 'incompleto',
+      content: (
+        <>
+          <FormField
+            label={`Valor por ${form.unidadeMedida.toLowerCase()} (R$)`}
+            hint={
+              priceReais && price === null
+                ? 'Use números, por exemplo 25,90.'
+                : undefined
+            }
+          >
+            <div className="flex min-h-11 items-center rounded-lg border border-slate-300 bg-white focus-within:border-primary">
+              <span className="pl-3 text-sm font-semibold text-text-muted">R$</span>
+              <input
+                required
+                type="text"
+                inputMode="decimal"
+                value={priceReais}
+                aria-invalid={Boolean(priceReais) && price === null}
+                onChange={(event) => setPriceReais(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm text-text outline-none"
+                placeholder="25,90"
+              />
+            </div>
+          </FormField>
+          <FormField label="Observações (opcional)">
+            <textarea
+              rows={2}
+              value={form.observacoes ?? ''}
+              onChange={(event) => updateField('observacoes', event.target.value)}
+              className={formInputClassName}
+              placeholder="Ex.: validade, conservação, encomendas"
+            />
+          </FormField>
+        </>
+      ),
+    },
+    {
+      id: 'registros',
+      label: 'Registros',
+      description: 'Selos e inspeções que garantem a procedência.',
+      status: form.registros.every(
+        (registro) =>
+          registro.numero.trim() &&
+          (registro.tipo !== 'Outro' || registro.tipoOutros?.trim()),
+      )
+        ? 'ok'
+        : 'incompleto',
+      content: (
+        <>
+          {form.registros.map((registro, index) => (
+            <div
+              key={index}
+              className="grid gap-3 rounded-xl border border-border-soft p-3.5 sm:grid-cols-[10rem_1fr_auto] sm:items-end"
+            >
+              <FormField label="Tipo">
+                <select
+                  required
+                  value={registro.tipo}
+                  onChange={(event) =>
+                    updateRegistration(index, 'tipo', event.target.value)
+                  }
+                  className={formInputClassName}
+                >
+                  {PRODUCT_REGISTRATION_TYPES.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Número">
+                <input
+                  required
+                  type="text"
+                  value={registro.numero}
+                  onChange={(event) =>
+                    updateRegistration(index, 'numero', event.target.value)
+                  }
+                  className={formInputClassName}
+                />
+              </FormField>
+              {form.registros.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateField(
+                      'registros',
+                      form.registros.filter((_, itemIndex) => itemIndex !== index),
+                    )
+                  }
+                  className="min-h-11 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger-soft"
+                >
+                  Remover
+                </button>
+              ) : (
+                <span />
+              )}
+              {registro.tipo === 'Outro' ? (
+                <FormField label="Descreva o tipo" className="sm:col-span-3">
+                  <input
+                    required
+                    type="text"
+                    value={registro.tipoOutros ?? ''}
+                    onChange={(event) =>
+                      updateRegistration(index, 'tipoOutros', event.target.value)
+                    }
+                    className={formInputClassName}
+                  />
+                </FormField>
+              ) : null}
+            </div>
+          ))}
+          {form.registros.length < MAX_REGISTRATIONS ? (
+            <button
+              type="button"
+              onClick={() =>
+                updateField('registros', [
+                  ...form.registros,
+                  { ...emptyRegistration },
+                ])
+              }
+              className="self-start text-sm font-semibold text-primary-darker hover:text-primary-dark"
+            >
+              + Adicionar registro
+            </button>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      id: 'fotos',
+      label: 'Fotos',
+      description: 'Sem fotos de divulgação, as de avaliação são usadas no catálogo.',
+      status:
+        form.fotosAvaliacao.length === 0
+          ? 'incompleto'
+          : form.fotosDivulgacao.length === 0
+            ? 'aviso'
+            : 'ok',
+      content: (
+        <>
+          <ImageDropzone
+            label="Fotos para avaliação"
+            description="Uso interno: rótulo, embalagem e o produto de perto."
+            files={form.fotosAvaliacao}
+            max={MAX_PRODUCT_PHOTOS}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('fotosAvaliacao', files)}
+          />
+          <ImageDropzone
+            label="Fotos de divulgação"
+            description="Aparecem no catálogo. A primeira é a capa."
+            files={form.fotosDivulgacao}
+            max={MAX_PRODUCT_PHOTOS}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('fotosDivulgacao', files)}
+          />
+        </>
+      ),
+    },
+  ]
 
-      {photos.length < 5 ? (
-        <Button type="button" variant="secondary" onClick={onAdd}>
-          Adicionar foto
-        </Button>
-      ) : null}
-    </fieldset>
+  return (
+    <SectionedForm
+      sections={sections}
+      isDirty={isDirty}
+      isSubmitting={isLoading}
+      submitLabel={
+        isEditMode
+          ? 'Salvar alterações'
+          : approveAfterCreate
+            ? 'Cadastrar e aprovar'
+            : 'Enviar cadastro'
+      }
+      submittingLabel={isEditMode ? 'Salvando...' : 'Enviando cadastro...'}
+      error={error}
+      onSubmit={() => void handleSubmit()}
+      onCancel={onCancel}
+    />
   )
 }

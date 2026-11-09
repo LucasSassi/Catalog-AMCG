@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import { Button } from '../../../shared/components/Button'
-import { Modal } from '../../../shared/components/Modal'
+import { FormModal } from '../../../shared/components/FormModal'
 import type { Producer } from '../types'
 import { ProducerRegistrationForm } from './ProducerRegistrationForm'
 
@@ -15,35 +13,23 @@ export function ProducerEditModal({
   onClose,
   onSuccess,
 }: ProducerEditModalProps) {
-  const [didSucceed, setDidSucceed] = useState(false)
-
-  function handleSuccess() {
-    setDidSucceed(true)
-    onSuccess()
-  }
-
-  function handleClose() {
-    setDidSucceed(false)
-    onClose()
-  }
-
   return (
-    <Modal title="Editar produtor" onClose={handleClose}>
-      {didSucceed ? (
-        <div className="space-y-5">
-          <p className="text-sm leading-6 text-slate-700">
-            Produtor atualizado com sucesso.
-          </p>
-          <Button fullWidth onClick={handleClose}>
-            Fechar
-          </Button>
-        </div>
-      ) : (
+    <FormModal
+      title={`Editar ${producer.nomeEmpresa}`}
+      subtitle="As mudanças valem para o catálogo assim que forem salvas."
+      successTitle="Produtor atualizado"
+      successMessage="Os dados foram salvos com sucesso."
+      onClose={onClose}
+      onSuccess={onSuccess}
+    >
+      {(props) => (
         <ProducerRegistrationForm
           producer={producer}
-          onSuccess={handleSuccess}
+          onSuccess={props.onSuccess}
+          onCancel={props.onCancel}
+          onDirtyChange={props.onDirtyChange}
         />
       )}
-    </Modal>
+    </FormModal>
   )
 }

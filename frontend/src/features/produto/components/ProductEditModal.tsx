@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import { Button } from '../../../shared/components/Button'
-import { Modal } from '../../../shared/components/Modal'
+import { FormModal } from '../../../shared/components/FormModal'
 import type { Product } from '../types'
 import { ProductRegistrationForm } from './ProductRegistrationForm'
 
@@ -15,32 +13,23 @@ export function ProductEditModal({
   onClose,
   onSuccess,
 }: ProductEditModalProps) {
-  const [didSucceed, setDidSucceed] = useState(false)
-
-  function handleSuccess() {
-    setDidSucceed(true)
-    onSuccess()
-  }
-
-  function handleClose() {
-    setDidSucceed(false)
-    onClose()
-  }
-
   return (
-    <Modal title="Editar produto" onClose={handleClose}>
-      {didSucceed ? (
-        <div className="space-y-5">
-          <p className="text-sm leading-6 text-slate-700">
-            Produto atualizado com sucesso.
-          </p>
-          <Button fullWidth onClick={handleClose}>
-            Fechar
-          </Button>
-        </div>
-      ) : (
-        <ProductRegistrationForm product={product} onSuccess={handleSuccess} />
+    <FormModal
+      title={`Editar ${product.nome}`}
+      subtitle="As mudanças valem para o catálogo assim que forem salvas."
+      successTitle="Produto atualizado"
+      successMessage="Os dados foram salvos com sucesso."
+      onClose={onClose}
+      onSuccess={onSuccess}
+    >
+      {(props) => (
+        <ProductRegistrationForm
+          product={product}
+          onSuccess={props.onSuccess}
+          onCancel={props.onCancel}
+          onDirtyChange={props.onDirtyChange}
+        />
       )}
-    </Modal>
+    </FormModal>
   )
 }
