@@ -47,7 +47,13 @@ export const CATALOG_CERTIFICATIONS = [
   'SIM',
 ] as const
 
-export const SEAL_INFO_TYPES = ['SIM', 'SIF', 'MAPA'] as const
+export const SEAL_INFO_TYPES = [
+  'SIM',
+  'SUSAF',
+  'SIF',
+  'SELO ARTE',
+  'MAPA',
+] as const
 
 export type SealInfoType = (typeof SEAL_INFO_TYPES)[number]
 
@@ -60,6 +66,18 @@ export const SEAL_INFO: Record<
       'SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios.',
     detail:
       'O SIM é a fiscalização sanitária do município. O produto só pode ser vendido nos municípios cobertos por esse serviço de inspeção.',
+  },
+  SUSAF: {
+    short:
+      'SUSAF – Sistema Unificado Estadual de Sanidade Agroindustrial Familiar: comercialização em todo o estado.',
+    detail:
+      'O SUSAF reconhece a inspeção municipal do produto agroindustrial familiar e permite que ele seja vendido em todo o estado, além do município de origem.',
+  },
+  'SELO ARTE': {
+    short:
+      'Selo ARTE: produto alimentício artesanal, com comercialização em todo o território nacional.',
+    detail:
+      'O Selo ARTE identifica produtos de origem animal feitos de forma artesanal, com receita e processo tradicionais. Ele permite a venda em todo o Brasil.',
   },
   SIF: {
     short:
