@@ -68,31 +68,76 @@ export function ProductDetailPage() {
   const mainPhoto = photos[selectedPhotoIndex] ?? photos[0]
   const whatsappUrl = buildProductWhatsAppUrl(product)
   const producerLogoUrl = product.produtor.logo?.url
+  const price = formatCurrency(product.valorCentavos)
+  // Registros "Outro" mostram o nome informado (ex.: "SIM", "SESA-PR").
+  const registroLabels = [
+    ...new Set(
+      product.registros.map((registro) =>
+        registro.tipo === 'Outro' && registro.tipoOutros
+          ? registro.tipoOutros.trim()
+          : registro.tipo,
+      ),
+    ),
+  ]
   const sealTypes = [
     ...new Set<SealInfoType>([
       ...(product.produtor.temRegistroSim ? (['SIM'] as const) : []),
-      ...product.registros.flatMap((registro) =>
-        isSealInfoType(registro.tipo) ? [registro.tipo] : [],
-      ),
+      ...registroLabels.filter(isSealInfoType),
     ]),
   ]
-  const otherRegistros = product.registros.filter(
-    (registro) => !isSealInfoType(registro.tipo),
+  const otherRegistros = registroLabels.filter(
+    (label) => !isSealInfoType(label),
   )
+  const hasSeals = sealTypes.length > 0 || otherRegistros.length > 0
 
   return (
-    <main className="bg-background-secondary py-10">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="overflow-visible rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-          <div className="grid gap-8 overflow-visible lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-            <div className="relative flex flex-col gap-3 overflow-visible sm:flex-row">
-              <div className="flex shrink-0 flex-row gap-2 overflow-x-auto sm:w-[4.5rem] sm:flex-col sm:overflow-y-auto sm:overflow-x-visible">
+    <main className="bg-background-secondary pt-6 sm:pt-8 lg:pb-12">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:gap-7 sm:px-6 lg:px-8">
+        <nav aria-label="Navegação">
+          <Link
+            to="/#produtos"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary-darker transition hover:text-primary-dark"
+          >
+            <ChevronLeftIcon />
+            Voltar ao catálogo
+          </Link>
+        </nav>
+
+        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-12">
+          <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+            <div className="relative overflow-hidden rounded-3xl bg-slate-100 shadow-sm sm:rounded-[1.75rem]">
+              <img
+                src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
+                alt={product.nome}
+                width={1200}
+                height={1200}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="aspect-square w-full object-cover"
+              />
+              {product.premiado ? (
+                <div className="absolute left-3.5 top-3.5 sm:left-5 sm:top-5">
+                  <AwardSeal premiacoes={product.premiacoes} />
+                </div>
+              ) : null}
+              {photos.length > 1 ? (
+                <span className="absolute bottom-3.5 right-3.5 rounded-full bg-foreground/80 px-3 py-1.5 text-xs font-semibold text-white sm:bottom-5 sm:right-5">
+                  {selectedPhotoIndex + 1} / {photos.length}
+                </span>
+              ) : null}
+            </div>
+
+            {photos.length > 1 ? (
+              <div className="flex flex-wrap gap-2.5 sm:gap-3">
                 {photos.map((photo, index) => (
                   <button
                     key={`${photo.url}-${index}`}
                     type="button"
+                    aria-label={`Ver foto ${index + 1}`}
+                    aria-pressed={index === selectedPhotoIndex}
                     onClick={() => setSelectedPhotoIndex(index)}
-                    className={`h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-xl border-2 ${
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-[2.5px] bg-slate-100 transition hover:-translate-y-0.5 sm:h-21 sm:w-21 ${
                       index === selectedPhotoIndex
                         ? 'border-primary'
                         : 'border-transparent'
@@ -104,8 +149,8 @@ export function ProductDetailPage() {
                         THUMBNAIL_WIDTH.gallery,
                       )}
                       alt=""
-                      width={72}
-                      height={72}
+                      width={84}
+                      height={84}
                       loading="lazy"
                       decoding="async"
                       className="aspect-square h-full w-full object-cover"
@@ -113,113 +158,112 @@ export function ProductDetailPage() {
                   </button>
                 ))}
               </div>
+            ) : null}
+          </div>
 
-              <div className="relative min-w-0 flex-1 overflow-visible">
-                <div className="relative overflow-visible rounded-2xl bg-slate-100">
-                  <div className="overflow-hidden rounded-2xl">
-                    <img
-                      src={buildThumbnailUrl(
-                        mainPhoto.url,
-                        THUMBNAIL_WIDTH.detail,
-                      )}
-                      alt={product.nome}
-                      width={1200}
-                      height={900}
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                      className="aspect-[4/3] w-full object-cover lg:aspect-square"
-                    />
-                  </div>
-                  {product.premiado ? (
-                    <div className="absolute -right-10 -top-10 z-10">
-                      <AwardSeal premiacoes={product.premiacoes} />
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex min-h-0 flex-col">
-              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <div className="flex min-w-0 flex-col gap-5 sm:gap-6">
+            <div className="flex flex-col gap-3 sm:gap-3.5">
+              <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#eadfca] px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#5a4a2c] sm:text-[13px]">
+                <PinIcon />
+                {product.produtor.municipio}
+              </span>
+              <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-foreground sm:text-[2.75rem] sm:leading-[1.08]">
                 {product.nome}
               </h1>
-              <p className="mt-4 text-sm leading-relaxed text-slate-600">
+              <p className="text-3xl font-extrabold tracking-tight text-primary lg:hidden">
+                {price}
+              </p>
+              <p className="text-base leading-relaxed text-[#3d4b41] sm:text-[17px] sm:leading-[1.65]">
                 {product.descricao}
               </p>
+            </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <p className="text-3xl font-bold text-slate-900">
-                  {formatCurrency(product.valorCentavos)}
-                </p>
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-primary-darker"
-                >
-                  <WhatsAppIcon size={16} />
-                  WhatsApp
-                </a>
+            <div className="hidden flex-col gap-4 rounded-3xl bg-white p-6 shadow-[0_1px_2px_rgba(10,59,37,.06),0_8px_24px_rgba(10,59,37,.05)] lg:flex">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                  Preço
+                </span>
+                <span className="text-[2.5rem] font-extrabold tracking-tight text-foreground">
+                  {price}
+                </span>
               </div>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex min-h-14 items-center justify-center gap-2.5 rounded-2xl bg-primary text-base font-bold text-white transition hover:bg-primary-darker"
+              >
+                <WhatsAppIcon size={20} />
+                Comprar pelo WhatsApp
+              </a>
+            </div>
 
-              <div className="mt-auto border-t border-slate-200 pt-8 lg:mt-16">
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex flex-col gap-2">
-                      <span className="inline-flex min-h-9 items-center rounded-lg bg-[#d4c4a8] px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-white">
-                        {product.produtor.municipio}
-                      </span>
-                      {sealTypes.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {sealTypes.map((tipo) => (
-                            <SealBadge key={tipo} tipo={tipo} />
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
+            <div className="flex flex-col gap-4 rounded-3xl bg-white p-4 shadow-sm sm:gap-5 sm:p-5">
+              <Link
+                to={`/produtores/${product.produtor.id}`}
+                aria-label={`Ver informações do produtor ${product.produtor.nome}`}
+                className="flex items-center gap-3.5 rounded-2xl border-[1.5px] border-border-soft p-2.5 transition hover:border-primary sm:gap-4 sm:p-3"
+              >
+                <span className="flex h-19 w-23 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-foreground px-1.5 sm:h-24 sm:w-30">
+                  <img
+                    src={
+                      producerLogoUrl
+                        ? buildThumbnailUrl(
+                            producerLogoUrl,
+                            THUMBNAIL_WIDTH.card,
+                          )
+                        : logoPlaceholder
+                    }
+                    alt=""
+                    width={120}
+                    height={96}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-contain"
+                  />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted sm:text-xs">
+                    Produtor
+                  </span>
+                  <span className="text-[15px] font-bold text-foreground sm:text-base">
+                    Conheça quem produz
+                  </span>
+                </span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary-background text-primary">
+                  <ChevronRightIcon />
+                </span>
+              </Link>
 
-                    <Link
-                      to={`/produtores/${product.produtor.id}`}
-                      aria-label={`Ver informações do produtor ${product.produtor.nome}`}
-                      className="ml-auto inline-flex h-36 w-44 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 px-2 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      <img
-                        src={
-                          producerLogoUrl
-                            ? buildThumbnailUrl(
-                                producerLogoUrl,
-                                THUMBNAIL_WIDTH.card,
-                              )
-                            : logoPlaceholder
-                        }
-                        alt=""
-                        width={176}
-                        height={144}
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-contain"
-                      />
-                    </Link>
-                  </div>
-                </div>
-
-                {otherRegistros.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {otherRegistros.map((registro) => (
+              {hasSeals ? (
+                <div className="flex flex-col gap-2.5 sm:gap-3">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted sm:text-xs">
+                    Selos e registros
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                    {sealTypes.map((tipo) => (
+                      <SealBadge key={tipo} tipo={tipo} />
+                    ))}
+                    {sealTypes.length > 0 && otherRegistros.length > 0 ? (
                       <span
-                        key={registro.tipo}
-                        className="rounded-full bg-secondary-background px-3 py-1 text-xs font-semibold text-primary-dark"
+                        className="hidden h-8 w-px bg-border-soft sm:block"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {otherRegistros.map((label) => (
+                      <span
+                        key={label}
+                        className="inline-flex min-h-8 items-center rounded-full bg-secondary-background px-3 text-xs font-bold text-primary-dark"
                       >
-                        {registro.tipo}
+                        {label}
                       </span>
                     ))}
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
           </div>
-        </div>
+        </section>
 
         <SimilarProductsCarousel
           title="Produtos similares"
@@ -246,16 +290,82 @@ export function ProductDetailPage() {
           onNext={doProdutor.goToNextPage}
           isLoading={doProdutor.isLoading}
         />
+      </div>
 
-        <div className="mt-6 text-center">
-          <Link
-            to="/#produtos"
-            className="text-sm font-semibold text-primary-darker hover:underline"
-          >
-            Voltar ao catálogo
-          </Link>
+      <div className="sticky bottom-0 z-30 mt-8 flex items-center gap-3.5 border-t border-border-soft bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(10,59,37,.08)] lg:hidden">
+        <div className="flex flex-col">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
+            Preço
+          </span>
+          <span className="text-xl font-extrabold text-foreground">
+            {price}
+          </span>
         </div>
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-h-13 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-white transition hover:bg-primary-darker"
+        >
+          <WhatsAppIcon size={18} />
+          Comprar pelo WhatsApp
+        </a>
       </div>
     </main>
+  )
+}
+
+function PinIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  )
+}
+
+function ChevronLeftIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M15 6 9 12l6 6" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m9 6 6 6-6 6" />
+    </svg>
   )
 }

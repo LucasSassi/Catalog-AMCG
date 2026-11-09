@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Link } from 'react-router-dom'
 import { WhatsAppIcon } from '../../../shared/components/WhatsAppIcon'
 import {
@@ -9,8 +9,34 @@ import { formatCurrency } from '../../../shared/lib/formatCurrency'
 import { buildProductWhatsAppUrl } from '../lib/whatsapp'
 import type { CatalogProduct } from '../types'
 
-const VISIBLE_COUNT = 3
+const VISIBLE_COUNT_DESKTOP = 3
+const VISIBLE_COUNT_MOBILE = 2
+const MOBILE_MEDIA_QUERY = '(max-width: 639px)'
 const SLIDE_DURATION_MS = 300
+
+function subscribeToMobileQuery(onChange: () => void): () => void {
+  const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY)
+  mediaQuery.addEventListener('change', onChange)
+  return () => mediaQuery.removeEventListener('change', onChange)
+}
+
+function getVisibleCount(): number {
+  return window.matchMedia(MOBILE_MEDIA_QUERY).matches
+    ? VISIBLE_COUNT_MOBILE
+    : VISIBLE_COUNT_DESKTOP
+}
+
+function getServerVisibleCount(): number {
+  return VISIBLE_COUNT_DESKTOP
+}
+
+function useVisibleCount(): number {
+  return useSyncExternalStore(
+    subscribeToMobileQuery,
+    getVisibleCount,
+    getServerVisibleCount,
+  )
+}
 
 interface SimilarProductsCarouselProps {
   title: string
@@ -37,6 +63,7 @@ export function SimilarProductsCarousel({
   onNext,
   isLoading,
 }: SimilarProductsCarouselProps) {
+  const visibleCount = useVisibleCount()
   const [startIndex, setStartIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [skipTransition, setSkipTransition] = useState(false)
@@ -48,7 +75,7 @@ export function SimilarProductsCarousel({
     setIsAnimating(false)
 
     if (pendingEdge.current === 'end') {
-      const lastWindowStart = Math.max(0, products.length - VISIBLE_COUNT)
+      const lastWindowStart = Math.max(0, products.length - visibleCount)
       setStartIndex(lastWindowStart)
     } else {
       setStartIndex(0)
@@ -64,7 +91,7 @@ export function SimilarProductsCarousel({
     return () => {
       cancelAnimationFrame(frame)
     }
-  }, [products])
+  }, [products, visibleCount])
 
   useEffect(() => {
     return () => {
@@ -78,15 +105,15 @@ export function SimilarProductsCarousel({
     return null
   }
 
-  const maxStartIndex = Math.max(0, products.length - VISIBLE_COUNT)
+  const maxStartIndex = Math.max(0, products.length - visibleCount)
   const canGoPrevious = startIndex > 0 || hasPrevious
   const canGoNext = startIndex < maxStartIndex || hasNext
   const trackWidthPercent =
-    products.length > 0 ? (products.length / VISIBLE_COUNT) * 100 : 100
+    products.length > 0 ? (products.length / visibleCount) * 100 : 100
   const translatePercent =
     products.length > 0 ? (startIndex / products.length) * 100 : 0
   const itemWidthPercent =
-    products.length > 0 ? 100 / products.length : 100 / VISIBLE_COUNT
+    products.length > 0 ? 100 / products.length : 100 / visibleCount
 
   function beginSlide(nextIndex: number): void {
     setIsAnimating(true)
@@ -108,7 +135,7 @@ export function SimilarProductsCarousel({
     }
 
     if (startIndex > 0) {
-      beginSlide(Math.max(0, startIndex - VISIBLE_COUNT))
+      beginSlide(Math.max(0, startIndex - visibleCount))
       return
     }
 
@@ -126,7 +153,7 @@ export function SimilarProductsCarousel({
     }
 
     if (startIndex < maxStartIndex) {
-      beginSlide(Math.min(maxStartIndex, startIndex + VISIBLE_COUNT))
+      beginSlide(Math.min(maxStartIndex, startIndex + visibleCount))
       return
     }
 
@@ -138,73 +165,66 @@ export function SimilarProductsCarousel({
     onNext()
   }
 
+  const navButtonClass =
+    'flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-[#cfdcd2] bg-white text-foreground transition hover:bg-secondary-background disabled:cursor-not-allowed disabled:opacity-40'
+
   return (
-    <section className="mt-10">
-      <div className="mb-5 flex items-center justify-center sm:mb-6">
-        <span className="rounded-full bg-primary px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.2em]">
+    <section className="mt-6 flex flex-col gap-4 sm:mt-8 sm:gap-5">
+      <div className="flex items-end justify-between gap-4">
+        <h2 className="text-[22px] font-extrabold tracking-tight text-foreground sm:text-[28px]">
           {title}
-        </span>
-      </div>
-
-      <div className="relative flex items-center gap-2 sm:gap-3">
-        {canGoPrevious ? (
-          <button
-            type="button"
-            aria-label={previousLabel}
-            onClick={handlePrevious}
-            disabled={isAnimating}
-            className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 shadow-md transition hover:bg-slate-50 disabled:cursor-wait sm:h-10 sm:w-10"
-          >
-            <ChevronLeftIcon />
-          </button>
-        ) : (
-          <div className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" aria-hidden="true" />
-        )}
-
-        {isLoading ? (
-          <p className="flex-1 py-10 text-center text-sm text-slate-500">
-            {loadingLabel}
-          </p>
-        ) : (
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <div
-              className={`flex ${
-                skipTransition
-                  ? ''
-                  : 'transition-transform duration-300 ease-out'
-              }`}
-              style={{
-                width: `${trackWidthPercent}%`,
-                transform: `translateX(-${translatePercent}%)`,
-              }}
+        </h2>
+        {canGoPrevious || canGoNext ? (
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              aria-label={previousLabel}
+              onClick={handlePrevious}
+              disabled={!canGoPrevious || isAnimating}
+              className={navButtonClass}
             >
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className="box-border shrink-0 px-1 sm:px-2"
-                  style={{ width: `${itemWidthPercent}%` }}
-                >
-                  <ProductCarouselCard product={product} />
-                </div>
-              ))}
-            </div>
+              <ChevronLeftIcon />
+            </button>
+            <button
+              type="button"
+              aria-label={nextLabel}
+              onClick={handleNext}
+              disabled={!canGoNext || isAnimating}
+              className={navButtonClass}
+            >
+              <ChevronRightIcon />
+            </button>
           </div>
-        )}
-
-        {canGoNext ? (
-          <button
-            type="button"
-            aria-label={nextLabel}
-            onClick={handleNext}
-            disabled={isAnimating}
-            className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 shadow-md transition hover:bg-slate-50 disabled:cursor-wait sm:h-10 sm:w-10"
-          >
-            <ChevronRightIcon />
-          </button>
-        ) : (
-          <div className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" aria-hidden="true" />
-        )}
+        ) : null}
       </div>
+
+      {isLoading ? (
+        <p className="py-10 text-center text-sm text-text-muted">
+          {loadingLabel}
+        </p>
+      ) : (
+        <div className="-mx-1.5 overflow-hidden sm:-mx-2.5">
+          <div
+            className={`flex ${
+              skipTransition ? '' : 'transition-transform duration-300 ease-out'
+            }`}
+            style={{
+              width: `${trackWidthPercent}%`,
+              transform: `translateX(-${translatePercent}%)`,
+            }}
+          >
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="box-border shrink-0 px-1.5 pb-2 sm:px-2.5"
+                style={{ width: `${itemWidthPercent}%` }}
+              >
+                <ProductCarouselCard product={product} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -213,8 +233,11 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   const whatsappUrl = buildProductWhatsAppUrl(product)
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-slate-300 bg-white p-1.5 shadow-sm sm:rounded-3xl sm:border-slate-400 sm:p-3">
-      <Link to={`/produtos/${product.id}`} className="block min-w-0 flex-1">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(10,59,37,.10)] sm:rounded-[1.375rem]">
+      <Link
+        to={`/produtos/${product.id}`}
+        className="flex min-w-0 flex-1 flex-col"
+      >
         <img
           src={buildThumbnailUrl(
             product.fotoDivulgacao.url,
@@ -222,36 +245,34 @@ function ProductCarouselCard({ product }: { product: CatalogProduct }) {
           )}
           alt={product.nome}
           width={600}
-          height={400}
+          height={450}
           loading="lazy"
           decoding="async"
-          className="aspect-[4/3] w-full rounded-lg object-cover sm:rounded-2xl"
+          className="aspect-[4/3] w-full bg-slate-100 object-cover"
         />
-        <h3 className="mt-1.5 line-clamp-2 text-center text-[10px] font-bold leading-tight text-slate-900 sm:mt-3 sm:text-base sm:leading-snug">
-          {product.nome}
-        </h3>
-        <p className="mt-1 line-clamp-2 text-center text-[8px] leading-3 text-slate-600 sm:mt-2 sm:line-clamp-3 sm:text-xs sm:leading-5">
-          {product.descricao}
-        </p>
+        <span className="flex flex-col gap-1 px-3 pt-3 sm:gap-1.5 sm:px-4.5 sm:pt-4">
+          <span className="line-clamp-2 text-sm font-bold leading-snug text-foreground sm:text-[17px]">
+            {product.nome}
+          </span>
+          <span className="line-clamp-2 text-xs leading-normal text-text-muted sm:text-sm">
+            {product.descricaoBreve}
+          </span>
+        </span>
       </Link>
 
-      <div className="mt-1.5 flex items-center justify-between gap-1 sm:mt-4 sm:gap-3">
-        <p className="min-w-0 truncate text-[9px] font-bold text-slate-900 sm:text-sm">
+      <div className="mt-auto flex items-center justify-between gap-2 px-3 pb-3 pt-3 sm:gap-3 sm:px-4.5 sm:pb-4.5 sm:pt-4">
+        <p className="min-w-0 truncate text-[15px] font-extrabold text-foreground sm:text-lg">
           {formatCurrency(product.valorCentavos)}
         </p>
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex min-h-6 shrink-0 items-center justify-center gap-0.5 rounded-md bg-primary px-1.5 text-[7px] font-bold uppercase tracking-wide text-white transition hover:bg-primary-darker sm:min-h-9 sm:gap-1.5 sm:rounded-lg sm:px-3 sm:text-[10px]"
+          aria-label={`Comprar ${product.nome} pelo WhatsApp`}
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-secondary-background text-sm font-bold text-primary-darker transition hover:bg-primary hover:text-white sm:px-4"
         >
-          WhatsApp
-          <span className="sm:hidden">
-            <WhatsAppIcon size={10} />
-          </span>
-          <span className="hidden sm:inline-flex">
-            <WhatsAppIcon size={14} />
-          </span>
+          <WhatsAppIcon size={16} />
+          <span className="hidden sm:inline">WhatsApp</span>
         </a>
       </div>
     </article>
@@ -266,11 +287,10 @@ function ChevronLeftIcon() {
       height="18"
       fill="none"
       stroke="currentColor"
-      strokeWidth="3"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="sm:h-5 sm:w-5"
     >
       <path d="M15 6 9 12l6 6" />
     </svg>
@@ -285,11 +305,10 @@ function ChevronRightIcon() {
       height="18"
       fill="none"
       stroke="currentColor"
-      strokeWidth="3"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="sm:h-5 sm:w-5"
     >
       <path d="m9 6 6 6-6 6" />
     </svg>

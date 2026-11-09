@@ -35,22 +35,25 @@ export function AwardSeal({ premiacoes }: AwardSealProps) {
           onFocus={() => setIsHintVisible(true)}
           onBlur={() => setIsHintVisible(false)}
           onClick={() => setIsModalOpen(true)}
-          className="rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-yellow"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white py-1.5 pl-1.5 pr-3.5 shadow-[0_6px_20px_rgba(10,59,37,.14)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-yellow sm:min-h-12 sm:gap-2.5 sm:pr-4"
         >
           <img
             src={premiadoBadge}
             alt=""
-            width={80}
-            height={80}
+            width={36}
+            height={36}
             loading="lazy"
             decoding="async"
-            className="h-32 w-32 object-contain drop-shadow"
+            className="h-8 w-8 object-contain sm:h-9 sm:w-9"
           />
+          <span className="text-xs font-bold uppercase tracking-wide text-foreground sm:text-[13px]">
+            Produto premiado
+          </span>
         </button>
         {isHintVisible ? (
           <p
             role="tooltip"
-            className="absolute right-0 top-12 z-20 w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium leading-4 text-slate-800 shadow-md lg:left-full lg:right-auto lg:top-0 lg:ml-2"
+            className="absolute left-0 top-full z-20 mt-2 w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium leading-4 text-slate-800 shadow-md"
           >
             {premiacoes.map((award) => (
               <span key={`${award.nome}-${award.ano}`} className="block">
