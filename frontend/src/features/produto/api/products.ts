@@ -36,6 +36,10 @@ export function listCatalogProducts(
     searchParams.set('certificacao', filters.certificacao)
   }
 
+  if (filters.premiado) {
+    searchParams.set('premiado', 'true')
+  }
+
   if (filters.pageSize !== undefined) {
     searchParams.set('pageSize', String(filters.pageSize))
   }

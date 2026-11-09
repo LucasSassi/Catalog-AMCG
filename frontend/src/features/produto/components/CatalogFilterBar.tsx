@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { PRODUCT_CATEGORY_LABELS } from '../constants'
 import type { CatalogFilters, ProductCategory } from '../types'
 import logoCatalogo from '../../../shared/assets/logo-catalogo-campos-gerais-branca.png'
+import premiadoBadge from '../../../shared/assets/premiado.png'
 
 interface CatalogFilterBarProps {
   filters: CatalogFilters
@@ -231,6 +232,19 @@ function FilterDropdowns({
         columns={getColumnCount(certificationOptions.length)}
         onSelect={(certificacao) => onChange({ ...filters, certificacao })}
       />
+      <button
+        type="button"
+        aria-pressed={Boolean(filters.premiado)}
+        onClick={() => onChange({ ...filters, premiado: !filters.premiado })}
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition sm:text-base ${
+          filters.premiado
+            ? 'border-accent-yellow bg-accent-yellow text-foreground'
+            : 'border-transparent text-white hover:text-accent-yellow-soft'
+        }`}
+      >
+        <img src={premiadoBadge} alt="" className="h-6 w-6 object-contain" />
+        Premiados
+      </button>
     </>
   )
 }
@@ -264,7 +278,8 @@ export function CatalogFilterBar({
     filters.municipio,
     filters.categoria,
     filters.certificacao,
-  ].filter((value) => value !== ALL_OPTIONS_VALUE).length
+  ].filter((value) => value !== ALL_OPTIONS_VALUE).length +
+    (filters.premiado ? 1 : 0)
   const hasActiveFilters = activeFilterCount > 0
 
   return (

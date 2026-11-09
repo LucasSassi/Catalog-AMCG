@@ -7,7 +7,11 @@ import { FeaturedProductsStrip } from '../../features/produto/components/Feature
 import { ProductCard } from '../../features/produto/components/ProductCard'
 import { useCatalogProducts } from '../../features/produto/hooks/useCatalogProducts'
 import { useFeaturedProducts } from '../../features/produto/hooks/useFeaturedProducts'
-import type { CatalogFilters as CatalogFiltersValue } from '../../features/produto/types'
+import { PRODUCT_CATEGORY_LABELS } from '../../features/produto/constants'
+import type {
+  CatalogFilters as CatalogFiltersValue,
+  ProductCategory,
+} from '../../features/produto/types'
 import { FeaturedProducersStrip } from '../../features/produtor/components/FeaturedProducersStrip'
 import { useFeaturedProducers } from '../../features/produtor/hooks/useFeaturedProducers'
 import { BannerCarousel } from '../../shared/components/BannerCarousel'
@@ -22,9 +26,12 @@ const initialFilters: CatalogFiltersValue = {
   categoria: '',
   municipio: '',
   certificacao: '',
+  premiado: false,
 }
 
-const PRODUCTS_PER_PAGE = 12
+const PRODUCTS_PER_PAGE = 20
+
+type FilterKey = 'busca' | 'categoria' | 'municipio' | 'certificacao' | 'premiado'
 
 const HIGHLIGHT_TAB = {
   products: 'produtos',
@@ -38,7 +45,7 @@ const HIGHLIGHT_TAB_BY_HASH: Record<string, string> = {
 
 const highlightAnchorClassName = 'block scroll-mt-32'
 
-const iconClassName = 'h-8 w-8 shrink-0 text-primary'
+const iconClassName = 'h-[18px] w-[18px]'
 
 const trustBadges: Array<{
   title: string
@@ -54,7 +61,7 @@ const trustBadges: Array<{
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2"
         aria-hidden="true"
       >
         <path
@@ -79,7 +86,7 @@ const trustBadges: Array<{
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2"
         aria-hidden="true"
       >
         <path
@@ -104,7 +111,7 @@ const trustBadges: Array<{
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2"
         aria-hidden="true"
       >
         <path
@@ -202,8 +209,44 @@ export function CatalogPage() {
       categoria: nextFilters.categoria,
       municipio: nextFilters.municipio,
       certificacao: nextFilters.certificacao,
+      premiado: nextFilters.premiado ?? false,
     })
     setCursorStack([null])
+  }
+
+  const activeFilterChips: Array<{ key: FilterKey; label: string }> = []
+
+  if (filters.busca.trim()) {
+    activeFilterChips.push({ key: 'busca', label: `“${filters.busca.trim()}”` })
+  }
+
+  if (filters.categoria) {
+    activeFilterChips.push({
+      key: 'categoria',
+      label:
+        PRODUCT_CATEGORY_LABELS[filters.categoria as ProductCategory] ??
+        filters.categoria,
+    })
+  }
+
+  if (filters.municipio) {
+    activeFilterChips.push({ key: 'municipio', label: filters.municipio })
+  }
+
+  if (filters.certificacao) {
+    activeFilterChips.push({ key: 'certificacao', label: filters.certificacao })
+  }
+
+  if (filters.premiado) {
+    activeFilterChips.push({ key: 'premiado', label: 'Premiados' })
+  }
+
+  function removeFilter(key: FilterKey): void {
+    handleFiltersChange(
+      key === 'premiado'
+        ? { ...filters, premiado: false }
+        : { ...filters, [key]: '' },
+    )
   }
 
   function handlePreviousPage(): void {
@@ -236,21 +279,23 @@ export function CatalogPage() {
       </h1>
 
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:grid-cols-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-x-9 gap-y-2.5 px-4 py-3 sm:px-6 lg:px-8">
           {trustBadges.map((badge) => (
-            <div key={badge.title} className="flex items-center gap-3">
-              {badge.icon}
-              <div>
-                <p className="text-sm font-bold text-primary-darker">{badge.title}</p>
-                <p className="text-xs text-slate-600">{badge.subtitle}</p>
-              </div>
+            <div key={badge.title} className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-secondary-background text-primary">
+                {badge.icon}
+              </span>
+              <p className="text-[13px] leading-tight">
+                <strong className="font-bold text-primary-darker">{badge.title}</strong>{' '}
+                <span className="text-text-muted">· {badge.subtitle}</span>
+              </p>
             </div>
           ))}
         </div>
       </section>
 
       {highlightTabs.length > 0 ? (
-        <section className="border-b border-slate-200 bg-white py-6">
+        <section className="border-b border-[#e8dfcf] bg-background-secondary pb-6 pt-5">
           <span id="produtos-destaque" className={highlightAnchorClassName} />
           <span
             id="produtores-destaque"
@@ -259,6 +304,7 @@ export function CatalogPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <TabbedSection
               title="Destaques"
+              eyebrow="Escolhidos pela curadoria AMCG"
               tabs={highlightTabs}
               activeTabId={activeHighlightTab}
               onTabChange={handleHighlightTabChange}
@@ -278,20 +324,47 @@ export function CatalogPage() {
       <main
         ref={productsSectionRef}
         id="produtos"
-        className="scroll-mt-24 py-8 px-4 sm:px-6 lg:scroll-mt-48 lg:px-8"
+        className="scroll-mt-24 px-4 pb-12 pt-6 sm:px-6 lg:scroll-mt-48 lg:px-8"
       >
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-5 text-center">
-            <h2 className="text-2xl font-bold uppercase tracking-wide text-primary-darker sm:text-3xl">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 className="text-xl font-extrabold text-foreground sm:text-[22px]">
               Produtos disponíveis
             </h2>
-            <p className="mt-1 text-sm font-semibold text-slate-700">
-              Seleção Especial
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              {products.length} resultado(s) nesta página
-            </p>
+            {!isLoading && !error ? (
+              <span className="text-sm text-text-muted">
+                {products.length}{' '}
+                {products.length === 1 ? 'produto' : 'produtos'}
+                {hasNext || cursorStack.length > 1 ? ' nesta página' : ''}
+              </span>
+            ) : null}
           </div>
+
+          {activeFilterChips.length > 0 ? (
+            <div className="-mt-1 mb-4 flex flex-wrap items-center gap-2">
+              {activeFilterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  aria-label={`Remover filtro ${chip.label}`}
+                  onClick={() => removeFilter(chip.key)}
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-muted bg-secondary-background pl-3 pr-1.5 text-[13px] font-semibold text-primary-darker transition hover:border-primary"
+                >
+                  {chip.label}
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleFiltersChange(initialFilters)}
+                className="min-h-8 px-2 text-[13px] font-bold text-primary-darker underline underline-offset-2 hover:text-primary-dark"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          ) : null}
 
           {isLoading ? <Feedback title="Carregando produtos..." /> : null}
 
@@ -312,7 +385,7 @@ export function CatalogPage() {
 
           {!isLoading && !error && products.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:gap-8">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(13.5rem,1fr))] sm:gap-[18px]">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

@@ -18,74 +18,89 @@ export function ProductCard({ product }: ProductCardProps) {
     PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
 
   return (
-    <article
-      className={
-        product.premiado
-          ? undefined
-          : '[contain-intrinsic-size:auto_360px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_480px]'
-      }
-    >
+    <article className="[contain-intrinsic-size:auto_300px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_340px]">
       <Link
         to={`/produtos/${product.id}`}
-        className="group flex h-full w-full flex-col rounded-2xl border border-slate-300 bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-3xl sm:p-3"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-soft bg-white text-left transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(10,59,37,0.35)]"
       >
-        <div className="relative">
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100 sm:rounded-2xl">
-            <img
-              src={buildThumbnailUrl(
-                product.fotoDivulgacao.url,
-                THUMBNAIL_WIDTH.card,
-              )}
-              alt={product.nome}
-              width={600}
-              height={600}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            />
-            <span className="absolute left-2 top-2 rounded-full bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-primary-darker shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs">
-              {categoryLabel}
-            </span>
-          </div>
+        <div className="relative aspect-square overflow-hidden bg-slate-100">
+          <img
+            src={buildThumbnailUrl(
+              product.fotoDivulgacao.url,
+              THUMBNAIL_WIDTH.card,
+            )}
+            alt={product.nome}
+            width={600}
+            height={600}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+          <span className="absolute left-2 top-2 max-w-[calc(100%-4rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-primary-darker shadow-sm sm:text-[11px]">
+            {categoryLabel}
+          </span>
           {product.premiado ? (
             <img
               src={premiadoBadge}
               alt="Produto premiado"
-              width={64}
-              height={64}
+              width={44}
+              height={44}
               loading="lazy"
               decoding="async"
-              className="absolute -right-4 -top-4 z-10 h-12 w-12 object-contain drop-shadow sm:-right-5 sm:-top-5 sm:h-16 sm:w-16"
+              className="absolute right-1.5 top-1.5 h-9 w-9 object-contain drop-shadow sm:h-11 sm:w-11"
             />
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col px-1 pt-3 sm:px-2 sm:pt-4">
-          <h2 className="line-clamp-2 min-h-[2.5rem] text-center text-sm font-bold leading-5 text-slate-900 sm:min-h-[3.5rem] sm:text-lg sm:leading-7">
+        <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2 sm:px-3.5 sm:pb-3.5 sm:pt-3">
+          <p className="flex items-center gap-1 truncate text-[11px] text-text-muted sm:text-xs">
+            <PinIcon />
+            <span className="truncate">
+              <span className="hidden sm:inline">{product.produtor.nome} · </span>
+              {product.produtor.municipio}
+            </span>
+          </p>
+          <h2 className="mt-1 line-clamp-2 min-h-[2.25rem] text-[13px] font-bold leading-snug text-foreground sm:min-h-10 sm:text-[15px]">
             {product.nome}
           </h2>
-          <p className="mt-2 hidden min-h-[3.75rem] text-justify text-xs leading-5 text-slate-600 sm:line-clamp-3">
-            {product.descricao}
-          </p>
-          <p className="mt-2 truncate text-center text-[10px] font-medium uppercase tracking-wide text-slate-400 sm:text-[11px]">
-            {product.produtor.nome} · {product.produtor.municipio}
-          </p>
 
-          <div className="mt-auto flex flex-col items-stretch gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pt-4">
-            <div className="min-w-0 text-center sm:text-left">
-              <p className="text-sm font-bold text-slate-900 sm:text-base">
+          <div className="mt-auto flex items-center justify-between gap-2 pt-2 sm:pt-2.5">
+            <p className="min-w-0">
+              <span className="text-[15px] font-extrabold text-foreground sm:text-[17px]">
                 {price}
-              </p>
-              <p className="text-[10px] text-slate-500 sm:text-[11px]">
-                por {product.unidadeMedida}
-              </p>
-            </div>
-            <span className="inline-flex min-h-9 w-full shrink-0 items-center justify-center rounded-lg bg-primary px-3 text-[10px] font-bold uppercase tracking-wide text-white transition group-hover:bg-primary-darker sm:w-auto sm:px-4 sm:text-xs">
-              Ver produto
+              </span>
+              <span className="text-[11px] text-text-muted sm:text-xs">
+                {' '}/ {product.unidadeMedida.toLowerCase()}
+              </span>
+            </p>
+            <span
+              aria-hidden="true"
+              className="hidden h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] bg-secondary-background text-primary transition group-hover:bg-primary group-hover:text-white sm:grid"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
             </span>
           </div>
         </div>
       </Link>
     </article>
+  )
+}
+
+function PinIcon() {
+  return (
+    <svg
+      className="h-3 w-3 shrink-0 sm:h-[13px] sm:w-[13px]"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
   )
 }
