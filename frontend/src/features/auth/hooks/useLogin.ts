@@ -5,6 +5,7 @@ import type { AuthUser, LoginCredentials } from '../types'
 
 interface AuthenticateOptions {
   requireAdmin?: boolean
+  remember?: boolean
 }
 
 export function useLogin() {
@@ -27,7 +28,7 @@ export function useLogin() {
         return null
       }
 
-      setAuthToken(response.token)
+      setAuthToken(response.token, options.remember ?? true)
       return response.usuario
     } catch (requestError) {
       if (requestError instanceof Error) {
