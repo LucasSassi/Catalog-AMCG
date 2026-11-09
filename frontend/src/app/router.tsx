@@ -4,8 +4,9 @@ import {
   isAuthTokenValid,
   removeAuthToken,
 } from '../shared/api/auth-token'
-import { BackofficePage } from '../pages/backoffice/BackofficePage'
 import { LoginPage } from '../pages/backoffice/LoginPage'
+import { ProducersReviewPage } from '../pages/backoffice/ProducersReviewPage'
+import { ProductsReviewPage } from '../pages/backoffice/ProductsReviewPage'
 import { AboutPage } from '../pages/catalog/AboutPage'
 import { CatalogPage } from '../pages/catalog/CatalogPage'
 import { InscriptionPage } from '../pages/catalog/InscriptionPage'
@@ -45,7 +46,18 @@ export function AppRouter() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<BackofficeLayout />}>
-            <Route path="/backoffice" element={<BackofficePage />} />
+            <Route
+              path="/backoffice"
+              element={<Navigate to="/backoffice/produtores" replace />}
+            />
+            <Route
+              path="/backoffice/produtores"
+              element={<ProducersReviewPage />}
+            />
+            <Route
+              path="/backoffice/produtos"
+              element={<ProductsReviewPage />}
+            />
           </Route>
         </Route>
 

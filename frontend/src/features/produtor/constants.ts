@@ -79,3 +79,39 @@ export const COMPANY_REGISTRATION_TYPE_OPTIONS = [
 ] as const
 
 export const YES_NO_OPTIONS = ['Sim', 'Não'] as const
+
+export const MAX_PRODUCER_DESTAQUES = 3
+
+export const PRODUCER_REJECTION_REASONS = [
+  {
+    id: 'registro',
+    label: 'Registro vencido ou ilegível',
+    message:
+      'O registro sanitário está vencido ou não foi possível ler o comprovante.',
+  },
+  {
+    id: 'fotos',
+    label: 'Fotos insuficientes',
+    message: 'As fotos enviadas não mostram bem o empreendimento.',
+  },
+  {
+    id: 'logo',
+    label: 'Logo ausente',
+    message: 'Falta a logo do empreendimento.',
+  },
+  {
+    id: 'documento',
+    label: 'Documento inválido',
+    message: 'O documento informado não confere.',
+  },
+  {
+    id: 'regiao',
+    label: 'Fora dos Campos Gerais',
+    message: 'O endereço informado fica fora da região atendida.',
+  },
+  {
+    id: 'contato',
+    label: 'Contato não responde',
+    message: 'Não conseguimos falar pelo WhatsApp informado.',
+  },
+] as const

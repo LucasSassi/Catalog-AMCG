@@ -1,136 +1,226 @@
+import { Skeleton } from '../../../shared/components/Skeleton'
+import { StatusBadge } from '../../../shared/components/StatusBadge'
 import {
   buildThumbnailUrl,
   THUMBNAIL_WIDTH,
 } from '../../../shared/lib/buildThumbnailUrl'
 import { formatCurrency } from '../../../shared/lib/formatCurrency'
+import {
+  formatWaitingDays,
+  getWaitingDays,
+  WAITING_DAYS_WARNING,
+} from '../../../shared/lib/review-status'
+import { PRODUCT_CATEGORY_LABELS } from '../constants'
 import type { Product } from '../types'
 
 interface ProductReviewCardProps {
   product: Product
+  producerLabel: string
+  isUpdating: boolean
+  destaqueLimitReached: boolean
+  selected: boolean
+  onToggleSelected: (product: Product) => void
   onSelect: (product: Product) => void
-  onToggleAtivo?: (id: string, ativo: boolean) => Promise<boolean>
-  isUpdating?: boolean
+  onToggleAtivo: (product: Product) => void
+  onToggleDestaque: (product: Product) => void
 }
 
 export function ProductReviewCard({
   product,
+  producerLabel,
+  isUpdating,
+  destaqueLimitReached,
+  selected,
+  onToggleSelected,
   onSelect,
   onToggleAtivo,
-  isUpdating = false,
+  onToggleDestaque,
 }: ProductReviewCardProps) {
   const image = product.fotosDivulgacao[0]
   const isApproved = product.status === 'APROVADO'
-  let statusClasses = 'bg-amber-100 text-amber-800'
-  let statusLabel = 'Pendente'
+  const isPending = product.status === 'PENDENTE'
+  const isHidden = isApproved && !product.ativo
+  const waiting = getWaitingDays(product.createdAt)
+  const canToggleDestaque =
+    isApproved &&
+    product.ativo &&
+    !isUpdating &&
+    (product.destaque || !destaqueLimitReached)
 
-  if (product.status === 'REJEITADO') {
-    statusClasses = 'bg-red-100 text-red-800'
-    statusLabel = 'Rejeitado'
-  }
+  let destaqueHint = product.destaque ? 'Remover destaque' : 'Destacar'
 
-  if (isApproved) {
-    statusClasses = 'bg-green-100 text-green-800'
-    statusLabel = 'Aprovado'
+  if (!product.ativo) {
+    destaqueHint = 'Mostre o produto na vitrine para destacá-lo'
+  } else if (!product.destaque && destaqueLimitReached) {
+    destaqueHint = 'Limite de destaques atingido'
   }
 
   return (
-    <button
-      type="button"
+    <article
       onClick={() => onSelect(product)}
-      className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-success hover:shadow-md"
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white transition hover:border-primary hover:shadow-md ${
+        selected
+          ? 'border-primary shadow-[0_0_0_1px_var(--color-primary)]'
+          : 'border-border-soft'
+      } ${isHidden ? 'opacity-80' : ''}`}
     >
-      <div className="flex gap-4">
+      <div className="relative h-40 bg-background">
         {image ? (
           <img
-            src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.avatar)}
+            src={buildThumbnailUrl(image.url, THUMBNAIL_WIDTH.card)}
             alt=""
-            width={96}
-            height={96}
             loading="lazy"
             decoding="async"
-            className="h-24 w-24 rounded-lg bg-slate-100 object-cover"
+            className="h-full w-full object-cover"
           />
-        ) : null}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-bold text-slate-900">{product.nome}</h3>
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses}`}
-            >
-              {statusLabel}
-            </span>
-            {isApproved ? (
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  product.ativo
-                    ? 'bg-secondary-background text-primary-dark'
-                    : 'bg-slate-200 text-slate-600'
-                }`}
-              >
-                {product.ativo ? 'No catálogo' : 'Oculto'}
-              </span>
-            ) : null}
-            {product.destaque ? (
-              <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-primary-dark">
-                Destaque
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-sm text-slate-600">{product.descricao}</p>
-          <dl className="mt-3 grid gap-x-5 gap-y-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-slate-500">Categoria</dt>
-              <dd className="font-medium">{product.categoria}</dd>
-            </div>
-            <div>
-              <dt className="text-slate-500">Valor</dt>
-              <dd className="font-medium">
-                {formatCurrency(product.valorCentavos)} / {product.unidadeMedida}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-slate-500">Produtor</dt>
-              <dd className="truncate font-medium">{product.produtorId}</dd>
-            </div>
-            <div>
-              <dt className="text-slate-500">Registros</dt>
-              <dd className="font-medium">
-                {product.registros.map((item) => item.tipo).join(', ')}
-              </dd>
-            </div>
-          </dl>
-
-          {isApproved && onToggleAtivo ? (
+        ) : (
+          <span className="grid h-full place-items-center text-xs text-text-muted">
+            Sem foto de divulgação
+          </span>
+        )}
+        <div className="absolute left-3 top-3 flex items-center gap-2">
+          {isApproved ? (
             <label
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-slate-700"
               onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
+              className={`grid h-8 w-8 place-items-center rounded-lg bg-white/95 shadow-sm transition ${
+                selected ? '' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100'
+              }`}
             >
+              <span className="sr-only">Selecionar {product.nome}</span>
               <input
                 type="checkbox"
-                role="switch"
-                checked={product.ativo}
-                disabled={isUpdating}
-                className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                onChange={(event) => {
-                  void onToggleAtivo(product.id, event.target.checked)
-                }}
+                checked={selected}
+                onChange={() => onToggleSelected(product)}
+                className="h-[18px] w-[18px] accent-primary"
               />
-              No catálogo
             </label>
           ) : null}
+          <StatusBadge status={product.status} hidden={isHidden} />
         </div>
+        {isApproved ? (
+          <button
+            type="button"
+            disabled={!canToggleDestaque}
+            aria-pressed={product.destaque}
+            aria-label={`${destaqueHint}: ${product.nome}`}
+            title={destaqueHint}
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggleDestaque(product)
+            }}
+            className={`absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full bg-white/95 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              product.destaque ? 'text-[#8a6400]' : 'text-text-muted'
+            }`}
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill={product.destaque ? '#f7c948' : 'none'}
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5z" />
+            </svg>
+          </button>
+        ) : null}
       </div>
 
-      {product.motivoRejeicao ? (
-        <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">
-          <strong>Motivo:</strong> {product.motivoRejeicao}
+      <div className="flex flex-1 flex-col gap-1.5 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary-darker">
+          {PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria}
         </p>
-      ) : null}
+        <h3 className="text-base font-bold text-foreground">{product.nome}</h3>
+        <p className="text-sm text-text-muted">{producerLabel}</p>
+        <p className="mt-1 text-lg font-extrabold text-foreground">
+          {formatCurrency(product.valorCentavos)}{' '}
+          <span className="text-sm font-medium text-text-muted">
+            / {product.unidadeMedida}
+          </span>
+        </p>
+        {product.motivoRejeicao ? (
+          <p className="mt-1 line-clamp-2 whitespace-pre-line rounded-lg bg-danger-soft p-2 text-xs text-danger">
+            <strong>Motivo:</strong> {product.motivoRejeicao}
+          </p>
+        ) : null}
+      </div>
 
-      <p className="mt-4 border-t border-slate-200 pt-3 text-sm font-semibold text-primary-darker">
-        Clique para analisar o cadastro
-      </p>
-    </button>
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-2.5">
+        {isApproved ? (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={product.ativo}
+            aria-label={`Mostrar ${product.nome} na vitrine`}
+            disabled={isUpdating}
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggleAtivo(product)
+            }}
+            className="flex min-h-11 items-center gap-2.5 text-sm font-semibold text-text disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span
+              className={`relative inline-block h-6 w-10 rounded-full transition ${
+                product.ativo ? 'bg-primary' : 'bg-slate-400'
+              }`}
+              aria-hidden="true"
+            >
+              <span
+                className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all ${
+                  product.ativo ? 'left-[19px]' : 'left-[3px]'
+                }`}
+              />
+            </span>
+            {product.ativo ? 'Na vitrine' : 'Oculto'}
+          </button>
+        ) : (
+          <span
+            className={`text-sm font-semibold ${
+              isPending
+                ? waiting > WAITING_DAYS_WARNING
+                  ? 'text-[#8a4b00]'
+                  : 'text-pending'
+                : 'text-danger'
+            }`}
+          >
+            {isPending
+              ? `Aguardando ${formatWaitingDays(waiting)}`
+              : 'Rejeitado'}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onSelect(product)
+          }}
+          className={`min-h-11 rounded-lg border px-3.5 text-sm font-semibold transition ${
+            isPending
+              ? 'border-primary bg-primary text-white hover:bg-primary-darker'
+              : 'border-slate-300 bg-white text-foreground hover:border-primary hover:text-primary-dark'
+          }`}
+        >
+          {isPending ? 'Revisar' : 'Detalhes'}
+        </button>
+      </div>
+    </article>
+  )
+}
+
+export function ProductCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border-soft bg-white">
+      <Skeleton className="h-40 rounded-none" />
+      <div className="flex flex-col gap-2 p-4">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="mt-2 h-5 w-1/3" />
+      </div>
+      <div className="border-t border-slate-100 px-4 py-3">
+        <Skeleton className="h-8 w-full" />
+      </div>
+    </div>
   )
 }

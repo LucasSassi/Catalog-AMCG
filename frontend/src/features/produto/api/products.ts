@@ -172,3 +172,12 @@ export function setProductAtivo(id: string, ativo: boolean): Promise<Product> {
     body: { ativo },
   })
 }
+
+/** Volta o produto para a fila de análise (usado para desfazer decisões). */
+export function reopenProduct(id: string): Promise<Product> {
+  return apiRequest<Product>(`/api/produtos/${id}`, {
+    method: 'PUT',
+    authenticated: true,
+    body: { status: 'PENDENTE' },
+  })
+}

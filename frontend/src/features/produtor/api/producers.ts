@@ -85,3 +85,12 @@ export function setProducerDestaque(
     body: { destaque },
   })
 }
+
+/** Volta o produtor para a fila de análise (usado para desfazer decisões). */
+export function reopenProducer(id: string): Promise<Producer> {
+  return apiRequest<Producer>(`/api/produtores/${id}`, {
+    method: 'PUT',
+    authenticated: true,
+    body: { status: 'PENDENTE' },
+  })
+}

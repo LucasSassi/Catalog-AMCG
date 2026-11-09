@@ -5,18 +5,33 @@ const AUTH_TOKEN_KEY = 'catalog-amcg:auth-token'
 interface JwtPayload {
   exp?: number
   role?: AuthUserRole
+  email?: string
 }
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(AUTH_TOKEN_KEY)
+  return (
+    localStorage.getItem(AUTH_TOKEN_KEY) ??
+    sessionStorage.getItem(AUTH_TOKEN_KEY)
+  )
 }
 
-export function setAuthToken(token: string): void {
-  localStorage.setItem(AUTH_TOKEN_KEY, token)
+/**
+ * Guarda o token. Com `persist` false ele vive só nesta aba/sessão do
+ * navegador ("Manter conectado" desmarcado).
+ */
+export function setAuthToken(token: string, persist = true): void {
+  removeAuthToken()
+
+  if (persist) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token)
+  } else {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token)
+  }
 }
 
 export function removeAuthToken(): void {
   localStorage.removeItem(AUTH_TOKEN_KEY)
+  sessionStorage.removeItem(AUTH_TOKEN_KEY)
 }
 
 export function hasAuthToken(): boolean {
@@ -48,6 +63,16 @@ export function getAuthTokenRole(): AuthUserRole | null {
 
   const payload = parseJwtPayload(token)
   return payload?.role ?? null
+}
+
+export function getAuthTokenEmail(): string | null {
+  const token = getAuthToken()
+
+  if (!token || !isAuthTokenValid()) {
+    return null
+  }
+
+  return parseJwtPayload(token)?.email ?? null
 }
 
 export function isAdminAuthToken(): boolean {

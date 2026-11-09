@@ -83,3 +83,38 @@ export const IMAGE_CONTENT_TYPES = [
 
 export const MAX_PRODUCT_PHOTOS = 5
 export const MIN_PRODUCT_PHOTOS = 1
+
+export const MAX_PRODUCT_DESTAQUES = 3
+
+export const PRODUCT_REJECTION_REASONS = [
+  {
+    id: 'fotos',
+    label: 'Fotos ruins ou insuficientes',
+    message: 'As fotos não mostram bem o produto (luz, foco ou enquadramento).',
+  },
+  {
+    id: 'registro',
+    label: 'Registro ausente ou inválido',
+    message: 'O registro sanitário do produto está ausente, vencido ou ilegível.',
+  },
+  {
+    id: 'descricao',
+    label: 'Descrição incompleta',
+    message: 'A descrição precisa explicar melhor o produto e seus ingredientes.',
+  },
+  {
+    id: 'preco',
+    label: 'Preço ou unidade incorretos',
+    message: 'O preço ou a unidade de medida parecem incorretos.',
+  },
+  {
+    id: 'categoria',
+    label: 'Categoria errada',
+    message: 'O produto foi cadastrado em uma categoria que não corresponde.',
+  },
+  {
+    id: 'rotulo',
+    label: 'Rótulo fora das normas',
+    message: 'O rótulo não atende às normas de rotulagem.',
+  },
+] as const
