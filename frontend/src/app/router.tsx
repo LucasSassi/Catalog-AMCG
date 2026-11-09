@@ -5,6 +5,7 @@ import {
   removeAuthToken,
 } from '../shared/api/auth-token'
 import { BannersPage } from '../pages/backoffice/BannersPage'
+import { DestaquesPage } from '../pages/backoffice/DestaquesPage'
 import { LoginPage } from '../pages/backoffice/LoginPage'
 import { ProducersReviewPage } from '../pages/backoffice/ProducersReviewPage'
 import { ProductsReviewPage } from '../pages/backoffice/ProductsReviewPage'
@@ -59,6 +60,7 @@ export function AppRouter() {
               path="/backoffice/produtos"
               element={<ProductsReviewPage />}
             />
+            <Route path="/backoffice/destaques" element={<DestaquesPage />} />
             <Route path="/backoffice/banners" element={<BannersPage />} />
           </Route>
         </Route>

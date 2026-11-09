@@ -84,6 +84,13 @@ function BackofficeShell() {
           <p className="px-3 pb-1.5 pt-6 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
             Vitrine
           </p>
+          <SidebarLink
+            to="/backoffice/destaques"
+            icon={<StarIcon />}
+            badge={0}
+          >
+            Destaques
+          </SidebarLink>
           <SidebarLink to="/backoffice/banners" icon={<ImageIcon />} badge={0}>
             Banners
           </SidebarLink>
@@ -185,20 +192,12 @@ function BackofficeShell() {
         >
           Produtos
         </BottomLink>
+        <BottomLink to="/backoffice/destaques" icon={<StarIcon />} badge={0}>
+          Destaques
+        </BottomLink>
         <BottomLink to="/backoffice/banners" icon={<ImageIcon />} badge={0}>
           Banners
         </BottomLink>
-        <a
-          href="/"
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-col items-center justify-center gap-1 text-xs font-semibold text-text-muted"
-        >
-          <span className="h-[22px] w-[22px]" aria-hidden="true">
-            <EyeIcon />
-          </span>
-          Catálogo
-        </a>
       </nav>
     </div>
   )
@@ -311,6 +310,14 @@ function EyeIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+      <path d="M12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5z" />
     </svg>
   )
 }
