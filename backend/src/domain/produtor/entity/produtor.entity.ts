@@ -52,6 +52,12 @@ export interface EnderecoCatalogo {
 }
 
 export interface Produtor {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   id: string;
   nomeEmpresa: string;
   municipioId: string;
@@ -111,6 +117,8 @@ export interface CadastrarProdutorInput {
 }
 
 export interface AtualizarProdutorInput {
+  revisao?: number;
+  autorId?: string;
   nomeEmpresa?: string;
   municipioId?: string;
   documento?: Documento;
@@ -119,7 +127,7 @@ export interface AtualizarProdutorInput {
   endereco?: Endereco;
   exibirEndereco?: boolean;
   historia?: string;
-  logo?: Arquivo;
+  logo?: Arquivo | null;
   fotos?: Arquivo[];
   redesSociais?: RedeSocialItem[];
   site?: string | null;

@@ -212,7 +212,7 @@ export function ProductRegistrationForm({
     }
 
     if (isEditMode && product) {
-      const updated = await update.submit(product.id, payload, product.status)
+      const updated = await update.submit(product.id, payload, product.revisao ?? 0)
 
       if (updated) {
         onSuccess?.()

@@ -33,7 +33,11 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
   }
 
   async update(id: string, data: UpdateProdutorData): Promise<Produtor | null> {
-    const payload: Record<string, unknown> = { ...data };
+    const { revisaoEsperada, ...values } = data;
+    const payload: Record<string, unknown> = {
+      ...values,
+      $inc: { revisao: 1 },
+    };
     const unsetFields: Record<string, string> = {};
 
     if (data.contato) {
@@ -48,6 +52,11 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
       delete payload.motivoRejeicao;
     }
 
+    if (data.logo === null) {
+      unsetFields.logo = "";
+      delete payload.logo;
+    }
+
     if (data.site === null) {
       unsetFields.site = "";
       delete payload.site;
@@ -57,10 +66,26 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
       payload.$unset = unsetFields;
     }
 
-    const document = await ProdutorModel.findByIdAndUpdate(id, payload, {
-      new: true,
-      runValidators: true,
-    }).exec();
+    const document = await ProdutorModel.findOneAndUpdate(
+      {
+        _id: id,
+        ...(revisaoEsperada !== undefined
+          ? {
+              $or: [
+                { revisao: revisaoEsperada },
+                ...(revisaoEsperada === 0
+                  ? [{ revisao: { $exists: false } }]
+                  : []),
+              ],
+            }
+          : {}),
+      },
+      payload,
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).exec();
 
     return document ? toProdutorEntity(document) : null;
   }
@@ -68,7 +93,7 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
   async softDelete(id: string): Promise<Produtor | null> {
     const document = await ProdutorModel.findByIdAndUpdate(
       id,
-      { ativo: false },
+      { ativo: false, destaque: false, $inc: { revisao: 1 } },
       { new: true, runValidators: true },
     ).exec();
 

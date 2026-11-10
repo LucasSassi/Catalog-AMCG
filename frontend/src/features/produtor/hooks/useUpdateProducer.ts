@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { updateProducer } from '../api/producers'
-import type { CreateProducerInput, Producer, ProducerStatus } from '../types'
+import type { CreateProducerInput, Producer } from '../types'
 
 export function useUpdateProducer() {
   const [isLoading, setIsLoading] = useState(false)
@@ -9,7 +9,7 @@ export function useUpdateProducer() {
   async function submit(
     id: string,
     input: CreateProducerInput,
-    status?: ProducerStatus,
+    revisao?: number,
   ): Promise<Producer | null> {
     setIsLoading(true)
     setError('')
@@ -17,7 +17,7 @@ export function useUpdateProducer() {
     try {
       const producer = await updateProducer(id, {
         ...input,
-        ...(status !== undefined ? { status } : {}),
+        revisao,
       })
       return producer
     } catch (requestError) {

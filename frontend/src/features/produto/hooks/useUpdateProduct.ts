@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { updateProduct } from '../api/products'
-import type { CreateProductInput, Product, ProductStatus } from '../types'
+import type { CreateProductInput, Product } from '../types'
 
 export function useUpdateProduct() {
   const [isLoading, setIsLoading] = useState(false)
@@ -9,7 +9,7 @@ export function useUpdateProduct() {
   async function submit(
     id: string,
     input: CreateProductInput,
-    status?: ProductStatus,
+    revisao?: number,
   ): Promise<Product | null> {
     setIsLoading(true)
     setError('')
@@ -17,7 +17,7 @@ export function useUpdateProduct() {
     try {
       const product = await updateProduct(id, {
         ...input,
-        ...(status !== undefined ? { status } : {}),
+        revisao,
       })
       return product
     } catch (requestError) {

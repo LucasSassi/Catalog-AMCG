@@ -184,8 +184,14 @@ export class InMemoryProdutoRepository
       return null;
     }
 
+    if (data.revisaoEsperada !== undefined && data.revisaoEsperada !== (atual.revisao ?? 0)) return null;
     const atualizado: Produto = {
       ...atual,
+      revisao: (atual.revisao ?? 0) + 1,
+      origemPendencia: data.origemPendencia ?? atual.origemPendencia,
+      camposAlterados: data.camposAlterados ?? atual.camposAlterados,
+      alteradoPor: data.alteradoPor ?? atual.alteradoPor,
+      alteradoEm: data.alteradoEm ?? atual.alteradoEm,
       produtorId: data.produtorId ?? atual.produtorId,
       nome: data.nome ?? atual.nome,
       descricaoBreve: data.descricaoBreve ?? atual.descricaoBreve,

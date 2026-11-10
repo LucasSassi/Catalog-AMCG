@@ -19,7 +19,7 @@ export function createProducer(input: CreateProducerInput): Promise<Producer> {
 
 export function updateProducer(
   id: string,
-  input: CreateProducerInput & { status?: ProducerStatus },
+  input: CreateProducerInput & { status?: ProducerStatus; revisao?: number },
 ): Promise<Producer> {
   return apiRequest<Producer>(`/api/produtores/${id}`, {
     method: 'PUT',
@@ -56,20 +56,21 @@ export function listProducers(filter: ProducerListFilter): Promise<Producer[]> {
   })
 }
 
-export function approveProducer(id: string): Promise<Producer> {
+export function approveProducer(id: string, revisao = 0): Promise<Producer> {
   return apiRequest<Producer>(`/api/produtores/${id}`, {
     method: 'PUT',
     authenticated: true,
-    body: { status: 'APROVADO' },
+    body: { status: 'APROVADO', revisao },
   })
 }
 
-export function rejectProducer(id: string, reason: string): Promise<Producer> {
+export function rejectProducer(id: string, reason: string, revisao = 0): Promise<Producer> {
   return apiRequest<Producer>(`/api/produtores/${id}`, {
     method: 'PUT',
     authenticated: true,
     body: {
       status: 'REJEITADO',
+      revisao,
       motivoRejeicao: reason,
     },
   })
@@ -87,10 +88,10 @@ export function setProducerDestaque(
 }
 
 /** Volta o produtor para a fila de análise (usado para desfazer decisões). */
-export function reopenProducer(id: string): Promise<Producer> {
+export function reopenProducer(id: string, revisao = 0): Promise<Producer> {
   return apiRequest<Producer>(`/api/produtores/${id}`, {
     method: 'PUT',
     authenticated: true,
-    body: { status: 'PENDENTE' },
+    body: { status: 'PENDENTE', revisao },
   })
 }

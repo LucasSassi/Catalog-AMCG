@@ -77,7 +77,7 @@ export function useBackofficeActions(
         : `${list.length} produtores aprovados`
 
     return run(
-      () => producers.approveMany(list.map((producer) => producer.id)),
+      () => producers.approveMany(list),
       message,
       () => producers.restore(previous),
       'Não foi possível aprovar. Tente de novo.',
@@ -88,7 +88,7 @@ export function useBackofficeActions(
     const previous = [snapshot(producer)]
 
     return run(
-      () => producers.reject(producer.id, motivo),
+      () => producers.reject(producer.id, motivo, producer.revisao ?? 0),
       `${producer.nomeEmpresa} rejeitado`,
       () => producers.restore(previous),
       'Não foi possível rejeitar. Tente de novo.',
@@ -112,7 +112,7 @@ export function useBackofficeActions(
     const previous = [snapshot(product)]
 
     return run(
-      () => products.approve(product.id),
+      () => products.approve(product.id, product.revisao ?? 0),
       `${product.nome} aprovado`,
       () => products.restore(previous),
       'Não foi possível aprovar. Tente de novo.',
@@ -123,7 +123,7 @@ export function useBackofficeActions(
     const previous = [snapshot(product)]
 
     return run(
-      () => products.reject(product.id, motivo),
+      () => products.reject(product.id, motivo, product.revisao ?? 0),
       `${product.nome} rejeitado`,
       () => products.restore(previous),
       'Não foi possível rejeitar. Tente de novo.',

@@ -93,7 +93,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", usuarioAuth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
     expect(aprovar.status).toBe(403);
   });
 
@@ -233,7 +233,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     expect(aprovar.status).toBe(200);
     expect(aprovar.body.status).toBe("APROVADO");
@@ -243,6 +243,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
       .set("Authorization", auth)
       .send({
         status: "REJEITADO",
+        revisao: aprovar.body.revisao,
         motivoRejeicao: "Documentação incompleta",
       });
 
@@ -277,7 +278,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const catalogo = await request(app).get("/api/produtores/catalogo");
     expect(catalogo.status).toBe(200);

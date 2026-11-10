@@ -130,7 +130,7 @@ export function createProduct(input: CreateProductInput): Promise<Product> {
 
 export function updateProduct(
   id: string,
-  input: CreateProductInput & { status?: ProductStatus },
+  input: CreateProductInput & { status?: ProductStatus; revisao?: number },
 ): Promise<Product> {
   return apiRequest<Product>(`/api/produtos/${id}`, {
     method: 'PUT',
@@ -139,20 +139,21 @@ export function updateProduct(
   })
 }
 
-export function approveProduct(id: string): Promise<Product> {
+export function approveProduct(id: string, revisao = 0): Promise<Product> {
   return apiRequest<Product>(`/api/produtos/${id}`, {
     method: 'PUT',
     authenticated: true,
-    body: { status: 'APROVADO' },
+    body: { status: 'APROVADO', revisao },
   })
 }
 
-export function rejectProduct(id: string, reason: string): Promise<Product> {
+export function rejectProduct(id: string, reason: string, revisao = 0): Promise<Product> {
   return apiRequest<Product>(`/api/produtos/${id}`, {
     method: 'PUT',
     authenticated: true,
     body: {
       status: 'REJEITADO',
+      revisao,
       motivoRejeicao: reason,
     },
   })
@@ -178,10 +179,10 @@ export function setProductAtivo(id: string, ativo: boolean): Promise<Product> {
 }
 
 /** Volta o produto para a fila de análise (usado para desfazer decisões). */
-export function reopenProduct(id: string): Promise<Product> {
+export function reopenProduct(id: string, revisao = 0): Promise<Product> {
   return apiRequest<Product>(`/api/produtos/${id}`, {
     method: 'PUT',
     authenticated: true,
-    body: { status: 'PENDENTE' },
+    body: { status: 'PENDENTE', revisao },
   })
 }

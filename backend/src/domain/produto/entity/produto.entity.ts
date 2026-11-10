@@ -28,6 +28,12 @@ export interface Premiacao {
 }
 
 export interface Produto {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   id: string;
   produtorId: string;
   nome: string;
@@ -65,6 +71,8 @@ export interface CadastrarProdutoInput {
 }
 
 export interface AtualizarProdutoInput {
+  revisao?: number;
+  autorId?: string;
   produtorId?: string;
   nome?: string;
   descricaoBreve?: string;

@@ -32,8 +32,10 @@ interface ProducerRegistrationFormProps {
   producer?: Producer
 }
 
-interface ProducerFormState
-  extends Omit<CreateProducerInput, 'logo' | 'redesSociais'> {
+interface ProducerFormState extends Omit<
+  CreateProducerInput,
+  'logo' | 'redesSociais'
+> {
   logo: ProducerFile[]
   instagram: string
   facebook: string
@@ -73,7 +75,13 @@ function buildInitialForm(producer?: Producer): ProducerFormState {
   return {
     nomeEmpresa: producer.nomeEmpresa,
     municipioId: producer.municipioId,
-    documento: { ...producer.documento },
+    documento: {
+      ...producer.documento,
+      numero:
+        producer.documento.tipo === 'CAD_PRO'
+          ? producer.documento.numero.replace(/^CAD-/i, '')
+          : producer.documento.numero,
+    },
     registros:
       producer.registros.length > 0
         ? producer.registros.map((registro) => ({ ...registro }))
@@ -177,7 +185,11 @@ export function ProducerRegistrationForm({
     }
 
     if (isEditMode && producer) {
-      const updated = await update.submit(producer.id, payload, producer.status)
+      const updated = await update.submit(
+        producer.id,
+        payload,
+        producer.revisao ?? 0,
+      )
 
       if (updated) {
         onSuccess()
@@ -206,7 +218,9 @@ export function ProducerRegistrationForm({
                 required
                 type="text"
                 value={form.nomeEmpresa}
-                onChange={(event) => updateField('nomeEmpresa', event.target.value)}
+                onChange={(event) =>
+                  updateField('nomeEmpresa', event.target.value)
+                }
                 className={formInputClassName}
               />
             </FormField>
@@ -215,7 +229,9 @@ export function ProducerRegistrationForm({
                 required
                 type="text"
                 value={form.municipioId}
-                onChange={(event) => updateField('municipioId', event.target.value)}
+                onChange={(event) =>
+                  updateField('municipioId', event.target.value)
+                }
                 className={formInputClassName}
                 placeholder="Ex.: Ponta Grossa"
               />
@@ -261,7 +277,8 @@ export function ProducerRegistrationForm({
                 onChange={(event) =>
                   updateField('documento', {
                     ...form.documento,
-                    tipo: event.target.value as CreateProducerInput['documento']['tipo'],
+                    tipo: event.target
+                      .value as CreateProducerInput['documento']['tipo'],
                   })
                 }
                 className={formInputClassName}
@@ -274,18 +291,31 @@ export function ProducerRegistrationForm({
               </select>
             </FormField>
             <FormField label="Número do documento">
-              <input
-                required
-                type="text"
-                value={form.documento.numero}
-                onChange={(event) =>
-                  updateField('documento', {
-                    ...form.documento,
-                    numero: event.target.value,
-                  })
-                }
-                className={formInputClassName}
-              />
+              <div className="flex">
+                {form.documento.tipo === 'CAD_PRO' && (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center rounded-l-md border border-r-0 bg-slate-100 px-3 text-sm font-semibold text-slate-700"
+                  >
+                    CAD-
+                  </span>
+                )}
+                <input
+                  required
+                  type="text"
+                  value={form.documento.numero}
+                  onChange={(event) =>
+                    updateField('documento', {
+                      ...form.documento,
+                      numero:
+                        form.documento.tipo === 'CAD_PRO'
+                          ? event.target.value.replace(/^CAD-/i, '')
+                          : event.target.value,
+                    })
+                  }
+                  className={`${formInputClassName} min-w-0 flex-1 ${form.documento.tipo === 'CAD_PRO' ? 'rounded-l-none' : ''}`}
+                />
+              </div>
             </FormField>
           </div>
           {form.registros.map((registro, index) => (
@@ -321,7 +351,9 @@ export function ProducerRegistrationForm({
                     type="text"
                     value={registro.tipoOutros ?? ''}
                     onChange={(event) =>
-                      updateRegistration(index, { tipoOutros: event.target.value })
+                      updateRegistration(index, {
+                        tipoOutros: event.target.value,
+                      })
                     }
                     className={formInputClassName}
                     placeholder="Ex.: SESA-PR"
@@ -345,7 +377,9 @@ export function ProducerRegistrationForm({
                   onClick={() =>
                     updateField(
                       'registros',
-                      form.registros.filter((_, itemIndex) => itemIndex !== index),
+                      form.registros.filter(
+                        (_, itemIndex) => itemIndex !== index,
+                      ),
                     )
                   }
                   className="mb-5 min-h-11 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger-soft"
@@ -358,7 +392,10 @@ export function ProducerRegistrationForm({
           <button
             type="button"
             onClick={() =>
-              updateField('registros', [...form.registros, { ...emptyRegistration }])
+              updateField('registros', [
+                ...form.registros,
+                { ...emptyRegistration },
+              ])
             }
             className="self-start text-sm font-semibold text-primary-darker hover:text-primary-dark"
           >
@@ -377,7 +414,10 @@ export function ProducerRegistrationForm({
       content: (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="WhatsApp" hint="Formato internacional: +5542999999999">
+            <FormField
+              label="WhatsApp"
+              hint="Formato internacional: +5542999999999"
+            >
               <input
                 required
                 type="tel"
@@ -410,7 +450,9 @@ export function ProducerRegistrationForm({
               <input
                 type="text"
                 value={form.instagram}
-                onChange={(event) => updateField('instagram', event.target.value)}
+                onChange={(event) =>
+                  updateField('instagram', event.target.value)
+                }
                 className={formInputClassName}
                 placeholder="@produtor"
               />
@@ -419,7 +461,9 @@ export function ProducerRegistrationForm({
               <input
                 type="text"
                 value={form.facebook}
-                onChange={(event) => updateField('facebook', event.target.value)}
+                onChange={(event) =>
+                  updateField('facebook', event.target.value)
+                }
                 className={formInputClassName}
                 placeholder="produtor.oficial"
               />
@@ -457,7 +501,10 @@ export function ProducerRegistrationForm({
               title="CEP com 8 dígitos (ex.: 84010-000)"
               value={form.endereco.cep}
               onChange={(event) =>
-                updateField('endereco', { ...form.endereco, cep: event.target.value })
+                updateField('endereco', {
+                  ...form.endereco,
+                  cep: event.target.value,
+                })
               }
               className={formInputClassName}
               placeholder="84010-000"
@@ -482,7 +529,10 @@ export function ProducerRegistrationForm({
               type="text"
               value={form.endereco.rua}
               onChange={(event) =>
-                updateField('endereco', { ...form.endereco, rua: event.target.value })
+                updateField('endereco', {
+                  ...form.endereco,
+                  rua: event.target.value,
+                })
               }
               className={formInputClassName}
             />
@@ -542,7 +592,8 @@ export function ProducerRegistrationForm({
     {
       id: 'imagens',
       label: 'Logo e fotos',
-      description: 'A logo é obrigatória; fotos ajudam na análise e na vitrine.',
+      description:
+        'A logo é obrigatória; fotos ajudam na análise e na vitrine.',
       status:
         form.logo.length === 0 || form.fotos.length === 0
           ? 'incompleto'

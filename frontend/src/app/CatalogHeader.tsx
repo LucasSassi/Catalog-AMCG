@@ -38,6 +38,7 @@ export function CatalogHeader() {
 
   const joinItems: NavDropdownItem[] = [
     { label: 'Cadastrar', to: '/inscricao' },
+    { label: 'Meu perfil', to: '/minha-conta/perfil' },
     { label: 'Dúvidas e Contato', to: '/quem-somos#contato' },
   ]
 
@@ -157,6 +158,13 @@ export function CatalogHeader() {
               onClick={closeMobile}
             >
               Cadastrar
+            </Link>
+            <Link
+              to="/minha-conta/perfil"
+              className={linkClassName}
+              onClick={closeMobile}
+            >
+              Meu perfil
             </Link>
             <Link
               to="/quem-somos#contato"

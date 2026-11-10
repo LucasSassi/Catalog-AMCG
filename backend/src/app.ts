@@ -1,4 +1,5 @@
 import cors from "cors";
+import { createContaController } from "./application/controllers/conta.controller";
 import express, { type Express } from "express";
 import { createBannerController } from "./application/controllers/banner.controller";
 import { createInscricaoController } from "./application/controllers/inscricao.controller";
@@ -108,6 +109,8 @@ export function createApp(options: CreateAppOptions): Express {
       jwtSecret: options.jwtSecret,
     }),
   );
+
+  app.use("/api", createContaController(options.jwtSecret, produtoService, produtorService));
 
   app.use(errorHandler);
 

@@ -98,7 +98,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     const aprovarProdutor = await request(app)
       .put(`/api/produtores/${cadastrarProdutor.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     produtorAprovadoId = aprovarProdutor.body.id;
   });
@@ -138,7 +138,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const response = await request(app).get(
       "/api/produtos/catalogo?categoria=MEL_E_DERIVADOS&municipio=Ponta%20Grossa",
@@ -209,7 +209,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
     expect(aprovar.status).toBe(200);
     expect(aprovar.body.status).toBe("APROVADO");
 
@@ -303,6 +303,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .set("Authorization", auth)
       .send({
         status: "REJEITADO",
+        revisao: 0,
         motivoRejeicao: "Fotos insuficientes",
       });
 
@@ -344,7 +345,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", adminAuth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const response = await request(app)
       .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
@@ -365,7 +366,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     await request(app)
       .patch(`/api/produtos/${cadastrar.body.id}/destaque`)
@@ -438,12 +439,12 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${primeiro.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     await request(app)
       .put(`/api/produtos/${segundo.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const response = await request(app)
       .get("/api/produtos/catalogo/do-produtor")

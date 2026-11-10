@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { apiRequest } from '../shared/api/client'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useReviewProducts } from '../features/produto/hooks/useReviewProducts'
 import { useReviewProducers } from '../features/produtor/hooks/useReviewProducers'
@@ -24,12 +25,32 @@ function BackofficeShell() {
   const actions = useBackofficeActions(producers, products)
   const context: BackofficeData = { producers, products, actions }
 
-  const pendingProducers = producers.producers.filter(
-    (producer) => producer.status === 'PENDENTE',
-  ).length
-  const pendingProducts = products.products.filter(
-    (product) => product.status === 'PENDENTE',
-  ).length
+  const [pendingProducers, setPendingProducers] = useState(0)
+  const [pendingProducts, setPendingProducts] = useState(0)
+  useEffect(() => {
+    let current = true
+    Promise.all([
+      apiRequest<{ total: number }>('/api/gestao/aprovacoes?pageSize=1', {
+        authenticated: true,
+      }),
+      apiRequest<{ total: number }>(
+        '/api/gestao/aprovacoes/produtores?pageSize=1',
+        { authenticated: true },
+      ),
+    ])
+      .then(([products, producers]) => {
+        if (current) {
+          setPendingProducts(products.total)
+          setPendingProducers(producers.total)
+        }
+      })
+      .catch(() => {
+        /* A página de revisão apresenta o erro e permite tentar novamente. */
+      })
+    return () => {
+      current = false
+    }
+  }, [products.products, producers.producers])
 
   function logout() {
     removeAuthToken()
@@ -81,14 +102,24 @@ function BackofficeShell() {
           >
             Produtos
           </SidebarLink>
+          <SidebarLink
+            to="/backoffice/aprovacoes"
+            icon={<ProductIcon />}
+            badge={pendingProducts + pendingProducers}
+          >
+            Aguardando aprovação
+          </SidebarLink>
+          <SidebarLink
+            to="/backoffice/usuarios"
+            icon={<ProducerIcon />}
+            badge={0}
+          >
+            Vincular usuários
+          </SidebarLink>
           <p className="px-3 pb-1.5 pt-6 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
             Vitrine
           </p>
-          <SidebarLink
-            to="/backoffice/destaques"
-            icon={<StarIcon />}
-            badge={0}
-          >
+          <SidebarLink to="/backoffice/destaques" icon={<StarIcon />} badge={0}>
             Destaques
           </SidebarLink>
           <SidebarLink to="/backoffice/banners" icon={<ImageIcon />} badge={0}>
@@ -176,7 +207,7 @@ function BackofficeShell() {
 
       <nav
         aria-label="Navegação do backoffice"
-        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-4 border-t border-border-soft bg-white lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-6 border-t border-border-soft bg-white lg:hidden"
       >
         <BottomLink
           to="/backoffice/produtores"
@@ -191,6 +222,16 @@ function BackofficeShell() {
           badge={pendingProducts}
         >
           Produtos
+        </BottomLink>
+        <BottomLink
+          to="/backoffice/aprovacoes"
+          icon={<ProductIcon />}
+          badge={pendingProducts + pendingProducers}
+        >
+          Aprovações
+        </BottomLink>
+        <BottomLink to="/backoffice/usuarios" icon={<ProducerIcon />} badge={0}>
+          Usuários
         </BottomLink>
         <BottomLink to="/backoffice/destaques" icon={<StarIcon />} badge={0}>
           Destaques
@@ -209,9 +250,7 @@ function PendingBadge({ count }: { count: number }) {
   }
 
   return (
-    <span
-      className="ml-auto min-w-6 rounded-full bg-accent-yellow px-1.5 py-0.5 text-center text-xs font-bold text-foreground"
-    >
+    <span className="ml-auto min-w-6 rounded-full bg-accent-yellow px-1.5 py-0.5 text-center text-xs font-bold text-foreground">
       <span className="sr-only">, </span>
       {count}
       <span className="sr-only"> pendentes</span>
@@ -286,7 +325,14 @@ function BottomLink({
 
 function ProducerIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -297,7 +343,14 @@ function ProducerIcon() {
 
 function ProductIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 8 12 3 3 8v8l9 5 9-5z" />
       <path d="m3 8 9 5 9-5" />
       <path d="M12 13v8" />
@@ -307,7 +360,14 @@ function ProductIcon() {
 
 function EyeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -316,7 +376,13 @@ function EyeIcon() {
 
 function StarIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    >
       <path d="M12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.8 5.8 21 7 14 2 9.3 9 8.5z" />
     </svg>
   )
@@ -324,7 +390,14 @@ function StarIcon() {
 
 function ImageIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <circle cx="8.5" cy="10" r="1.5" />
       <path d="m21 16-5-5-9 8" />
@@ -334,7 +407,14 @@ function ImageIcon() {
 
 function LogoutIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <path d="m16 17 5-5-5-5" />
       <path d="M21 12H9" />

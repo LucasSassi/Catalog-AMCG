@@ -430,6 +430,14 @@ export class ProdutoService implements IProdutoService {
       observacoes?: string;
       status?: StatusProduto;
       motivoRejeicao?: string | null;
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+      ativo?: boolean;
+      destaque?: boolean;
+      revisaoEsperada?: number;
     } = {};
 
     if (input.produtorId !== undefined) {
@@ -493,6 +501,22 @@ export class ProdutoService implements IProdutoService {
       data.observacoes = this.normalizeObservacoes(input.observacoes);
     }
 
+    const campos = ["nome", "descricaoBreve", "descricao", "valorCentavos", "fotosAvaliacao", "fotosDivulgacao"] as const;
+    const alterados = campos.filter((campo) => data[campo] !== undefined && JSON.stringify(data[campo]) !== JSON.stringify(atual[campo]));
+    if (input.revisao !== undefined && input.revisao !== (atual.revisao ?? 0)) {
+      throw new ConflictError("Produto alterado. Atualize a página antes de continuar");
+    }
+    data.revisaoEsperada = input.revisao ?? atual.revisao ?? 0;
+    if (alterados.length && input.status !== undefined) {
+      throw new ValidationError("Salve as alterações antes de decidir a aprovação");
+    }
+    if (input.status === "APROVADO") {
+      await this.assertProdutorAprovado(atual.produtorId);
+      data.ativo = true;
+    } else if (input.status !== undefined) {
+      data.ativo = false;
+      data.destaque = false;
+    }
     if (input.status !== undefined) {
       this.assertStatus(input.status);
       data.status = input.status;
@@ -511,15 +535,22 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError(
         "Motivo da rejeição só pode ser informado quando o status for REJEITADO",
       );
-    } else if (atual.status === "APROVADO") {
+    }
+    if (alterados.length) {
       data.status = "PENDENTE";
+      data.ativo = false;
+      data.destaque = false;
       data.motivoRejeicao = null;
+      data.origemPendencia = "ALTERACAO";
+      data.camposAlterados = [...new Set([...(atual.status === "PENDENTE" ? atual.camposAlterados ?? [] : []), ...alterados])];
+      data.alteradoPor = input.autorId;
+      data.alteradoEm = new Date();
     }
 
     const atualizado = await this.writeRepository.update(id, data);
 
     if (!atualizado) {
-      throw new NotFoundError("Produto não encontrado");
+      throw new ConflictError("Produto alterado. Atualize a página antes de continuar");
     }
 
     return atualizado;

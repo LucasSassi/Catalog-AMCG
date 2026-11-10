@@ -1,3 +1,4 @@
+import { UsuarioModel } from "../../../infraestructure/db/mongo/models/usuario.model";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { createApp } from "../../../app";
@@ -73,7 +74,14 @@ describe("Quando usar o InscricaoController (integration)", () => {
   let produtoRepository: InMemoryProdutoRepository;
   let app: ReturnType<typeof createApp>;
 
+  afterEach(() => jest.restoreAllMocks());
   beforeEach(() => {
+    jest
+      .spyOn(UsuarioModel, "findById")
+      .mockResolvedValue({ id: "user-1" } as never);
+    jest
+      .spyOn(UsuarioModel, "findOneAndUpdate")
+      .mockResolvedValue({ id: "user-1" } as never);
     produtorRepository = new InMemoryProdutorRepository();
     produtoRepository = new InMemoryProdutoRepository();
 
@@ -94,6 +102,27 @@ describe("Quando usar o InscricaoController (integration)", () => {
     });
   });
 
+  it("Não cria outra inscrição para conta já vinculada", async () => {
+    jest
+      .spyOn(UsuarioModel, "findById")
+      .mockResolvedValue({ id: "user-1", produtorId: "existente" } as never);
+    const response = await request(app)
+      .post("/api/inscricoes")
+      .set("Authorization", authHeader())
+      .send(buildInscricaoPayload());
+    expect(response.status).toBe(409);
+    expect(await produtorRepository.list()).toHaveLength(0);
+  });
+  it("Desfaz a inscrição se o vínculo mudar durante a criação", async () => {
+    jest.spyOn(UsuarioModel, "findOneAndUpdate").mockResolvedValue(null);
+    const response = await request(app)
+      .post("/api/inscricoes")
+      .set("Authorization", authHeader())
+      .send(buildInscricaoPayload());
+    expect(response.status).toBe(409);
+    expect(await produtorRepository.list()).toHaveLength(0);
+    expect(await produtoRepository.list()).toHaveLength(0);
+  });
   it("Deve exigir JWT para criar inscrição", async () => {
     const response = await request(app)
       .post("/api/inscricoes")
@@ -109,6 +138,19 @@ describe("Quando usar o InscricaoController (integration)", () => {
       .send(buildInscricaoPayload());
 
     expect(response.status).toBe(201);
+    expect(UsuarioModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: "user-1", produtorId: null },
+      expect.objectContaining({
+        $set: { produtorId: response.body.produtor.id },
+        $push: {
+          historicoVinculos: expect.objectContaining({
+            origem: "INSCRICAO",
+            usuarioId: "user-1",
+          }),
+        },
+      }),
+      { new: true },
+    );
     expect(response.body.produtor).toMatchObject({
       nomeEmpresa: "Fazenda Inscrição",
       status: "PENDENTE",
@@ -168,7 +210,7 @@ describe("Quando usar o InscricaoController (integration)", () => {
     const adminAprova = await request(app)
       .put(`/api/produtores/${inscricao.body.produtor.id}`)
       .set("Authorization", authHeader("admin-1", "admin@amcg.org", "admin"))
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     expect(adminAprova.status).toBe(200);
 

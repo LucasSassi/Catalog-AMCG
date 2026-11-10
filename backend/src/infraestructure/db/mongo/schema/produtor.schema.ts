@@ -52,6 +52,12 @@ export interface RedeSocialDocument {
 }
 
 export interface ProdutorDocument {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   nomeEmpresa: string;
   municipioId: string;
   documento: DocumentoDocument;
@@ -131,6 +137,11 @@ const redeSocialSchema = new Schema<RedeSocialDocument>(
 
 export const produtorSchema = new Schema<ProdutorDocument>(
   {
+    revisao: { type: Number, default: 0 },
+    origemPendencia: { type: String, enum: ["CADASTRO", "ALTERACAO"], default: "CADASTRO" },
+    camposAlterados: { type: [String], default: [] },
+    alteradoPor: String,
+    alteradoEm: Date,
     nomeEmpresa: { type: String, required: true, trim: true },
     municipioId: { type: String, required: true, trim: true },
     documento: { type: documentoSchema, required: true },
@@ -163,3 +174,5 @@ export const produtorSchema = new Schema<ProdutorDocument>(
 produtorSchema.index({ "documento.numero": 1 }, { unique: true });
 produtorSchema.index({ "registros.numero": 1 }, { unique: true, sparse: true });
 produtorSchema.index({ destaque: 1, status: 1, ativo: 1 });
+
+produtorSchema.index({ status: 1, _id: -1 });

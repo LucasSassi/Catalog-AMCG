@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   approveProduct,
   listProducts,
@@ -15,6 +15,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export function useReviewProducts(status: ProductListFilter) {
+  const decisionRevisions = useRef(new Map<string, number>())
   const [products, setProducts] = useState<Product[]>([])
   const [loadedStatus, setLoadedStatus] = useState<ProductListFilter | null>(
     null,
@@ -72,6 +73,7 @@ export function useReviewProducts(status: ProductListFilter) {
     )
     const failure = results.find((result) => result.status === 'rejected')
 
+    updated.forEach(product => decisionRevisions.current.set(product.id, product.revisao ?? 0))
     replace(updated)
     setIsUpdating(false)
 
@@ -83,13 +85,15 @@ export function useReviewProducts(status: ProductListFilter) {
     return true
   }
 
-  function approve(id: string) {
-    return mutate([() => approveProduct(id)], 'Não foi possível aprovar o produto.')
+  const revision = (id: string) => products.find(p => p.id === id)?.revisao ?? 0
+
+  function approve(id: string, revisao = revision(id)) {
+    return mutate([() => approveProduct(id, revisao)], 'Não foi possível aprovar o produto.')
   }
 
-  function reject(id: string, reason: string) {
+  function reject(id: string, reason: string, revisao = revision(id)) {
     return mutate(
-      [() => rejectProduct(id, reason)],
+      [() => rejectProduct(id, reason, revisao)],
       'Não foi possível rejeitar o produto.',
     )
   }
@@ -126,14 +130,14 @@ export function useReviewProducts(status: ProductListFilter) {
     return mutate(
       previous.map((item) => () => {
         if (item.status === 'APROVADO') {
-          return approveProduct(item.id)
+          return approveProduct(item.id, decisionRevisions.current.get(item.id) ?? revision(item.id))
         }
 
         if (item.status === 'REJEITADO') {
-          return rejectProduct(item.id, item.motivoRejeicao ?? 'Rejeitado')
+          return rejectProduct(item.id, item.motivoRejeicao ?? 'Rejeitado', decisionRevisions.current.get(item.id) ?? revision(item.id))
         }
 
-        return reopenProduct(item.id)
+        return reopenProduct(item.id, decisionRevisions.current.get(item.id) ?? revision(item.id))
       }),
       'Não foi possível desfazer a decisão.',
     )

@@ -29,6 +29,12 @@ export interface CreateProdutoData {
 }
 
 export interface UpdateProdutoData {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+  revisaoEsperada?: number;
   produtorId?: string;
   nome?: string;
   descricaoBreve?: string;

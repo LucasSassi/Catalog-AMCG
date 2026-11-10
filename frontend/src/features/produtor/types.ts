@@ -59,6 +59,11 @@ export interface CatalogProducerAddress {
 }
 
 export interface Producer {
+  revisao?: number
+  origemPendencia?: 'CADASTRO' | 'ALTERACAO'
+  camposAlterados?: string[]
+  alteradoEm?: string
+  alteradoPor?: string
   id: string
   nomeEmpresa: string
   municipioId: string

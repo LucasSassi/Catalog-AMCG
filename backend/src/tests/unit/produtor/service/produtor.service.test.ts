@@ -53,6 +53,60 @@ describe("Quando usar o ProdutorService", () => {
     });
   });
 
+
+  describe("Revisão de alterações do perfil", () => {
+    it("Permite remover logo e fotos na edição e exige reaprovação", async () => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { logo: null, fotos: [], revisao: approved.revisao });
+      expect(edited.logo).toBeUndefined();
+      expect(edited.fotos).toEqual([]);
+      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false, camposAlterados: ["logo", "fotos"] });
+      const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
+      const unchanged = await service.update(created.id, { logo: null, fotos: [], revisao: reviewed.revisao });
+      expect(unchanged).toMatchObject({ status: "APROVADO", ativo: true, fotos: [] });
+      expect(unchanged.logo).toBeUndefined();
+    });
+    it("Mantém imagens existentes quando não são enviadas na edição", async () => {
+      const created = await service.create(buildInput());
+      const edited = await service.update(created.id, { historia: "História atualizada" });
+      expect(edited.logo).toEqual(created.logo);
+      expect(edited.fotos).toEqual(created.fotos);
+    });
+
+    it.each([
+      { nomeEmpresa: "Novo nome" }, { historia: "Nova história" },
+      { logo: { ...logoPadrao, url: "https://example.com/nova-logo.jpg" } },
+      { fotos: [{ ...fotoPadrao, url: "https://example.com/nova-foto.jpg" }] },
+      { contato: { telefone: "+5542988888888", email: "novo@example.com" } },
+    ])("Oculta perfil alterado até reaprovação: %j", async input => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { ...input, autorId: "usuario-1", revisao: approved.revisao });
+      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "usuario-1", camposAlterados: Object.keys(input) });
+      expect((await service.listCatalog()).produtores).toHaveLength(0);
+      await expect(service.update(created.id, { status: "APROVADO", revisao: approved.revisao })).rejects.toMatchObject({ statusCode: 409 });
+      const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
+      expect(reviewed).toMatchObject({ status: "APROVADO", ativo: true });
+    });
+    it("Mantém publicação quando os dados normalizados não mudam", async () => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { nomeEmpresa: ` ${created.nomeEmpresa} `, historia: ` ${created.historia} `, revisao: approved.revisao });
+      expect(edited).toMatchObject({ status: "APROVADO", ativo: true });
+    });
+    it("Impede publicação de conteúdo alterado na mesma operação", async () => {
+      const created = await service.create(buildInput());
+      await expect(service.update(created.id, { nomeEmpresa: "Alterado", status: "APROVADO" })).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("Permite corrigir perfil rejeitado e reenviar para revisão", async () => {
+      const created = await service.create(buildInput());
+      await service.update(created.id, { status: "REJEITADO", motivoRejeicao: "Corrigir história" });
+      const edited = await service.update(created.id, { historia: "História corrigida" });
+      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false });
+      expect(edited.motivoRejeicao).toBeUndefined();
+    });
+  });
   describe("Quando cadastrar um produtor", () => {
     it("Deve criar o produtor com status PENDENTE e ativo true", async () => {
       const produtor = await service.create(buildInput());

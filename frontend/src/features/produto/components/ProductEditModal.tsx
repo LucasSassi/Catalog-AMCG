@@ -16,7 +16,7 @@ export function ProductEditModal({
   return (
     <FormModal
       title={`Editar ${product.nome}`}
-      subtitle="As mudanças valem para o catálogo assim que forem salvas."
+      subtitle="Alterações em nome, descrições, preço ou fotos deixam o produto inativo até nova aprovação."
       successTitle="Produto atualizado"
       successMessage="Os dados foram salvos com sucesso."
       onClose={onClose}

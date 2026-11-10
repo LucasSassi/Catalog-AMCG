@@ -33,6 +33,12 @@ export interface PremiacaoDocument {
 }
 
 export interface ProdutoDocument {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   produtorId: string;
   nome: string;
   /** Opcional em documentos antigos, cadastrados antes da descrição breve existir. */
@@ -86,6 +92,11 @@ const premiacaoSchema = new Schema<PremiacaoDocument>(
 
 export const produtoSchema = new Schema<ProdutoDocument>(
   {
+    revisao: { type: Number, default: 0 },
+    origemPendencia: { type: String, enum: ["CADASTRO", "ALTERACAO"], default: "CADASTRO" },
+    camposAlterados: { type: [String], default: [] },
+    alteradoPor: String,
+    alteradoEm: Date,
     produtorId: { type: String, required: true, trim: true },
     nome: { type: String, required: true, trim: true },
     descricaoBreve: { type: String, trim: true },

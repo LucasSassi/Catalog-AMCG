@@ -42,6 +42,11 @@ export interface ProductAward {
 }
 
 export interface Product {
+  revisao?: number
+  origemPendencia?: 'CADASTRO' | 'ALTERACAO'
+  camposAlterados?: string[]
+  alteradoPor?: string
+  alteradoEm?: string
   id: string
   produtorId: string
   nome: string

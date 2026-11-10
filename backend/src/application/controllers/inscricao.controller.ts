@@ -1,4 +1,9 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
@@ -27,7 +32,14 @@ import {
 } from "../../domain/produtor/entity/produtor.constants";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
 import type { CadastrarProdutorInput } from "../../domain/produtor/entity/produtor.entity";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import {
+  contaSemVinculo,
+  vincularConta,
+} from "../services/pre-cadastro.service";
+import {
+  type AuthenticatedRequest,
+  createAuthMiddleware,
+} from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -211,9 +223,7 @@ const produtoSchema = z.object({
 
 const inscricaoSchema = z.object({
   produtor: produtorSchema,
-  produtos: z
-    .array(produtoSchema)
-    .min(1, "Ao menos um produto é obrigatório"),
+  produtos: z.array(produtoSchema).min(1, "Ao menos um produto é obrigatório"),
 });
 
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -251,6 +261,8 @@ export function createInscricaoController(
 
       try {
         const body = parseOrThrow(inscricaoSchema, request.body);
+        const userId = (request as AuthenticatedRequest).userId!;
+        await contaSemVinculo(userId);
         const produtorInput = body.produtor as CadastrarProdutorInput;
 
         const produtor = await produtorService.create(produtorInput);
@@ -269,6 +281,7 @@ export function createInscricaoController(
           produtos.push(produto);
         }
 
+        await vincularConta(userId, produtor.id, "INSCRICAO");
         response.status(201).json({ produtor, produtos });
       } catch (error) {
         for (const produtoId of createdProdutoIds) {

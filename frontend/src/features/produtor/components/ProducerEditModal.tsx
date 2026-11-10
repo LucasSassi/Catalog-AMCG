@@ -16,7 +16,7 @@ export function ProducerEditModal({
   return (
     <FormModal
       title={`Editar ${producer.nomeEmpresa}`}
-      subtitle="As mudanças valem para o catálogo assim que forem salvas."
+      subtitle="As alterações deixam o perfil aguardando aprovação antes de aparecer no catálogo."
       successTitle="Produtor atualizado"
       successMessage="Os dados foram salvos com sucesso."
       onClose={onClose}

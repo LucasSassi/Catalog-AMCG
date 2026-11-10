@@ -28,6 +28,7 @@ interface ProductDetailsPanelProps {
   onPrevious?: () => void
   onNext?: () => void
   onClose: () => void
+  readOnlyEdit?: boolean
   onEdit: () => void
   onOpenProducer?: () => void
   onApprove: () => void
@@ -49,6 +50,7 @@ export function ProductDetailsPanel({
   onNext,
   onClose,
   onEdit,
+  readOnlyEdit = false,
   onOpenProducer,
   onApprove,
   onReject,
@@ -115,6 +117,8 @@ export function ProductDetailsPanel({
                 : `inscrito em ${formatDate(product.createdAt)}`}
             </span>
           </div>
+          {product.status === 'PENDENTE' && <p className="text-sm font-bold">Aguardando aprovação · {product.origemPendencia === 'ALTERACAO' ? 'Alteração' : 'Cadastro'}</p>}
+          {product.camposAlterados?.length ? <p className="text-sm">Campos alterados: {product.camposAlterados.join(', ')}</p> : null}
           <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-foreground">
             {product.nome}
           </h2>
@@ -126,14 +130,14 @@ export function ProductDetailsPanel({
       }
       footer={
         <>
-          <button
+          {!readOnlyEdit && <button
             type="button"
             onClick={onEdit}
             disabled={disabled}
             className="inline-flex min-h-11 items-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-bold text-foreground transition hover:border-primary disabled:opacity-60"
           >
             Editar
-          </button>
+          </button>}
           <span className="flex-1" />
           {isPending ? (
             <>

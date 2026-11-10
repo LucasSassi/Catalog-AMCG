@@ -41,6 +41,11 @@ function mapPremiacao(
 export function toProdutoEntity(document: ProdutoModelDocument): Produto {
   return {
     id: document._id.toString(),
+    revisao: document.revisao ?? 0,
+    origemPendencia: document.origemPendencia ?? "CADASTRO",
+    camposAlterados: document.camposAlterados ?? [],
+    alteradoPor: document.alteradoPor,
+    alteradoEm: document.alteradoEm,
     produtorId: document.produtorId,
     nome: document.nome,
     descricaoBreve: document.descricaoBreve || document.descricao,

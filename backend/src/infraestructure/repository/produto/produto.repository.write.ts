@@ -30,14 +30,15 @@ export class ProdutoRepositoryWrite implements IProdutoRepositoryWrite {
   }
 
   async update(id: string, data: UpdateProdutoData): Promise<Produto | null> {
-    const payload: Record<string, unknown> = { ...data };
+    const { revisaoEsperada, ...values } = data;
+    const payload: Record<string, unknown> = { ...values, $inc: { revisao: 1 } };
 
     if (data.motivoRejeicao === null) {
       payload.$unset = { motivoRejeicao: "" };
       delete payload.motivoRejeicao;
     }
 
-    const document = await ProdutoModel.findByIdAndUpdate(id, payload, {
+    const document = await ProdutoModel.findOneAndUpdate({ _id: id, ...(revisaoEsperada !== undefined ? { $or: [{ revisao: revisaoEsperada }, ...(revisaoEsperada === 0 ? [{ revisao: { $exists: false } }] : [])] } : {}) }, payload, {
       new: true,
       runValidators: true,
     }).exec();
@@ -48,7 +49,7 @@ export class ProdutoRepositoryWrite implements IProdutoRepositoryWrite {
   async softDelete(id: string): Promise<Produto | null> {
     const document = await ProdutoModel.findByIdAndUpdate(
       id,
-      { ativo: false },
+      { ativo: false, destaque: false, $inc: { revisao: 1 } },
       { new: true, runValidators: true },
     ).exec();
 

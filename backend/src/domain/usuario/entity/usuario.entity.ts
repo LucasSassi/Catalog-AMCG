@@ -5,6 +5,7 @@ export interface Usuario {
   nome: string;
   email: string;
   senhaHash: string;
+  produtorId?: string;
   role: RoleUsuario;
   createdAt: Date;
   updatedAt: Date;

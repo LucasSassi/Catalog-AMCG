@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   approveProducer,
   listProducers,
@@ -14,6 +14,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export function useReviewProducers(status: ProducerListFilter) {
+  const decisionRevisions = useRef(new Map<string, number>())
   const [producers, setProducers] = useState<Producer[]>([])
   const [loadedStatus, setLoadedStatus] = useState<ProducerListFilter | null>(
     null,
@@ -35,7 +36,10 @@ export function useReviewProducers(status: ProducerListFilter) {
       .catch((requestError) => {
         if (isCurrent) {
           setError(
-            errorMessage(requestError, 'Não foi possível carregar os produtores.'),
+            errorMessage(
+              requestError,
+              'Não foi possível carregar os produtores.',
+            ),
           )
         }
       })
@@ -65,12 +69,15 @@ export function useReviewProducers(status: ProducerListFilter) {
     setIsUpdating(true)
     setError('')
 
-    const results = await Promise.allSettled(requests.map((request) => request()))
+    const results = await Promise.allSettled(
+      requests.map((request) => request()),
+    )
     const updated = results.flatMap((result) =>
       result.status === 'fulfilled' ? [result.value] : [],
     )
     const failure = results.find((result) => result.status === 'rejected')
 
+    updated.forEach((p) => decisionRevisions.current.set(p.id, p.revisao ?? 0))
     replace(updated)
     setIsUpdating(false)
 
@@ -82,20 +89,25 @@ export function useReviewProducers(status: ProducerListFilter) {
     return true
   }
 
-  function approve(id: string) {
-    return mutate([() => approveProducer(id)], 'Não foi possível aprovar o produtor.')
+  const revision = (id: string) =>
+    producers.find((p) => p.id === id)?.revisao ?? 0
+  function approve(id: string, revisao = revision(id)) {
+    return mutate(
+      [() => approveProducer(id, revisao)],
+      'Não foi possível aprovar o produtor.',
+    )
   }
 
-  function approveMany(ids: string[]) {
+  function approveMany(items: Producer[]) {
     return mutate(
-      ids.map((id) => () => approveProducer(id)),
+      items.map((item) => () => approveProducer(item.id, item.revisao ?? 0)),
       'Não foi possível aprovar todos os produtores.',
     )
   }
 
-  function reject(id: string, reason: string) {
+  function reject(id: string, reason: string, revisao = revision(id)) {
     return mutate(
-      [() => rejectProducer(id, reason)],
+      [() => rejectProducer(id, reason, revisao)],
       'Não foi possível rejeitar o produtor.',
     )
   }
@@ -118,14 +130,24 @@ export function useReviewProducers(status: ProducerListFilter) {
     return mutate(
       previous.map((item) => () => {
         if (item.status === 'APROVADO') {
-          return approveProducer(item.id)
+          return approveProducer(
+            item.id,
+            decisionRevisions.current.get(item.id) ?? revision(item.id),
+          )
         }
 
         if (item.status === 'REJEITADO') {
-          return rejectProducer(item.id, item.motivoRejeicao ?? 'Rejeitado')
+          return rejectProducer(
+            item.id,
+            item.motivoRejeicao ?? 'Rejeitado',
+            decisionRevisions.current.get(item.id) ?? revision(item.id),
+          )
         }
 
-        return reopenProducer(item.id)
+        return reopenProducer(
+          item.id,
+          decisionRevisions.current.get(item.id) ?? revision(item.id),
+        )
       }),
       'Não foi possível desfazer a decisão.',
     )

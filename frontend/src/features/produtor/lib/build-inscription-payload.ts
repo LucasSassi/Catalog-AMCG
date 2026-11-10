@@ -1,5 +1,6 @@
 import type { CreateProductInput } from '../../produto/types'
 import type {
+  ProducerDocument,
   CreateInscriptionInput,
   CreateProducerInput,
   InscriptionFormState,
@@ -12,22 +13,26 @@ import { stripSocialHandle } from './social-url'
 
 export function buildInscriptionPayload(
   form: InscriptionFormState,
+  documento?: ProducerDocument,
 ): CreateInscriptionInput {
   return {
-    produtor: buildProducerPayload(form),
+    produtor: buildProducerPayload(form, documento),
     produtos: form.produtos.map(buildProductPayload),
   }
 }
 
 function buildProducerPayload(
   form: InscriptionFormState,
+  documento?: ProducerDocument,
 ): CreateProducerInput {
   if (!form.logo) {
     throw new Error('Logo da empresa é obrigatório.')
   }
 
   if (form.fotosDivulgacao.length === 0) {
-    throw new Error('Ao menos uma foto de divulgação do produtor é obrigatória.')
+    throw new Error(
+      'Ao menos uma foto de divulgação do produtor é obrigatória.',
+    )
   }
 
   if (!form.tipoRegistro) {
@@ -47,7 +52,7 @@ function buildProducerPayload(
   return {
     nomeEmpresa: form.nomeEmpresa.trim(),
     municipioId: municipio,
-    documento: parseDocumentNumber(form.documentoNumero),
+    documento: documento ?? parseDocumentNumber(form.documentoNumero),
     registros: [
       {
         tipo: form.tipoRegistro,

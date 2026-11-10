@@ -1,4 +1,14 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { MyProfilePage } from '../pages/account/MyProfilePage'
+import { AccountLoginPage } from '../pages/account/MyProductsPage'
+import { PendingApprovalPage } from '../pages/backoffice/PendingApprovalPage'
+import { UserLinksPage } from '../pages/backoffice/UserLinksPage'
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from 'react-router-dom'
 import {
   isAdminAuthToken,
   isAuthTokenValid,
@@ -25,7 +35,7 @@ function ProtectedRoute() {
   }
 
   if (!isAdminAuthToken()) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/backoffice/login" replace />
   }
 
   return <Outlet />
@@ -41,6 +51,12 @@ export function AppRouter() {
           <Route path="produtores" element={<ProducersPage />} />
           <Route path="produtores/:id" element={<ProducerDetailPage />} />
           <Route path="produtos/:id" element={<ProductDetailPage />} />
+          <Route path="minha-conta/login" element={<AccountLoginPage />} />
+          <Route path="minha-conta/perfil" element={<MyProfilePage />} />
+          <Route
+            path="minha-conta/produtos"
+            element={<Navigate to="/minha-conta/perfil" replace />}
+          />
           <Route path="inscricao" element={<InscriptionPage />} />
         </Route>
 
@@ -60,6 +76,11 @@ export function AppRouter() {
               path="/backoffice/produtos"
               element={<ProductsReviewPage />}
             />
+            <Route
+              path="/backoffice/aprovacoes"
+              element={<PendingApprovalPage />}
+            />
+            <Route path="/backoffice/usuarios" element={<UserLinksPage />} />
             <Route path="/backoffice/destaques" element={<DestaquesPage />} />
             <Route path="/backoffice/banners" element={<BannersPage />} />
           </Route>

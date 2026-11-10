@@ -28,6 +28,12 @@ export interface CreateProdutorData {
 }
 
 export interface UpdateProdutorData {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+  revisaoEsperada?: number;
   nomeEmpresa?: string;
   municipioId?: string;
   documento?: Documento;
@@ -36,7 +42,7 @@ export interface UpdateProdutorData {
   endereco?: Endereco;
   exibirEndereco?: boolean;
   historia?: string;
-  logo?: Arquivo;
+  logo?: Arquivo | null;
   fotos?: Arquivo[];
   redesSociais?: RedeSocialItem[];
   site?: string | null;

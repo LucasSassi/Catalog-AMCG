@@ -94,6 +94,16 @@ describe("Quando usar o ProdutoService", () => {
     );
   });
 
+
+  it("Oculta produtos públicos enquanto o perfil do produtor aguarda reaprovação", async () => {
+    const product = await service.create(buildInput(produtorAprovadoId));
+    await service.update(product.id, { status: "APROVADO" });
+    await produtorService.update(produtorAprovadoId, { historia: "História atualizada" });
+    expect((await service.listCatalog()).produtos).toHaveLength(0);
+    await expect(service.getCatalogById(product.id)).rejects.toMatchObject({ statusCode: 404 });
+    await produtorService.update(produtorAprovadoId, { status: "APROVADO" });
+    expect((await service.listCatalog()).produtos).toHaveLength(1);
+  });
   describe("Quando cadastrar um produto", () => {
     it("Deve criar o produto com status PENDENTE e ativo true", async () => {
       const produto = await service.create(buildInput(produtorAprovadoId));
@@ -453,6 +463,52 @@ describe("Quando usar o ProdutoService", () => {
   });
 
   describe("Quando atualizar um produto", () => {
+    it.each([
+      { nome: "Novo nome" },
+      { descricaoBreve: "Nova descrição breve" },
+      { descricao: "Nova descrição completa do produto" },
+      { valorCentavos: 9900 },
+      { fotosDivulgacao: [{ ...arquivoValido, url: "https://example.com/nova.jpg" }] },
+      { fotosAvaliacao: [{ ...arquivoValido, url: "https://example.com/nova.jpg" }] },
+    ])("Deve retirar do catálogo e registrar alteração: %j", async (input) => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.setDestaque(criado.id, true);
+      const atualizado = await service.update(criado.id, { ...input, autorId: "conta-1" });
+      expect(atualizado).toMatchObject({ status: "PENDENTE", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "conta-1" });
+      expect(atualizado.camposAlterados).toEqual(Object.keys(input));
+      expect((await service.listCatalog()).produtos).toHaveLength(0);
+      expect((await service.listDestaques()).produtos).toHaveLength(0);
+      await expect(service.getCatalogById(criado.id)).rejects.toMatchObject({ statusCode: 404 });
+      const aprovado = await service.update(criado.id, { status: "APROVADO", revisao: atualizado.revisao });
+      expect(aprovado).toMatchObject({ ativo: true, status: "APROVADO", destaque: false });
+    });
+    it("Deve manter aprovação quando não há mudança efetiva", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      const aprovado = await service.update(criado.id, { status: "APROVADO" });
+      const atualizado = await service.update(criado.id, { nome: `  ${criado.nome}  `, valorCentavos: criado.valorCentavos, fotosDivulgacao: criado.fotosDivulgacao, descricao: `  ${criado.descricao}  `, descricaoBreve: `  ${criado.descricaoBreve}  ` });
+      expect(atualizado.status).toBe("APROVADO");
+      expect(atualizado.ativo).toBe(true);
+      await expect(service.update(criado.id, { status: "APROVADO", revisao: aprovado.revisao })).rejects.toMatchObject({ statusCode: 409 });
+    });
+    it.each([{ descricaoBreve: "   " }, { descricaoBreve: "a".repeat(201) }, { descricao: "  " }])("Deve rejeitar descrição inválida sem alterar o produto: %j", async (input) => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await expect(service.update(criado.id, input)).rejects.toMatchObject({ statusCode: 400 });
+      expect(await service.getById(criado.id)).toMatchObject({ status: "APROVADO", ativo: true, descricao: criado.descricao, descricaoBreve: criado.descricaoBreve });
+    });
+    it("Deve impedir edição e aprovação na mesma operação", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await expect(service.update(criado.id, { nome: "Novo nome", status: "APROVADO" })).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("Deve permitir correção de rejeitado com nova pendência e remover motivo", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "REJEITADO", motivoRejeicao: "Corrigir preço" });
+      const atualizado = await service.update(criado.id, { valorCentavos: 4000 });
+      expect(atualizado).toMatchObject({ status: "PENDENTE", ativo: false });
+      expect(atualizado.motivoRejeicao).toBeUndefined();
+    });
+
     it("Deve voltar o status para PENDENTE quando estava APROVADO", async () => {
       const criado = await service.create(buildInput(produtorAprovadoId));
       await service.update(criado.id, { status: "APROVADO" });

@@ -4,6 +4,11 @@ import type { ProdutorModelDocument } from "../../../db/mongo/models/produtor.mo
 export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
   return {
     id: document._id.toString(),
+    revisao: document.revisao ?? 0,
+    origemPendencia: document.origemPendencia ?? "CADASTRO",
+    camposAlterados: document.camposAlterados ?? [],
+    alteradoPor: document.alteradoPor,
+    alteradoEm: document.alteradoEm,
     nomeEmpresa: document.nomeEmpresa,
     municipioId: document.municipioId,
     documento: {

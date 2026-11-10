@@ -204,6 +204,7 @@ export class UsuarioService implements IUsuarioService {
   private toPublico(usuario: Usuario): UsuarioPublico {
     return {
       id: usuario.id,
+      produtorId: usuario.produtorId,
       nome: usuario.nome,
       email: usuario.email,
       role: usuario.role,

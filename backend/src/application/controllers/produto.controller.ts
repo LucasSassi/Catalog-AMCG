@@ -16,7 +16,7 @@ import {
   listUnidadesMedida,
 } from "../../domain/produto/entity/produto.constants";
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
-import { createRequireAdmin } from "../middleware/auth.middleware";
+import { type AuthenticatedRequest, createRequireAdmin } from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -84,6 +84,7 @@ const cadastrarSchema = z.object({
 
 const atualizarSchema = z
   .object({
+    revisao: z.number().int().min(0).optional(),
     produtorId: z.string().trim().min(1, "Produtor é obrigatório").optional(),
     nome: z.string().trim().min(1, "Nome do produto é obrigatório").optional(),
     descricaoBreve: descricaoBreveSchema.optional(),
@@ -358,7 +359,8 @@ export function createProdutoController(
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
-        const produto = await produtoService.update(getRouteId(request), body);
+        if (body.status !== undefined && body.revisao === undefined) throw new ValidationError("Revisão do produto é obrigatória");
+        const produto = await produtoService.update(getRouteId(request), { ...body, autorId: (request as AuthenticatedRequest).userId });
         response.status(200).json(produto);
       } catch (error) {
         next(error);

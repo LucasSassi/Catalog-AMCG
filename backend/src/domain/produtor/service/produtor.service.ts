@@ -107,7 +107,9 @@ export class ProdutorService implements IProdutorService {
     });
 
     return {
-      produtores: produtores.map((produtor) => this.toProdutorCatalogo(produtor)),
+      produtores: produtores.map((produtor) =>
+        this.toProdutorCatalogo(produtor),
+      ),
     };
   }
 
@@ -231,12 +233,20 @@ export class ProdutorService implements IProdutorService {
       endereco?: Endereco;
       exibirEndereco?: boolean;
       historia?: string;
-      logo?: Arquivo;
+      logo?: Arquivo | null;
       fotos?: Arquivo[];
       redesSociais?: RedeSocialItem[];
       site?: string | null;
       status?: StatusProdutor;
       motivoRejeicao?: string | null;
+      revisao?: number;
+      origemPendencia?: "CADASTRO" | "ALTERACAO";
+      camposAlterados?: string[];
+      alteradoPor?: string;
+      alteradoEm?: Date;
+      revisaoEsperada?: number;
+      ativo?: boolean;
+      destaque?: boolean;
     } = {};
 
     if (input.nomeEmpresa !== undefined) {
@@ -282,11 +292,11 @@ export class ProdutorService implements IProdutorService {
     }
 
     if (input.logo !== undefined) {
-      data.logo = this.normalizeArquivo(input.logo);
+      data.logo = input.logo === null ? null : this.normalizeArquivo(input.logo);
     }
 
     if (input.fotos !== undefined) {
-      data.fotos = this.normalizeFotos(input.fotos);
+      data.fotos = this.normalizeFotos(input.fotos, 0);
     }
 
     if (input.redesSociais !== undefined) {
@@ -300,6 +310,40 @@ export class ProdutorService implements IProdutorService {
           : (this.normalizeOptionalSite(input.site) ?? null);
     }
 
+    const campos = [
+      "nomeEmpresa",
+      "municipioId",
+      "documento",
+      "registros",
+      "contato",
+      "endereco",
+      "exibirEndereco",
+      "historia",
+      "logo",
+      "fotos",
+      "redesSociais",
+      "site",
+    ] as const;
+    const alterados = campos.filter(
+      (campo) =>
+        data[campo] !== undefined &&
+        JSON.stringify(data[campo] ?? null) !==
+          JSON.stringify(atual[campo] ?? null),
+    );
+    if (input.revisao !== undefined && input.revisao !== (atual.revisao ?? 0))
+      throw new ConflictError(
+        "Perfil alterado. Atualize a página antes de continuar",
+      );
+    data.revisaoEsperada = input.revisao ?? atual.revisao ?? 0;
+    if (alterados.length && input.status !== undefined)
+      throw new ValidationError(
+        "Salve as alterações antes de decidir a aprovação",
+      );
+    if (input.status === "APROVADO") data.ativo = true;
+    else if (input.status !== undefined) {
+      data.ativo = false;
+      data.destaque = false;
+    }
     if (input.status !== undefined) {
       this.assertStatus(input.status);
       data.status = input.status;
@@ -320,10 +364,27 @@ export class ProdutorService implements IProdutorService {
       );
     }
 
+    if (alterados.length) {
+      data.status = "PENDENTE";
+      data.ativo = false;
+      data.destaque = false;
+      data.motivoRejeicao = null;
+      data.origemPendencia = "ALTERACAO";
+      data.camposAlterados = [
+        ...new Set([
+          ...(atual.status === "PENDENTE" ? (atual.camposAlterados ?? []) : []),
+          ...alterados,
+        ]),
+      ];
+      data.alteradoPor = input.autorId;
+      data.alteradoEm = new Date();
+    }
     const atualizado = await this.writeRepository.update(id, data);
 
     if (!atualizado) {
-      throw new NotFoundError("Produtor não encontrado");
+      throw new ConflictError(
+        "Perfil alterado. Atualize a página antes de continuar",
+      );
     }
 
     return atualizado;
@@ -441,14 +502,14 @@ export class ProdutorService implements IProdutorService {
     return trimmed;
   }
 
-  private normalizeFotos(fotos: Arquivo[]): Arquivo[] {
+  private normalizeFotos(fotos: Arquivo[], minFotos = MIN_FOTOS): Arquivo[] {
     if (!Array.isArray(fotos)) {
       throw new ValidationError("Fotos inválidas");
     }
 
-    if (fotos.length < MIN_FOTOS || fotos.length > MAX_FOTOS) {
+    if (fotos.length < minFotos || fotos.length > MAX_FOTOS) {
       throw new ValidationError(
-        `Fotos deve ter entre ${MIN_FOTOS} e ${MAX_FOTOS} itens`,
+        `Fotos deve ter entre ${minFotos} e ${MAX_FOTOS} itens`,
       );
     }
 
@@ -493,9 +554,7 @@ export class ProdutorService implements IProdutorService {
     }
 
     if (redesSociais.length > MAX_REDES_SOCIAIS) {
-      throw new ValidationError(
-        `Máximo de ${MAX_REDES_SOCIAIS} redes sociais`,
-      );
+      throw new ValidationError(`Máximo de ${MAX_REDES_SOCIAIS} redes sociais`);
     }
 
     const tipos = new Set<TipoRedeSocial>();
@@ -554,8 +613,7 @@ export class ProdutorService implements IProdutorService {
 
     if (documento.tipo === "CPF" || documento.tipo === "CNPJ") {
       numero = numero.replace(/\D/g, "");
-      const expected =
-        documento.tipo === "CPF" ? CPF_LENGTH : CNPJ_LENGTH;
+      const expected = documento.tipo === "CPF" ? CPF_LENGTH : CNPJ_LENGTH;
       if (numero.length !== expected) {
         throw new ValidationError(
           `${documento.tipo} deve ter ${expected} dígitos`,
@@ -570,7 +628,9 @@ export class ProdutorService implements IProdutorService {
     return { tipo: documento.tipo as TipoDocumento, numero };
   }
 
-  private normalizeRegistros(registros: RegistroProdutor[]): RegistroProdutor[] {
+  private normalizeRegistros(
+    registros: RegistroProdutor[],
+  ): RegistroProdutor[] {
     if (!Array.isArray(registros) || registros.length === 0) {
       throw new ValidationError("Ao menos um registro é obrigatório");
     }
