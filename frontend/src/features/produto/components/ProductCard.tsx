@@ -36,18 +36,18 @@ export function ProductCard({ product }: ProductCardProps) {
             decoding="async"
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
-          <span className="absolute left-2 top-2 max-w-[calc(100%-4rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-primary-darker shadow-sm sm:text-[11px]">
+          <span className={`absolute left-2 top-2 ${product.premiado ? 'max-w-[calc(100%-5rem)] sm:max-w-[calc(100%-6rem)]' : 'max-w-[calc(100%-1rem)]'} truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-primary-darker shadow-sm sm:text-[11px]`}>
             {categoryLabel}
           </span>
           {product.premiado ? (
             <img
               src={premiadoBadge}
               alt="Produto premiado"
-              width={44}
-              height={44}
+              width={80}
+              height={80}
               loading="lazy"
               decoding="async"
-              className="absolute right-1.5 top-1.5 h-9 w-9 object-contain drop-shadow sm:h-11 sm:w-11"
+              className="absolute right-1.5 top-1.5 h-16 w-16 object-contain drop-shadow sm:h-20 sm:w-20"
             />
           ) : null}
         </div>

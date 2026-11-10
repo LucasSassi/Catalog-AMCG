@@ -55,13 +55,24 @@ describe("Quando usar o ProdutorService", () => {
 
 
   describe("Revisão de alterações do perfil", () => {
+    it("Acumula campos modificados até a nova decisão", async () => {
+      const criado = await service.create(buildInput());
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.update(criado.id, { nomeEmpresa: "Nome revisado" });
+      const alterado = await service.update(criado.id, { historia: "História revisada" });
+      expect(alterado).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(alterado.camposAlterados).toEqual(["nomeEmpresa", "historia"]);
+      expect(await service.list({ status: "PENDENTE" })).toHaveLength(0);
+      expect(await service.list({ status: "ALTERADO" })).toHaveLength(1);
+    });
+
     it("Permite remover logo e fotos na edição e exige reaprovação", async () => {
       const created = await service.create(buildInput());
       const approved = await service.update(created.id, { status: "APROVADO" });
       const edited = await service.update(created.id, { logo: null, fotos: [], revisao: approved.revisao });
       expect(edited.logo).toBeUndefined();
       expect(edited.fotos).toEqual([]);
-      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false, camposAlterados: ["logo", "fotos"] });
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false, camposAlterados: ["logo", "fotos"] });
       const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
       const unchanged = await service.update(created.id, { logo: null, fotos: [], revisao: reviewed.revisao });
       expect(unchanged).toMatchObject({ status: "APROVADO", ativo: true, fotos: [] });
@@ -83,7 +94,7 @@ describe("Quando usar o ProdutorService", () => {
       const created = await service.create(buildInput());
       const approved = await service.update(created.id, { status: "APROVADO" });
       const edited = await service.update(created.id, { ...input, autorId: "usuario-1", revisao: approved.revisao });
-      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "usuario-1", camposAlterados: Object.keys(input) });
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "usuario-1", camposAlterados: Object.keys(input) });
       expect((await service.listCatalog()).produtores).toHaveLength(0);
       await expect(service.update(created.id, { status: "APROVADO", revisao: approved.revisao })).rejects.toMatchObject({ statusCode: 409 });
       const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
@@ -103,7 +114,7 @@ describe("Quando usar o ProdutorService", () => {
       const created = await service.create(buildInput());
       await service.update(created.id, { status: "REJEITADO", motivoRejeicao: "Corrigir história" });
       const edited = await service.update(created.id, { historia: "História corrigida" });
-      expect(edited).toMatchObject({ status: "PENDENTE", ativo: false });
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false });
       expect(edited.motivoRejeicao).toBeUndefined();
     });
   });
@@ -440,14 +451,14 @@ describe("Quando usar o ProdutorService", () => {
   });
 
   describe("Quando atualizar um produtor", () => {
-    it("Deve atualizar o nome sem alterar o status", async () => {
+    it("Deve separar uma alteração dos novos cadastros", async () => {
       const criado = await service.create(buildInput());
       const atualizado = await service.update(criado.id, {
         nomeEmpresa: "Fazenda Nova",
       });
 
       expect(atualizado.nomeEmpresa).toBe("Fazenda Nova");
-      expect(atualizado.status).toBe("PENDENTE");
+      expect(atualizado.status).toBe("ALTERADO");
     });
 
     it("Deve aprovar o produtor via status APROVADO", async () => {

@@ -365,14 +365,14 @@ export class ProdutorService implements IProdutorService {
     }
 
     if (alterados.length) {
-      data.status = "PENDENTE";
+      data.status = "ALTERADO";
       data.ativo = false;
       data.destaque = false;
       data.motivoRejeicao = null;
       data.origemPendencia = "ALTERACAO";
       data.camposAlterados = [
         ...new Set([
-          ...(atual.status === "PENDENTE" ? (atual.camposAlterados ?? []) : []),
+          ...((atual.status === "PENDENTE" || atual.status === "ALTERADO") ? (atual.camposAlterados ?? []) : []),
           ...alterados,
         ]),
       ];

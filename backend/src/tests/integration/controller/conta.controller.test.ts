@@ -328,7 +328,7 @@ it("Inclui pendentes inativos na fila e informa o total do servidor", async () =
     .get("/api/gestao/aprovacoes")
     .set("Authorization", auth("admin"));
   expect(result.status).toBe(200);
-  expect(find).toHaveBeenCalledWith({ status: "PENDENTE" });
+  expect(find).toHaveBeenCalledWith({ status: { $in: ["PENDENTE", "ALTERADO"] } });
   expect(result.body).toMatchObject({
     total: 23,
     items: [{ id: productId, ativo: false, origemPendencia: "ALTERACAO" }],
@@ -459,4 +459,19 @@ it.each([
     revisao: 2,
     autorId: userId,
   });
+});
+
+
+it.each([
+  ["PENDENTE", { status: "PENDENTE", origemPendencia: { $ne: "ALTERACAO" } }],
+  ["ALTERADO", { $or: [{ status: "ALTERADO" }, { status: "PENDENTE", origemPendencia: "ALTERACAO" }] }],
+])("Separa a fila de produtos por status %s antes de paginar", async (status, filter) => {
+  const find = jest.spyOn(ProdutoModel, "find").mockReturnValue({ sort: jest.fn().mockReturnValue({ limit: jest.fn().mockResolvedValue([]) }) } as never);
+  const count = jest.spyOn(ProdutoModel, "countDocuments").mockResolvedValue(0);
+  jest.spyOn(ProdutorModel, "find").mockReturnValue({ select: jest.fn().mockResolvedValue([]) } as never);
+  const result = await request(app()).get("/api/gestao/aprovacoes")
+    .query({ status }).set("Authorization", auth("admin"));
+  expect(result.status).toBe(200);
+  expect(find).toHaveBeenCalledWith(filter);
+  expect(count).toHaveBeenCalledWith(filter);
 });

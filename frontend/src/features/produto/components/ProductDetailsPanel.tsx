@@ -57,7 +57,7 @@ export function ProductDetailsPanel({
   onToggleAtivo,
   onToggleDestaque,
 }: ProductDetailsPanelProps) {
-  const isPending = product.status === 'PENDENTE'
+  const isPending = (product.status === 'PENDENTE' || product.status === 'ALTERADO')
   const isApproved = product.status === 'APROVADO'
   const isHidden = isApproved && !product.ativo
   const destaqueLimitReached =
@@ -117,7 +117,7 @@ export function ProductDetailsPanel({
                 : `inscrito em ${formatDate(product.createdAt)}`}
             </span>
           </div>
-          {product.status === 'PENDENTE' && <p className="text-sm font-bold">Aguardando aprovação · {product.origemPendencia === 'ALTERACAO' ? 'Alteração' : 'Cadastro'}</p>}
+          {(product.status === 'PENDENTE' || product.status === 'ALTERADO') && <p className="text-sm font-bold">Aguardando aprovação · {product.origemPendencia === 'ALTERACAO' ? 'Alteração' : 'Cadastro'}</p>}
           {product.camposAlterados?.length ? <p className="text-sm">Campos alterados: {product.camposAlterados.join(', ')}</p> : null}
           <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-foreground">
             {product.nome}

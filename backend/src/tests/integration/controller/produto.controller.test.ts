@@ -219,7 +219,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .send({ nome: "Mel Premium" });
     expect(atualizar.status).toBe(200);
     expect(atualizar.body.nome).toBe("Mel Premium");
-    expect(atualizar.body.status).toBe("PENDENTE");
+    expect(atualizar.body.status).toBe("ALTERADO");
 
     const remover = await request(app)
       .delete(`/api/produtos/${cadastrar.body.id}`)

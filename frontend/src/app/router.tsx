@@ -1,6 +1,5 @@
 import { MyProfilePage } from '../pages/account/MyProfilePage'
 import { AccountLoginPage } from '../pages/account/MyProductsPage'
-import { PendingApprovalPage } from '../pages/backoffice/PendingApprovalPage'
 import { UserLinksPage } from '../pages/backoffice/UserLinksPage'
 import {
   BrowserRouter,
@@ -75,10 +74,6 @@ export function AppRouter() {
             <Route
               path="/backoffice/produtos"
               element={<ProductsReviewPage />}
-            />
-            <Route
-              path="/backoffice/aprovacoes"
-              element={<PendingApprovalPage />}
             />
             <Route path="/backoffice/usuarios" element={<UserLinksPage />} />
             <Route path="/backoffice/destaques" element={<DestaquesPage />} />

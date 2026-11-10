@@ -63,7 +63,7 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
       ? { site: document.site }
       : {}),
     ativo: document.ativo,
-    status: document.status,
+    status: document.status === "PENDENTE" && document.origemPendencia === "ALTERACAO" ? "ALTERADO" : document.status,
     destaque: document.destaque ?? false,
     ...(document.motivoRejeicao !== undefined
       ? { motivoRejeicao: document.motivoRejeicao }

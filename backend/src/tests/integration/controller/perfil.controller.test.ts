@@ -72,7 +72,7 @@ it("Retorna somente o perfil vinculado à conta autenticada", async () => {
       id: producerId,
       nomeEmpresa: "Fazenda",
       revisao: 3,
-      status: "PENDENTE",
+      status: "ALTERADO",
     },
   });
 });
@@ -149,7 +149,7 @@ it("Lista produtores pendentes inativos com paginação e total", async () => {
     total: 10,
     items: [{ id: producerId, ativo: false, revisao: 3 }],
   });
-  expect(find).toHaveBeenCalledWith({ status: "PENDENTE" });
+  expect(find).toHaveBeenCalledWith({ status: { $in: ["PENDENTE", "ALTERADO"] } });
   expect(limit).toHaveBeenCalledWith(13);
 });
 it("Restringe aprovação de perfis a administradores", async () => {
@@ -180,4 +180,26 @@ it("Aceita salvar perfil sem logo e sem fotos", async () => {
   const response = await request(app()).patch("/api/minha-conta/perfil").set("Authorization", token()).send({ logo: null, fotos: [], revisao: 3 });
   expect(response.status).toBe(200);
   expect(producerUpdate).toHaveBeenCalledWith(producerId, { logo: null, fotos: [], revisao: 3, autorId: userId });
+});
+
+
+it.each([
+  ["PENDENTE", { status: "PENDENTE", origemPendencia: { $ne: "ALTERACAO" } }],
+  ["ALTERADO", { $or: [{ status: "ALTERADO" }, { status: "PENDENTE", origemPendencia: "ALTERACAO" }] }],
+])("Separa a fila de produtores por status %s antes de paginar", async (status, filter) => {
+  const limit = jest.fn().mockResolvedValue([]);
+  const find = jest.spyOn(ProdutorModel, "find").mockReturnValue({ sort: jest.fn().mockReturnValue({ limit }) } as never);
+  const count = jest.spyOn(ProdutorModel, "countDocuments").mockResolvedValue(0);
+  const result = await request(app()).get("/api/gestao/aprovacoes/produtores")
+    .query({ status }).set("Authorization", token("admin"));
+  expect(result.status).toBe(200);
+  expect(find).toHaveBeenCalledWith(filter);
+  expect(count).toHaveBeenCalledWith(filter);
+});
+
+
+it("Rejeita status inválido na fila de aprovação", async () => {
+  const result = await request(app()).get("/api/gestao/aprovacoes/produtores")
+    .query({ status: "INVALIDO" }).set("Authorization", token("admin"));
+  expect(result.status).toBe(400);
 });

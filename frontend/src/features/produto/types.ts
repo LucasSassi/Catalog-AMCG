@@ -1,4 +1,4 @@
-export type ProductStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
+export type ProductStatus = 'PENDENTE' | 'ALTERADO' | 'APROVADO' | 'REJEITADO'
 
 export type ProductCategory =
   | 'BEBIDAS_ARTESANAIS'

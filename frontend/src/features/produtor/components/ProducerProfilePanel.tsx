@@ -81,7 +81,7 @@ export function ProducerProfilePanel({
     })),
   ]
   const alerts = getProducerAlerts(producer)
-  const isPending = producer.status === 'PENDENTE'
+  const isPending = (producer.status === 'PENDENTE' || producer.status === 'ALTERADO')
 
   return (
     <SidePanel
@@ -217,7 +217,7 @@ function OverviewTab({
     <div className="flex flex-col gap-6">
       <dl className="grid grid-cols-2 overflow-hidden rounded-xl border border-border-soft sm:grid-cols-4">
         <Stat label="Aprovados" value={counts.APROVADO} tone="text-primary-darker" />
-        <Stat label="Em análise" value={counts.PENDENTE} tone="text-pending" />
+        <Stat label="Em análise" value={counts.PENDENTE + counts.ALTERADO} tone="text-pending" />
         <Stat label="Rejeitados" value={counts.REJEITADO} tone="text-danger" />
         <Stat label="Fotos" value={imagesCount} tone="text-foreground" />
       </dl>
@@ -313,7 +313,7 @@ function ProductsTab({
     )
   }
 
-  const order = { PENDENTE: 0, APROVADO: 1, REJEITADO: 2 } as const
+  const order = { PENDENTE: 0, ALTERADO: 1, APROVADO: 2, REJEITADO: 3 } as const
   const sorted = [...products].sort((a, b) => order[a.status] - order[b.status])
 
   return (
@@ -342,6 +342,7 @@ function HistoryTab({ producer }: { producer: Producer }) {
   if (producer.updatedAt && producer.updatedAt !== producer.createdAt) {
     const statusText = {
       PENDENTE: 'Aguardando análise',
+      ALTERADO: 'Após modificação · aguardando revisão',
       APROVADO: 'Aprovado para o catálogo',
       REJEITADO: 'Rejeitado',
     }[producer.status]

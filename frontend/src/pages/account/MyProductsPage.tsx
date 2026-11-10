@@ -87,7 +87,9 @@ export function MyProducts() {
               <h2 className="text-xl font-bold">{product.nome}</h2>
               <p>{formatCurrency(product.valorCentavos)}</p>
               <p>
-                {product.status === 'PENDENTE'
+                {product.status === 'ALTERADO'
+                    ? 'Após modificação · aguardando revisão'
+                    : product.status === 'PENDENTE'
                   ? 'Aguardando aprovação'
                   : product.status === 'REJEITADO'
                     ? 'Rejeitado'

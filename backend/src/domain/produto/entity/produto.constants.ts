@@ -1,6 +1,6 @@
 export const PRODUTO_COLLECTION = "produtos";
 
-export const STATUS_PRODUTO = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
+export const STATUS_PRODUTO = ["PENDENTE", "ALTERADO", "APROVADO", "REJEITADO"] as const;
 export type StatusProduto = (typeof STATUS_PRODUTO)[number];
 
 export const CATEGORIA_PRODUTO = [

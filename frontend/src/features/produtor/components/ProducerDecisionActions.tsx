@@ -26,7 +26,7 @@ export function ProducerDecisionActions({
   onReject,
   onToggleDestaque,
 }: ProducerDecisionActionsProps) {
-  if (producer.status === 'PENDENTE') {
+  if ((producer.status === 'PENDENTE' || producer.status === 'ALTERADO')) {
     return (
       <>
         <button

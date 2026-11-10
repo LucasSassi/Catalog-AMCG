@@ -8,6 +8,7 @@ interface StatusBadgeProps {
 
 const STATUS_STYLES: Record<ReviewItemStatus, { label: string; classes: string }> =
   {
+    ALTERADO: { label: 'Após modificação', classes: 'bg-blue-100 text-blue-900' },
     PENDENTE: { label: 'Pendente', classes: 'bg-pending-soft text-pending' },
     APROVADO: {
       label: 'Aprovado',

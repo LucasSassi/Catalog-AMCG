@@ -7,7 +7,7 @@ import type {
 } from '../produto/types'
 import type { REGISTRATION_TYPES } from './constants'
 
-export type ProducerStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
+export type ProducerStatus = 'PENDENTE' | 'ALTERADO' | 'APROVADO' | 'REJEITADO'
 
 export type SocialNetworkType = 'INSTAGRAM' | 'FACEBOOK'
 

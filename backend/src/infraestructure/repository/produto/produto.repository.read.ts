@@ -1,3 +1,4 @@
+import { reviewStatusFilter } from "../../../domain/common/review-status";
 import { Types, type PipelineStage } from "mongoose";
 import { PRODUTOR_COLLECTION } from "../../../domain/produtor/entity/produtor.constants";
 import type { IProdutoRepositoryRead } from "../../../domain/produto/repository/produto.repository.read";
@@ -149,7 +150,7 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
     }
 
     if (filtros?.status !== undefined) {
-      query.status = filtros.status;
+      Object.assign(query, reviewStatusFilter(filtros.status));
     }
 
     if (filtros?.destaque !== undefined) {

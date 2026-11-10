@@ -58,7 +58,7 @@ export function ProducerReviewPanel({
   ...handlers
 }: ProducerReviewPanelProps) {
   const fotos = producer.fotos ?? []
-  const isPending = producer.status === 'PENDENTE'
+  const isPending = (producer.status === 'PENDENTE' || producer.status === 'ALTERADO')
 
   return (
     <section

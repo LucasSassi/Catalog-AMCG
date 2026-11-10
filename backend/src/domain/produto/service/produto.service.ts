@@ -537,12 +537,12 @@ export class ProdutoService implements IProdutoService {
       );
     }
     if (alterados.length) {
-      data.status = "PENDENTE";
+      data.status = "ALTERADO";
       data.ativo = false;
       data.destaque = false;
       data.motivoRejeicao = null;
       data.origemPendencia = "ALTERACAO";
-      data.camposAlterados = [...new Set([...(atual.status === "PENDENTE" ? atual.camposAlterados ?? [] : []), ...alterados])];
+      data.camposAlterados = [...new Set([...((atual.status === "PENDENTE" || atual.status === "ALTERADO") ? atual.camposAlterados ?? [] : []), ...alterados])];
       data.alteradoPor = input.autorId;
       data.alteradoEm = new Date();
     }

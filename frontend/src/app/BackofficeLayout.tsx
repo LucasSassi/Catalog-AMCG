@@ -103,13 +103,6 @@ function BackofficeShell() {
             Produtos
           </SidebarLink>
           <SidebarLink
-            to="/backoffice/aprovacoes"
-            icon={<ProductIcon />}
-            badge={pendingProducts + pendingProducers}
-          >
-            Aguardando aprovação
-          </SidebarLink>
-          <SidebarLink
             to="/backoffice/usuarios"
             icon={<ProducerIcon />}
             badge={0}
@@ -207,7 +200,7 @@ function BackofficeShell() {
 
       <nav
         aria-label="Navegação do backoffice"
-        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-6 border-t border-border-soft bg-white lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-5 border-t border-border-soft bg-white lg:hidden"
       >
         <BottomLink
           to="/backoffice/produtores"
@@ -222,13 +215,6 @@ function BackofficeShell() {
           badge={pendingProducts}
         >
           Produtos
-        </BottomLink>
-        <BottomLink
-          to="/backoffice/aprovacoes"
-          icon={<ProductIcon />}
-          badge={pendingProducts + pendingProducers}
-        >
-          Aprovações
         </BottomLink>
         <BottomLink to="/backoffice/usuarios" icon={<ProducerIcon />} badge={0}>
           Usuários

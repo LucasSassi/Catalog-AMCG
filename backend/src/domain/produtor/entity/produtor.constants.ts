@@ -1,6 +1,6 @@
 export const PRODUTOR_COLLECTION = "produtores";
 
-export const STATUS_PRODUTOR = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
+export const STATUS_PRODUTOR = ["PENDENTE", "ALTERADO", "APROVADO", "REJEITADO"] as const;
 export type StatusProdutor = (typeof STATUS_PRODUTOR)[number];
 
 export const TIPO_DOCUMENTO = ["CNPJ", "CPF", "CAD_PRO"] as const;

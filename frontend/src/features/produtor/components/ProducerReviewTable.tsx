@@ -49,7 +49,7 @@ export function ProducerReviewTable({
   onApprove,
   onReject,
 }: ProducerReviewTableProps) {
-  const pending = producers.filter((producer) => producer.status === 'PENDENTE')
+  const pending = producers.filter((producer) => (producer.status === 'PENDENTE' || producer.status === 'ALTERADO'))
   const allSelected =
     pending.length > 0 && pending.every((producer) => selectedIds.has(producer.id))
 
@@ -97,7 +97,7 @@ export function ProducerReviewTable({
               total: 0,
             }
             const alerts = alertsById.get(producer.id) ?? []
-            const isPending = producer.status === 'PENDENTE'
+            const isPending = (producer.status === 'PENDENTE' || producer.status === 'ALTERADO')
             const waiting = getWaitingDays(producer.createdAt)
             const isFocused = producer.id === focusedId
             const isReviewing = producer.id === reviewingId
@@ -195,7 +195,7 @@ function MobileProducerCard({
   onApprove: (producer: Producer) => void
   onReject: (producer: Producer) => void
 }) {
-  const isPending = producer.status === 'PENDENTE'
+  const isPending = (producer.status === 'PENDENTE' || producer.status === 'ALTERADO')
   const waiting = getWaitingDays(producer.createdAt)
 
   return (
@@ -216,7 +216,7 @@ function MobileProducerCard({
             {isPending ? ` · ${formatWaitingDays(waiting)}` : ''}
           </span>
         </span>
-        {isPending ? null : <StatusBadge status={producer.status} />}
+        <StatusBadge status={producer.status} />
         <svg className="h-[18px] w-[18px] shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m9 18 6-6-6-6" />
         </svg>

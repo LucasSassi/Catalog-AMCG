@@ -12,16 +12,18 @@ interface StatusFilterTabsProps {
 
 const LABELS: Record<ReviewStatusFilter, string> = {
   PENDENTE: 'Pendentes',
+  ALTERADO: 'Aguardando aprovação',
   APROVADO: 'Aprovados',
   REJEITADO: 'Rejeitados',
   TODOS: 'Todos',
 }
 
 const DEFAULT_ORDER: ReviewStatusFilter[] = [
+  'TODOS',
+  'ALTERADO',
   'PENDENTE',
   'APROVADO',
   'REJEITADO',
-  'TODOS',
 ]
 
 export function StatusFilterTabs({

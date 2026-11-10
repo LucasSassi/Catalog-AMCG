@@ -1,3 +1,4 @@
+import { reviewStatusFilter } from "../../domain/common/review-status";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
 import { toProdutorEntity } from "../../infraestructure/repository/produtor/adapters/produtor.adapter";
 import { PreCadastroService } from "../services/pre-cadastro.service";
@@ -177,7 +178,7 @@ export function createContaController(
     wrap(async (req, res) => {
       const p = page(req);
       const filter = {
-        status: "PENDENTE" as const,
+        ...reviewStatusFilter(parse(z.enum(["PENDENTE", "ALTERADO"]).optional(), req.query.status)),
         ...(p.busca
           ? { nomeEmpresa: { $regex: escaped(p.busca), $options: "i" } }
           : {}),
@@ -248,7 +249,7 @@ export function createContaController(
     wrap(async (req, res) => {
       const p = page(req);
       const filter = {
-        status: "PENDENTE" as const,
+        ...reviewStatusFilter(parse(z.enum(["PENDENTE", "ALTERADO"]).optional(), req.query.status)),
         ...(p.busca
           ? { nome: { $regex: escaped(p.busca), $options: "i" } }
           : {}),

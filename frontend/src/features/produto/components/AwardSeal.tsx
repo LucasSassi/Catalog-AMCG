@@ -40,13 +40,13 @@ export function AwardSeal({ premiacoes }: AwardSealProps) {
           <img
             src={premiadoBadge}
             alt=""
-            width={36}
-            height={36}
+            width={64}
+            height={64}
             loading="lazy"
             decoding="async"
-            className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+            className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
           />
-          <span className="text-xs font-bold uppercase tracking-wide text-foreground sm:text-[13px]">
+          <span className="text-sm font-bold uppercase tracking-wide text-foreground sm:text-base">
             Produto premiado
           </span>
         </button>

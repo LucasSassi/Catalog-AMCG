@@ -89,7 +89,7 @@ function MyProfile() {
                 <p
                   role="status"
                   className={`mt-1 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${
-                    producer.status === 'PENDENTE'
+                    (producer.status === 'PENDENTE' || producer.status === 'ALTERADO')
                       ? 'bg-amber-100 text-amber-900'
                       : producer.status === 'REJEITADO'
                         ? 'bg-red-100 text-red-900'
@@ -98,7 +98,9 @@ function MyProfile() {
                           : 'bg-slate-100 text-slate-700'
                   }`}
                 >
-                  {producer.status === 'PENDENTE'
+                  {producer.status === 'ALTERADO'
+                    ? 'Após modificação · aguardando revisão'
+                    : producer.status === 'PENDENTE'
                     ? 'Aguardando validação · fora do catálogo'
                     : producer.status === 'REJEITADO'
                       ? 'Rejeitado · fora do catálogo'

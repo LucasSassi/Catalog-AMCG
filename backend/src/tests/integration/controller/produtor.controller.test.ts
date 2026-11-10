@@ -143,7 +143,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
       .send({ nomeEmpresa: "Fazenda Atualizada" });
     expect(atualizar.status).toBe(200);
     expect(atualizar.body.nomeEmpresa).toBe("Fazenda Atualizada");
-    expect(atualizar.body.status).toBe("PENDENTE");
+    expect(atualizar.body.status).toBe("ALTERADO");
 
     const remover = await request(app)
       .delete(`/api/produtores/${cadastrar.body.id}`)

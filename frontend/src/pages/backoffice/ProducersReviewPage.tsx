@@ -46,6 +46,7 @@ import { ShortcutsDialog } from './ShortcutsDialog'
 
 const STATUS_VALUES: ReviewStatusFilter[] = [
   'PENDENTE',
+  'ALTERADO',
   'APROVADO',
   'REJEITADO',
   'TODOS',
@@ -53,6 +54,7 @@ const STATUS_VALUES: ReviewStatusFilter[] = [
 
 const EMPTY_MESSAGES: Record<ReviewStatusFilter, string> = {
   PENDENTE: 'Nenhum produtor pendente.',
+  ALTERADO: 'Nenhum produtor aguardando revisão após modificação.',
   APROVADO: 'Nenhum produtor aprovado ainda.',
   REJEITADO: 'Nenhum produtor rejeitado.',
   TODOS: 'Nenhum produtor cadastrado.',
@@ -205,7 +207,7 @@ export function ProducersReviewPage() {
     null
   const selectedVisible = visible.filter(
     (producer) =>
-      producer.status === 'PENDENTE' && selectedIds.has(producer.id),
+      (producer.status === 'PENDENTE' || producer.status === 'ALTERADO') && selectedIds.has(producer.id),
   )
 
   useEffect(() => {
@@ -306,7 +308,7 @@ export function ProducersReviewPage() {
       checked
         ? new Set(
             visible
-              .filter((producer) => producer.status === 'PENDENTE')
+              .filter((producer) => (producer.status === 'PENDENTE' || producer.status === 'ALTERADO'))
               .map((producer) => producer.id),
           )
         : new Set(),
@@ -367,9 +369,9 @@ export function ProducersReviewPage() {
       setDetailsId(target.id)
     } else if (key === 'a' && target && target.status !== 'APROVADO') {
       void approveProducer(target)
-    } else if (key === 'r' && target && target.status === 'PENDENTE') {
+    } else if (key === 'r' && target && (target.status === 'PENDENTE' || target.status === 'ALTERADO')) {
       setRejectTarget({ kind: 'producer', producer: target })
-    } else if (key === 'x' && target && target.status === 'PENDENTE') {
+    } else if (key === 'x' && target && (target.status === 'PENDENTE' || target.status === 'ALTERADO')) {
       toggleSelected(target)
     } else if (key === '/') {
       event.preventDefault()
@@ -516,9 +518,9 @@ export function ProducersReviewPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <KpiCard
-          label="Aguardando decisão"
+          label="Novos cadastros"
           value={pendingAll.length}
           hint={
             pendingAll.length > 0
@@ -536,6 +538,14 @@ export function ProducersReviewPage() {
           tone="warning"
           active={status === 'PENDENTE' && onlyAlerts}
           onClick={() => updateParams({ status: null, alertas: '1' })}
+        />
+        <KpiCard
+          label="Após modificação"
+          value={allCounts.ALTERADO}
+          hint="aguardando nova revisão"
+          tone="pending"
+          active={status === 'ALTERADO'}
+          onClick={() => updateParams({ status: 'ALTERADO', alertas: null })}
         />
         <KpiCard
           label="Aprovados"

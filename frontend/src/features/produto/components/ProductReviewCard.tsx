@@ -38,7 +38,7 @@ export function ProductReviewCard({
 }: ProductReviewCardProps) {
   const image = product.fotosDivulgacao[0]
   const isApproved = product.status === 'APROVADO'
-  const isPending = product.status === 'PENDENTE'
+  const isPending = (product.status === 'PENDENTE' || product.status === 'ALTERADO')
   const isHidden = isApproved && !product.ativo
   const waiting = getWaitingDays(product.createdAt)
   const canToggleDestaque =

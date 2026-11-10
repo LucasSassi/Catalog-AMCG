@@ -1,4 +1,4 @@
-export type ReviewItemStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
+export type ReviewItemStatus = 'PENDENTE' | 'ALTERADO' | 'APROVADO' | 'REJEITADO'
 export type ReviewStatusFilter = ReviewItemStatus | 'TODOS'
 
 export type ReviewStatusCounts = Record<ReviewStatusFilter, number>
@@ -8,6 +8,7 @@ export function countByStatus(
 ): ReviewStatusCounts {
   const counts: ReviewStatusCounts = {
     PENDENTE: 0,
+    ALTERADO: 0,
     APROVADO: 0,
     REJEITADO: 0,
     TODOS: items.length,

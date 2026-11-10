@@ -463,6 +463,17 @@ describe("Quando usar o ProdutoService", () => {
   });
 
   describe("Quando atualizar um produto", () => {
+    it("Acumula alterações e mantém o produto na fila própria", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.update(criado.id, { nome: "Nome revisado" });
+      const alterado = await service.update(criado.id, { valorCentavos: 9900 });
+      expect(alterado).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(alterado.camposAlterados).toEqual(["nome", "valorCentavos"]);
+      expect(await service.list({ status: "PENDENTE" })).toHaveLength(0);
+      expect(await service.list({ status: "ALTERADO" })).toHaveLength(1);
+    });
+
     it.each([
       { nome: "Novo nome" },
       { descricaoBreve: "Nova descrição breve" },
@@ -475,7 +486,7 @@ describe("Quando usar o ProdutoService", () => {
       await service.update(criado.id, { status: "APROVADO" });
       await service.setDestaque(criado.id, true);
       const atualizado = await service.update(criado.id, { ...input, autorId: "conta-1" });
-      expect(atualizado).toMatchObject({ status: "PENDENTE", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "conta-1" });
+      expect(atualizado).toMatchObject({ status: "ALTERADO", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "conta-1" });
       expect(atualizado.camposAlterados).toEqual(Object.keys(input));
       expect((await service.listCatalog()).produtos).toHaveLength(0);
       expect((await service.listDestaques()).produtos).toHaveLength(0);
@@ -505,11 +516,11 @@ describe("Quando usar o ProdutoService", () => {
       const criado = await service.create(buildInput(produtorAprovadoId));
       await service.update(criado.id, { status: "REJEITADO", motivoRejeicao: "Corrigir preço" });
       const atualizado = await service.update(criado.id, { valorCentavos: 4000 });
-      expect(atualizado).toMatchObject({ status: "PENDENTE", ativo: false });
+      expect(atualizado).toMatchObject({ status: "ALTERADO", ativo: false });
       expect(atualizado.motivoRejeicao).toBeUndefined();
     });
 
-    it("Deve voltar o status para PENDENTE quando estava APROVADO", async () => {
+    it("Deve mover para ALTERADO quando estava APROVADO", async () => {
       const criado = await service.create(buildInput(produtorAprovadoId));
       await service.update(criado.id, { status: "APROVADO" });
 
@@ -518,7 +529,7 @@ describe("Quando usar o ProdutoService", () => {
       });
 
       expect(atualizado.nome).toBe("Mel Premium");
-      expect(atualizado.status).toBe("PENDENTE");
+      expect(atualizado.status).toBe("ALTERADO");
     });
 
     it("Deve rejeitar body vazio", async () => {

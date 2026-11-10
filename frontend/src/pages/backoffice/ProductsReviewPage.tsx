@@ -35,15 +35,16 @@ import {
   PlusIcon,
 } from './BackofficePageHeader'
 
-const STATUS_ORDER: ReviewStatusFilter[] = [
+const STATUS_VALUES: ReviewStatusFilter[] = [
   'TODOS',
+  'ALTERADO',
   'PENDENTE',
   'APROVADO',
   'REJEITADO',
 ]
 
 function parseStatus(value: string | null): ReviewStatusFilter {
-  return STATUS_ORDER.find((status) => status === value) ?? 'TODOS'
+  return STATUS_VALUES.find((status) => status === value) ?? 'TODOS'
 }
 
 function parseCategoria(value: string | null): ProductCategory | '' {
@@ -138,7 +139,7 @@ export function ProductsReviewPage() {
     const list = filtered.filter((product) =>
       matchesStatus(product.status, status),
     )
-    const rank = { PENDENTE: 0, APROVADO: 1, REJEITADO: 2 } as const
+    const rank = { PENDENTE: 0, ALTERADO: 1, APROVADO: 2, REJEITADO: 3 } as const
 
     // Pendentes primeiro (mais antigos no topo); o resto mantém a ordem da API.
     return [...list].sort((a, b) => {
@@ -369,7 +370,6 @@ export function ProductsReviewPage() {
         <StatusFilterTabs
           value={status}
           counts={counts}
-          order={STATUS_ORDER}
           onChange={(next) =>
             updateParams({ status: next === 'TODOS' ? null : next })
           }
