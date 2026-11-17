@@ -4,6 +4,7 @@ import {
   ValidationError,
 } from "../../common/errors/app-error";
 import {
+  CEP_LENGTH,
   CNPJ_LENGTH,
   CONTENT_TYPES_IMAGEM,
   CPF_LENGTH,
@@ -63,6 +64,7 @@ export class ProdutorService implements IProdutorService {
     const registros = this.normalizeRegistros(input.registros);
     const contato = this.normalizeContato(input.contato);
     const endereco = this.normalizeEndereco(input.endereco);
+    const exibirEndereco = this.assertExibirEndereco(input.exibirEndereco);
     const historia = this.assertHistoria(input.historia);
     const logo = this.normalizeArquivo(input.logo);
     const fotos = this.normalizeFotos(input.fotos);
@@ -79,6 +81,7 @@ export class ProdutorService implements IProdutorService {
       registros,
       contato,
       endereco,
+      exibirEndereco,
       historia,
       logo,
       fotos,
@@ -104,7 +107,9 @@ export class ProdutorService implements IProdutorService {
     });
 
     return {
-      produtores: produtores.map((produtor) => this.toProdutorCatalogo(produtor)),
+      produtores: produtores.map((produtor) =>
+        this.toProdutorCatalogo(produtor),
+      ),
     };
   }
 
@@ -201,6 +206,7 @@ export class ProdutorService implements IProdutorService {
       input.registros === undefined &&
       input.contato === undefined &&
       input.endereco === undefined &&
+      input.exibirEndereco === undefined &&
       input.historia === undefined &&
       input.logo === undefined &&
       input.fotos === undefined &&
@@ -225,13 +231,22 @@ export class ProdutorService implements IProdutorService {
       registros?: RegistroProdutor[];
       contato?: Contato;
       endereco?: Endereco;
+      exibirEndereco?: boolean;
       historia?: string;
-      logo?: Arquivo;
+      logo?: Arquivo | null;
       fotos?: Arquivo[];
       redesSociais?: RedeSocialItem[];
       site?: string | null;
       status?: StatusProdutor;
       motivoRejeicao?: string | null;
+      revisao?: number;
+      origemPendencia?: "CADASTRO" | "ALTERACAO";
+      camposAlterados?: string[];
+      alteradoPor?: string;
+      alteradoEm?: Date;
+      revisaoEsperada?: number;
+      ativo?: boolean;
+      destaque?: boolean;
     } = {};
 
     if (input.nomeEmpresa !== undefined) {
@@ -268,16 +283,20 @@ export class ProdutorService implements IProdutorService {
       data.endereco = this.normalizeEndereco(input.endereco);
     }
 
+    if (input.exibirEndereco !== undefined) {
+      data.exibirEndereco = this.assertExibirEndereco(input.exibirEndereco);
+    }
+
     if (input.historia !== undefined) {
       data.historia = this.assertHistoria(input.historia);
     }
 
     if (input.logo !== undefined) {
-      data.logo = this.normalizeArquivo(input.logo);
+      data.logo = input.logo === null ? null : this.normalizeArquivo(input.logo);
     }
 
     if (input.fotos !== undefined) {
-      data.fotos = this.normalizeFotos(input.fotos);
+      data.fotos = this.normalizeFotos(input.fotos, 0);
     }
 
     if (input.redesSociais !== undefined) {
@@ -291,6 +310,40 @@ export class ProdutorService implements IProdutorService {
           : (this.normalizeOptionalSite(input.site) ?? null);
     }
 
+    const campos = [
+      "nomeEmpresa",
+      "municipioId",
+      "documento",
+      "registros",
+      "contato",
+      "endereco",
+      "exibirEndereco",
+      "historia",
+      "logo",
+      "fotos",
+      "redesSociais",
+      "site",
+    ] as const;
+    const alterados = campos.filter(
+      (campo) =>
+        data[campo] !== undefined &&
+        JSON.stringify(data[campo] ?? null) !==
+          JSON.stringify(atual[campo] ?? null),
+    );
+    if (input.revisao !== undefined && input.revisao !== (atual.revisao ?? 0))
+      throw new ConflictError(
+        "Perfil alterado. Atualize a página antes de continuar",
+      );
+    data.revisaoEsperada = input.revisao ?? atual.revisao ?? 0;
+    if (alterados.length && input.status !== undefined)
+      throw new ValidationError(
+        "Salve as alterações antes de decidir a aprovação",
+      );
+    if (input.status === "APROVADO") data.ativo = true;
+    else if (input.status !== undefined) {
+      data.ativo = false;
+      data.destaque = false;
+    }
     if (input.status !== undefined) {
       this.assertStatus(input.status);
       data.status = input.status;
@@ -311,10 +364,27 @@ export class ProdutorService implements IProdutorService {
       );
     }
 
+    if (alterados.length) {
+      data.status = "ALTERADO";
+      data.ativo = false;
+      data.destaque = false;
+      data.motivoRejeicao = null;
+      data.origemPendencia = "ALTERACAO";
+      data.camposAlterados = [
+        ...new Set([
+          ...((atual.status === "PENDENTE" || atual.status === "ALTERADO") ? (atual.camposAlterados ?? []) : []),
+          ...alterados,
+        ]),
+      ];
+      data.alteradoPor = input.autorId;
+      data.alteradoEm = new Date();
+    }
     const atualizado = await this.writeRepository.update(id, data);
 
     if (!atualizado) {
-      throw new NotFoundError("Produtor não encontrado");
+      throw new ConflictError(
+        "Perfil alterado. Atualize a página antes de continuar",
+      );
     }
 
     return atualizado;
@@ -362,11 +432,17 @@ export class ProdutorService implements IProdutorService {
       historia: produtor.historia,
       ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
       fotos: produtor.fotos,
-      endereco: {
-        bairro: produtor.endereco.bairro,
-        cidade: produtor.endereco.cidade,
-        estado: produtor.endereco.estado,
-      },
+      ...(produtor.exibirEndereco
+        ? {
+            endereco: {
+              cep: produtor.endereco.cep,
+              rua: produtor.endereco.rua,
+              bairro: produtor.endereco.bairro,
+              cidade: produtor.endereco.cidade,
+              estado: produtor.endereco.estado,
+            },
+          }
+        : {}),
       redesSociais: produtor.redesSociais,
       ...(produtor.site !== undefined ? { site: produtor.site } : {}),
     };
@@ -426,14 +502,14 @@ export class ProdutorService implements IProdutorService {
     return trimmed;
   }
 
-  private normalizeFotos(fotos: Arquivo[]): Arquivo[] {
+  private normalizeFotos(fotos: Arquivo[], minFotos = MIN_FOTOS): Arquivo[] {
     if (!Array.isArray(fotos)) {
       throw new ValidationError("Fotos inválidas");
     }
 
-    if (fotos.length < MIN_FOTOS || fotos.length > MAX_FOTOS) {
+    if (fotos.length < minFotos || fotos.length > MAX_FOTOS) {
       throw new ValidationError(
-        `Fotos deve ter entre ${MIN_FOTOS} e ${MAX_FOTOS} itens`,
+        `Fotos deve ter entre ${minFotos} e ${MAX_FOTOS} itens`,
       );
     }
 
@@ -478,9 +554,7 @@ export class ProdutorService implements IProdutorService {
     }
 
     if (redesSociais.length > MAX_REDES_SOCIAIS) {
-      throw new ValidationError(
-        `Máximo de ${MAX_REDES_SOCIAIS} redes sociais`,
-      );
+      throw new ValidationError(`Máximo de ${MAX_REDES_SOCIAIS} redes sociais`);
     }
 
     const tipos = new Set<TipoRedeSocial>();
@@ -539,8 +613,7 @@ export class ProdutorService implements IProdutorService {
 
     if (documento.tipo === "CPF" || documento.tipo === "CNPJ") {
       numero = numero.replace(/\D/g, "");
-      const expected =
-        documento.tipo === "CPF" ? CPF_LENGTH : CNPJ_LENGTH;
+      const expected = documento.tipo === "CPF" ? CPF_LENGTH : CNPJ_LENGTH;
       if (numero.length !== expected) {
         throw new ValidationError(
           `${documento.tipo} deve ter ${expected} dígitos`,
@@ -555,7 +628,9 @@ export class ProdutorService implements IProdutorService {
     return { tipo: documento.tipo as TipoDocumento, numero };
   }
 
-  private normalizeRegistros(registros: RegistroProdutor[]): RegistroProdutor[] {
+  private normalizeRegistros(
+    registros: RegistroProdutor[],
+  ): RegistroProdutor[] {
     if (!Array.isArray(registros) || registros.length === 0) {
       throw new ValidationError("Ao menos um registro é obrigatório");
     }
@@ -573,8 +648,16 @@ export class ProdutorService implements IProdutorService {
       throw new ValidationError("Número do registro é obrigatório");
     }
 
+    const tipoOutros = registro.tipoOutros?.trim();
+    if (registro.tipo === "Outro" && !tipoOutros) {
+      throw new ValidationError(
+        "Informe qual é o tipo de registro quando o tipo for Outro",
+      );
+    }
+
     return {
       tipo: registro.tipo as RegistroProdutorTipo,
+      ...(registro.tipo === "Outro" && tipoOutros ? { tipoOutros } : {}),
       numero,
       ...(registro.dataEmissao !== undefined
         ? { dataEmissao: registro.dataEmissao }
@@ -601,12 +684,25 @@ export class ProdutorService implements IProdutorService {
     return { telefone, email };
   }
 
+  private assertExibirEndereco(exibirEndereco: boolean): boolean {
+    if (typeof exibirEndereco !== "boolean") {
+      throw new ValidationError(
+        "Informe se o endereço deve ser exibido no site",
+      );
+    }
+    return exibirEndereco;
+  }
+
   private normalizeEndereco(endereco: Endereco): Endereco {
+    const cep = (endereco.cep ?? "").replace(/\D/g, "");
     const rua = endereco.rua.trim();
     const bairro = endereco.bairro.trim();
     const cidade = endereco.cidade.trim();
     const estado = endereco.estado;
 
+    if (cep.length !== CEP_LENGTH) {
+      throw new ValidationError(`CEP deve ter ${CEP_LENGTH} dígitos`);
+    }
     if (!rua) {
       throw new ValidationError("Rua é obrigatória");
     }
@@ -621,6 +717,7 @@ export class ProdutorService implements IProdutorService {
     }
 
     return {
+      cep,
       rua,
       bairro,
       cidade,

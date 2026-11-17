@@ -47,7 +47,13 @@ export const CATALOG_CERTIFICATIONS = [
   'SIM',
 ] as const
 
-export const SEAL_INFO_TYPES = ['SIM', 'SIF', 'MAPA'] as const
+export const SEAL_INFO_TYPES = [
+  'SIM',
+  'SUSAF',
+  'SIF',
+  'SELO ARTE',
+  'MAPA',
+] as const
 
 export type SealInfoType = (typeof SEAL_INFO_TYPES)[number]
 
@@ -60,6 +66,18 @@ export const SEAL_INFO: Record<
       'SIM – Inspeção Municipal: comercialização somente dentro dos respectivos municípios.',
     detail:
       'O SIM é a fiscalização sanitária do município. O produto só pode ser vendido nos municípios cobertos por esse serviço de inspeção.',
+  },
+  SUSAF: {
+    short:
+      'SUSAF – Sistema Unificado Estadual de Sanidade Agroindustrial Familiar: comercialização em todo o estado.',
+    detail:
+      'O SUSAF reconhece a inspeção municipal do produto agroindustrial familiar e permite que ele seja vendido em todo o estado, além do município de origem.',
+  },
+  'SELO ARTE': {
+    short:
+      'Selo ARTE: produto alimentício artesanal, com comercialização em todo o território nacional.',
+    detail:
+      'O Selo ARTE identifica produtos de origem animal feitos de forma artesanal, com receita e processo tradicionais. Ele permite a venda em todo o Brasil.',
   },
   SIF: {
     short:
@@ -81,5 +99,42 @@ export const IMAGE_CONTENT_TYPES = [
   'image/webp',
 ] as const
 
+export const MAX_DESCRICAO_BREVE_LENGTH = 200
+
 export const MAX_PRODUCT_PHOTOS = 5
 export const MIN_PRODUCT_PHOTOS = 1
+
+export const MAX_PRODUCT_DESTAQUES = 3
+
+export const PRODUCT_REJECTION_REASONS = [
+  {
+    id: 'fotos',
+    label: 'Fotos ruins ou insuficientes',
+    message: 'As fotos não mostram bem o produto (luz, foco ou enquadramento).',
+  },
+  {
+    id: 'registro',
+    label: 'Registro ausente ou inválido',
+    message: 'O registro sanitário do produto está ausente, vencido ou ilegível.',
+  },
+  {
+    id: 'descricao',
+    label: 'Descrição incompleta',
+    message: 'A descrição precisa explicar melhor o produto e seus ingredientes.',
+  },
+  {
+    id: 'preco',
+    label: 'Preço ou unidade incorretos',
+    message: 'O preço ou a unidade de medida parecem incorretos.',
+  },
+  {
+    id: 'categoria',
+    label: 'Categoria errada',
+    message: 'O produto foi cadastrado em uma categoria que não corresponde.',
+  },
+  {
+    id: 'rotulo',
+    label: 'Rótulo fora das normas',
+    message: 'O rótulo não atende às normas de rotulagem.',
+  },
+] as const

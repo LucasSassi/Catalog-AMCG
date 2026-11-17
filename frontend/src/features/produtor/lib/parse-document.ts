@@ -1,7 +1,7 @@
 import type { ProducerDocument } from '../types'
 
 export function parseDocumentNumber(value: string): ProducerDocument {
-  const trimmed = value.trim()
+  const trimmed = value.trim().replace(/^CAD-/i, '').trim()
   const digits = trimmed.replace(/\D/g, '')
 
   if (digits.length === 11) {

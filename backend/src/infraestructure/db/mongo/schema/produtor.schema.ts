@@ -25,12 +25,15 @@ export interface DocumentoDocument {
 
 export interface RegistroProdutorDocument {
   tipo: RegistroProdutorTipo;
+  tipoOutros?: string;
   numero: string;
   dataEmissao?: Date;
   dataValidade?: Date;
 }
 
 export interface EnderecoDocument {
+  /** Opcional em documentos antigos, cadastrados antes do CEP ser exigido. */
+  cep?: string;
   rua: string;
   bairro: string;
   cidade: string;
@@ -49,12 +52,19 @@ export interface RedeSocialDocument {
 }
 
 export interface ProdutorDocument {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   nomeEmpresa: string;
   municipioId: string;
   documento: DocumentoDocument;
   registros: RegistroProdutorDocument[];
   contato: ContatoDocument;
   endereco: EnderecoDocument;
+  exibirEndereco?: boolean;
   historia: string;
   logo?: ArquivoDocument;
   fotos: ArquivoDocument[];
@@ -89,6 +99,7 @@ const documentoSchema = new Schema<DocumentoDocument>(
 const registroProdutorSchema = new Schema<RegistroProdutorDocument>(
   {
     tipo: { type: String, required: true, enum: REGISTRO_PRODUTOR_TIPO },
+    tipoOutros: { type: String, trim: true },
     numero: { type: String, required: true, trim: true },
     dataEmissao: { type: Date },
     dataValidade: { type: Date },
@@ -98,6 +109,7 @@ const registroProdutorSchema = new Schema<RegistroProdutorDocument>(
 
 const enderecoSchema = new Schema<EnderecoDocument>(
   {
+    cep: { type: String, trim: true },
     rua: { type: String, required: true, trim: true },
     bairro: { type: String, required: true, trim: true },
     cidade: { type: String, required: true, trim: true },
@@ -125,12 +137,18 @@ const redeSocialSchema = new Schema<RedeSocialDocument>(
 
 export const produtorSchema = new Schema<ProdutorDocument>(
   {
+    revisao: { type: Number, default: 0 },
+    origemPendencia: { type: String, enum: ["CADASTRO", "ALTERACAO"], default: "CADASTRO" },
+    camposAlterados: { type: [String], default: [] },
+    alteradoPor: String,
+    alteradoEm: Date,
     nomeEmpresa: { type: String, required: true, trim: true },
     municipioId: { type: String, required: true, trim: true },
     documento: { type: documentoSchema, required: true },
     registros: { type: [registroProdutorSchema], default: [] },
     contato: { type: contatoSchema, required: true },
     endereco: { type: enderecoSchema, required: true },
+    exibirEndereco: { type: Boolean, required: true, default: false },
     historia: { type: String, required: true, trim: true, default: "" },
     logo: { type: arquivoSchema },
     fotos: { type: [arquivoSchema], default: [] },
@@ -156,3 +174,5 @@ export const produtorSchema = new Schema<ProdutorDocument>(
 produtorSchema.index({ "documento.numero": 1 }, { unique: true });
 produtorSchema.index({ "registros.numero": 1 }, { unique: true, sparse: true });
 produtorSchema.index({ destaque: 1, status: 1, ativo: 1 });
+
+produtorSchema.index({ status: 1, _id: -1 });

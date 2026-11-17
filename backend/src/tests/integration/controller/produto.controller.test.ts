@@ -35,11 +35,13 @@ const produtorPayload = {
     email: "contato@fazenda.com",
   },
   endereco: {
+    cep: "84010000",
     rua: "Rua das Flores",
     bairro: "Centro",
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  exibirEndereco: true,
   historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
   logo: arquivoValido,
   fotos: [arquivoValido],
@@ -49,6 +51,7 @@ function buildProdutoPayload(produtorId: string) {
   return {
     produtorId,
     nome: "Mel Artesanal",
+    descricaoBreve: "Produto artesanal dos Campos Gerais",
     descricao: "Mel puro de Campos Gerais",
     categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",
@@ -95,7 +98,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     const aprovarProdutor = await request(app)
       .put(`/api/produtores/${cadastrarProdutor.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     produtorAprovadoId = aprovarProdutor.body.id;
   });
@@ -135,7 +138,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const response = await request(app).get(
       "/api/produtos/catalogo?categoria=MEL_E_DERIVADOS&municipio=Ponta%20Grossa",
@@ -206,7 +209,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
     expect(aprovar.status).toBe(200);
     expect(aprovar.body.status).toBe("APROVADO");
 
@@ -216,7 +219,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .send({ nome: "Mel Premium" });
     expect(atualizar.status).toBe(200);
     expect(atualizar.body.nome).toBe("Mel Premium");
-    expect(atualizar.body.status).toBe("PENDENTE");
+    expect(atualizar.body.status).toBe("ALTERADO");
 
     const remover = await request(app)
       .delete(`/api/produtos/${cadastrar.body.id}`)
@@ -300,6 +303,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
       .set("Authorization", auth)
       .send({
         status: "REJEITADO",
+        revisao: 0,
         motivoRejeicao: "Fotos insuficientes",
       });
 
@@ -341,7 +345,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", adminAuth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const response = await request(app)
       .patch(`/api/produtos/${cadastrar.body.id}/ativo`)
@@ -362,7 +366,7 @@ describe("Quando usar o ProdutoController (integration)", () => {
     await request(app)
       .put(`/api/produtos/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     await request(app)
       .patch(`/api/produtos/${cadastrar.body.id}/destaque`)
@@ -413,5 +417,59 @@ describe("Quando usar o ProdutoController (integration)", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toMatch(/aprovados/i);
+  });
+
+  it("Deve listar produtos do produtor no catálogo público", async () => {
+    const auth = authHeader();
+
+    const primeiro = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send(buildProdutoPayload(produtorAprovadoId));
+
+    const segundo = await request(app)
+      .post("/api/produtos")
+      .set("Authorization", auth)
+      .send({
+        ...buildProdutoPayload(produtorAprovadoId),
+        nome: "Mel Floral",
+        registros: [{ tipo: "SELO ARTE", numero: "REG-PROD-002" }],
+      });
+
+    await request(app)
+      .put(`/api/produtos/${primeiro.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO", revisao: 0 });
+
+    await request(app)
+      .put(`/api/produtos/${segundo.body.id}`)
+      .set("Authorization", auth)
+      .send({ status: "APROVADO", revisao: 0 });
+
+    const response = await request(app)
+      .get("/api/produtos/catalogo/do-produtor")
+      .query({
+        produtorId: produtorAprovadoId,
+        excludeId: primeiro.body.id,
+        pageSize: 3,
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.pageSize).toBe(3);
+    expect(response.body.produtos).toHaveLength(1);
+    expect(response.body.produtos[0]).toMatchObject({
+      id: segundo.body.id,
+      nome: "Mel Floral",
+      produtor: { id: produtorAprovadoId },
+    });
+    expect(response.body.hasNext).toBe(false);
+  });
+
+  it("Deve rejeitar listagem do produtor sem produtorId", async () => {
+    const response = await request(app).get(
+      "/api/produtos/catalogo/do-produtor",
+    );
+
+    expect(response.status).toBe(400);
   });
 });

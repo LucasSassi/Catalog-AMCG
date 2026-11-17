@@ -1,11 +1,18 @@
-import { useState, type FormEvent } from 'react'
-import { Button } from '../../../shared/components/Button'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  FormField,
+  formInputClassName,
+  SectionedForm,
+  type FormSection,
+} from '../../../shared/components/SectionedForm'
 import {
   BRAZILIAN_STATES,
   DOCUMENT_TYPES,
   IMAGE_CONTENT_TYPES,
+  MAX_CEP_DIGITS,
   MAX_HISTORIA_LENGTH,
   MAX_PRODUCER_PHOTOS,
+  REGISTRATION_TYPES,
 } from '../constants'
 import { useRegisterProducer } from '../hooks/useRegisterProducer'
 import { useUpdateProducer } from '../hooks/useUpdateProducer'
@@ -15,11 +22,23 @@ import type {
   ProducerFile,
   ProducerRegistration,
 } from '../types'
+import { ImageDropzone } from './ImageDropzone'
 
 interface ProducerRegistrationFormProps {
   onSuccess: () => void
+  onCancel?: () => void
+  onDirtyChange?: (dirty: boolean) => void
   approveAfterCreate?: boolean
   producer?: Producer
+}
+
+interface ProducerFormState extends Omit<
+  CreateProducerInput,
+  'logo' | 'redesSociais'
+> {
+  logo: ProducerFile[]
+  instagram: string
+  facebook: string
 }
 
 const emptyRegistration: ProducerRegistration = {
@@ -27,204 +46,140 @@ const emptyRegistration: ProducerRegistration = {
   numero: '',
 }
 
-const emptyPhoto: ProducerFile = {
-  url: '',
-  contentType: 'image/jpeg',
-  nomeOriginal: '',
+function getSocialHandle(
+  producer: Producer | undefined,
+  tipo: 'INSTAGRAM' | 'FACEBOOK',
+): string {
+  return producer?.redesSociais.find((item) => item.tipo === tipo)?.handle ?? ''
 }
 
-const initialForm: CreateProducerInput = {
-  nomeEmpresa: '',
-  municipioId: '',
-  documento: { tipo: 'CNPJ', numero: '' },
-  registros: [{ ...emptyRegistration }],
-  contato: { telefone: '', email: '' },
-  endereco: { rua: '', bairro: '', cidade: '', estado: 'PR' },
-  historia: '',
-  logo: { ...emptyPhoto },
-  fotos: [{ ...emptyPhoto }],
-  site: '',
-}
-
-function buildInitialForm(producer?: Producer): CreateProducerInput {
+function buildInitialForm(producer?: Producer): ProducerFormState {
   if (!producer) {
     return {
-      ...initialForm,
-      documento: { ...initialForm.documento },
+      nomeEmpresa: '',
+      municipioId: '',
+      documento: { tipo: 'CNPJ', numero: '' },
       registros: [{ ...emptyRegistration }],
-      contato: { ...initialForm.contato },
-      endereco: { ...initialForm.endereco },
-      logo: { ...emptyPhoto },
-      fotos: [{ ...emptyPhoto }],
+      contato: { telefone: '', email: '' },
+      endereco: { cep: '', rua: '', bairro: '', cidade: '', estado: 'PR' },
+      exibirEndereco: false,
+      historia: '',
+      logo: [],
+      fotos: [],
+      site: '',
+      instagram: '',
+      facebook: '',
     }
   }
 
   return {
     nomeEmpresa: producer.nomeEmpresa,
     municipioId: producer.municipioId,
-    documento: { ...producer.documento },
+    documento: {
+      ...producer.documento,
+      numero:
+        producer.documento.tipo === 'CAD_PRO'
+          ? producer.documento.numero.replace(/^CAD-/i, '')
+          : producer.documento.numero,
+    },
     registros:
       producer.registros.length > 0
         ? producer.registros.map((registro) => ({ ...registro }))
         : [{ ...emptyRegistration }],
     contato: { ...producer.contato },
     endereco: { ...producer.endereco },
+    exibirEndereco: producer.exibirEndereco,
     historia: producer.historia,
-    logo: producer.logo ? { ...producer.logo } : { ...emptyPhoto },
-    fotos:
-      producer.fotos.length > 0
-        ? producer.fotos.map((foto) => ({ ...foto }))
-        : [{ ...emptyPhoto }],
+    logo: producer.logo?.url ? [{ ...producer.logo }] : [],
+    fotos: (producer.fotos ?? [])
+      .filter((foto) => foto.url)
+      .map((foto) => ({ ...foto })),
     site: producer.site ?? '',
+    instagram: getSocialHandle(producer, 'INSTAGRAM'),
+    facebook: getSocialHandle(producer, 'FACEBOOK'),
   }
 }
 
-function getSocialHandle(
-  producer: Producer | undefined,
-  tipo: 'INSTAGRAM' | 'FACEBOOK',
-): string {
-  if (!producer) {
-    return ''
-  }
-
-  const network = producer.redesSociais.find((item) => item.tipo === tipo)
-  if (!network) {
-    return ''
-  }
-
-  return network.handle
+function filled(...values: string[]): boolean {
+  return values.every((value) => value.trim().length > 0)
 }
-
-const inputClassName =
-  'min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary'
 
 export function ProducerRegistrationForm({
   onSuccess,
+  onCancel,
+  onDirtyChange,
   approveAfterCreate = false,
   producer,
 }: ProducerRegistrationFormProps) {
   const isEditMode = producer !== undefined
-  const [form, setForm] = useState<CreateProducerInput>(() =>
-    buildInitialForm(producer),
-  )
-  const [instagram, setInstagram] = useState(() =>
-    getSocialHandle(producer, 'INSTAGRAM'),
-  )
-  const [facebook, setFacebook] = useState(() =>
-    getSocialHandle(producer, 'FACEBOOK'),
-  )
-  const register = useRegisterProducer({
-    approveAfterCreate,
-  })
+  const [initial] = useState(() => buildInitialForm(producer))
+  const [form, setForm] = useState<ProducerFormState>(initial)
+  const register = useRegisterProducer({ approveAfterCreate })
   const update = useUpdateProducer()
   const error = isEditMode ? update.error : register.error
   const isLoading = isEditMode ? update.isLoading : register.isLoading
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initial),
+    [form, initial],
+  )
 
-  function updateField<K extends keyof CreateProducerInput>(
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  function updateField<K extends keyof ProducerFormState>(
     field: K,
-    value: CreateProducerInput[K],
+    value: ProducerFormState[K],
   ) {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
   function updateRegistration(
     index: number,
-    field: keyof ProducerRegistration,
-    value: string,
+    changes: Partial<ProducerRegistration>,
   ) {
-    setForm((current) => {
-      const registros = current.registros.map((item, itemIndex) => {
+    setForm((current) => ({
+      ...current,
+      registros: current.registros.map((item, itemIndex) => {
         if (itemIndex !== index) {
           return item
         }
-
-        return { ...item, [field]: value }
-      })
-
-      return { ...current, registros }
-    })
-  }
-
-  function addRegistration() {
-    setForm((current) => ({
-      ...current,
-      registros: [...current.registros, { ...emptyRegistration }],
+        const next = { ...item, ...changes }
+        if (next.tipo !== 'Outro') {
+          delete next.tipoOutros
+        }
+        return next
+      }),
     }))
   }
 
-  function removeRegistration(index: number) {
-    setForm((current) => {
-      if (current.registros.length === 1) {
-        return current
-      }
+  async function handleSubmit() {
+    const logo = form.logo[0]
 
-      return {
-        ...current,
-        registros: current.registros.filter(
-          (_, itemIndex) => itemIndex !== index,
-        ),
-      }
-    })
-  }
-
-  function updatePhoto(
-    index: number,
-    field: keyof ProducerFile,
-    value: string,
-  ) {
-    setForm((current) => {
-      const fotos = current.fotos.map((item, itemIndex) => {
-        if (itemIndex !== index) {
-          return item
-        }
-
-        return { ...item, [field]: value }
-      })
-
-      return { ...current, fotos }
-    })
-  }
-
-  function addPhoto() {
-    setForm((current) => {
-      if (current.fotos.length >= MAX_PRODUCER_PHOTOS) {
-        return current
-      }
-
-      return {
-        ...current,
-        fotos: [...current.fotos, { ...emptyPhoto }],
-      }
-    })
-  }
-
-  function removePhoto(index: number) {
-    setForm((current) => {
-      if (current.fotos.length === 1) {
-        return current
-      }
-
-      return {
-        ...current,
-        fotos: current.fotos.filter((_, itemIndex) => itemIndex !== index),
-      }
-    })
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    if (!logo) {
+      return
+    }
 
     const redesSociais = [
-      ...(instagram.trim()
-        ? [{ tipo: 'INSTAGRAM' as const, handle: instagram.trim() }]
+      ...(form.instagram.trim()
+        ? [{ tipo: 'INSTAGRAM' as const, handle: form.instagram.trim() }]
         : []),
-      ...(facebook.trim()
-        ? [{ tipo: 'FACEBOOK' as const, handle: facebook.trim() }]
+      ...(form.facebook.trim()
+        ? [{ tipo: 'FACEBOOK' as const, handle: form.facebook.trim() }]
         : []),
     ]
 
     const payload: CreateProducerInput = {
-      ...form,
+      nomeEmpresa: form.nomeEmpresa,
+      municipioId: form.municipioId,
+      documento: form.documento,
+      registros: form.registros,
+      contato: form.contato,
+      endereco: form.endereco,
+      exibirEndereco: form.exibirEndereco,
+      historia: form.historia,
+      logo,
+      fotos: form.fotos,
       redesSociais,
       site: form.site?.trim() || undefined,
     }
@@ -233,504 +188,456 @@ export function ProducerRegistrationForm({
       const updated = await update.submit(
         producer.id,
         payload,
-        producer.status,
+        producer.revisao ?? 0,
       )
+
       if (updated) {
         onSuccess()
       }
       return
     }
 
-    const didSubmit = await register.submit(payload)
-
-    if (didSubmit) {
+    if (await register.submit(payload)) {
       onSuccess()
     }
   }
 
-  return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Empresa
-        </legend>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Nome da empresa
-          </span>
-          <input
-            required
-            type="text"
-            value={form.nomeEmpresa}
-            onChange={(event) => updateField('nomeEmpresa', event.target.value)}
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Município (AMCG)
-          </span>
-          <input
-            required
-            type="text"
-            value={form.municipioId}
-            onChange={(event) => updateField('municipioId', event.target.value)}
-            className={inputClassName}
-            placeholder="Ex.: Ponta Grossa"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            História do produtor
-          </span>
-          <textarea
-            required
-            value={form.historia}
-            maxLength={MAX_HISTORIA_LENGTH}
-            rows={5}
-            onChange={(event) => updateField('historia', event.target.value)}
-            className={inputClassName}
-            placeholder="Conte a história e a identidade produtiva do produtor"
-          />
-          <span className="mt-1 block text-xs text-slate-500">
-            {form.historia.length}/{MAX_HISTORIA_LENGTH}
-          </span>
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Documento
-        </legend>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Tipo
-          </span>
-          <select
-            required
-            value={form.documento.tipo}
-            onChange={(event) =>
-              updateField('documento', {
-                ...form.documento,
-                tipo: event.target.value as CreateProducerInput['documento']['tipo'],
-              })
-            }
-            className={inputClassName}
-          >
-            {DOCUMENT_TYPES.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {tipo}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Número
-          </span>
-          <input
-            required
-            type="text"
-            value={form.documento.numero}
-            onChange={(event) =>
-              updateField('documento', {
-                ...form.documento,
-                numero: event.target.value,
-              })
-            }
-            className={inputClassName}
-          />
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Registros
-        </legend>
-
-        {form.registros.map((registro, index) => (
-          <div
-            key={index}
-            className="space-y-3 rounded-lg border border-slate-200 p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-700">
-                Registro {index + 1}
-              </p>
-              {form.registros.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => removeRegistration(index)}
-                >
-                  Remover
-                </Button>
-              ) : null}
-            </div>
-
-            <p className="rounded-lg border border-surface bg-secondary-background px-3 py-2 text-sm font-medium text-primary-dark">
-              Tipo: Registro SIM (Inspeção Municipal)
-            </p>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Número
-              </span>
+  const sections: FormSection[] = [
+    {
+      id: 'empresa',
+      label: 'Empresa',
+      description: 'Como o produtor aparece no catálogo.',
+      status: filled(form.nomeEmpresa, form.municipioId, form.historia)
+        ? 'ok'
+        : 'incompleto',
+      content: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Nome da empresa">
               <input
                 required
                 type="text"
-                value={registro.numero}
+                value={form.nomeEmpresa}
                 onChange={(event) =>
-                  updateRegistration(index, 'numero', event.target.value)
+                  updateField('nomeEmpresa', event.target.value)
                 }
-                className={inputClassName}
+                className={formInputClassName}
               />
-            </label>
-          </div>
-        ))}
-
-        <Button type="button" variant="secondary" onClick={addRegistration}>
-          Adicionar registro
-        </Button>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Contato
-        </legend>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Telefone (E.164)
-          </span>
-          <input
-            required
-            type="tel"
-            value={form.contato.telefone}
-            onChange={(event) =>
-              updateField('contato', {
-                ...form.contato,
-                telefone: event.target.value,
-              })
-            }
-            className={inputClassName}
-            placeholder="+5542999999999"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            E-mail
-          </span>
-          <input
-            required
-            type="email"
-            value={form.contato.email}
-            onChange={(event) =>
-              updateField('contato', {
-                ...form.contato,
-                email: event.target.value,
-              })
-            }
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Instagram
-          </span>
-          <input
-            type="text"
-            value={instagram}
-            onChange={(event) => setInstagram(event.target.value)}
-            className={inputClassName}
-            placeholder="@produtor"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Facebook
-          </span>
-          <input
-            type="text"
-            value={facebook}
-            onChange={(event) => setFacebook(event.target.value)}
-            className={inputClassName}
-            placeholder="produtor.oficial"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Site
-          </span>
-          <input
-            type="url"
-            value={form.site ?? ''}
-            onChange={(event) => updateField('site', event.target.value)}
-            className={inputClassName}
-            placeholder="https://..."
-          />
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Endereço
-        </legend>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Rua
-          </span>
-          <input
-            required
-            type="text"
-            value={form.endereco.rua}
-            onChange={(event) =>
-              updateField('endereco', {
-                ...form.endereco,
-                rua: event.target.value,
-              })
-            }
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Bairro
-          </span>
-          <input
-            required
-            type="text"
-            value={form.endereco.bairro}
-            onChange={(event) =>
-              updateField('endereco', {
-                ...form.endereco,
-                bairro: event.target.value,
-              })
-            }
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Cidade
-          </span>
-          <input
-            required
-            type="text"
-            value={form.endereco.cidade}
-            onChange={(event) =>
-              updateField('endereco', {
-                ...form.endereco,
-                cidade: event.target.value,
-              })
-            }
-            className={inputClassName}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Estado
-          </span>
-          <select
-            required
-            value={form.endereco.estado}
-            onChange={(event) =>
-              updateField('endereco', {
-                ...form.endereco,
-                estado: event.target.value,
-              })
-            }
-            className={inputClassName}
-          >
-            {BRAZILIAN_STATES.map((estado) => (
-              <option key={estado} value={estado}>
-                {estado}
-              </option>
-            ))}
-          </select>
-        </label>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Logo
-        </legend>
-
-        <div className="space-y-3 rounded-lg border border-slate-200 p-4">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              URL
-            </span>
-            <input
-              required
-              type="url"
-              value={form.logo.url}
-              onChange={(event) =>
-                updateField('logo', { ...form.logo, url: event.target.value })
-              }
-              className={inputClassName}
-              placeholder="https://..."
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Content-Type
-            </span>
-            <select
-              required
-              value={form.logo.contentType}
-              onChange={(event) =>
-                updateField('logo', {
-                  ...form.logo,
-                  contentType: event.target.value,
-                })
-              }
-              className={inputClassName}
-            >
-              {IMAGE_CONTENT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              Nome original
-            </span>
-            <input
-              required
-              type="text"
-              value={form.logo.nomeOriginal}
-              onChange={(event) =>
-                updateField('logo', {
-                  ...form.logo,
-                  nomeOriginal: event.target.value,
-                })
-              }
-              className={inputClassName}
-              placeholder="logo-produtor.jpg"
-            />
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-bold uppercase tracking-wide text-primary-darker">
-          Fotos do produtor
-        </legend>
-
-        {form.fotos.map((photo, index) => (
-          <div
-            key={index}
-            className="space-y-3 rounded-lg border border-slate-200 p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-700">
-                Foto {index + 1}
-              </p>
-              {form.fotos.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => removePhoto(index)}
-                >
-                  Remover
-                </Button>
-              ) : null}
-            </div>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                URL
-              </span>
+            </FormField>
+            <FormField label="Município (AMCG)">
               <input
                 required
-                type="url"
-                value={photo.url}
+                type="text"
+                value={form.municipioId}
                 onChange={(event) =>
-                  updatePhoto(index, 'url', event.target.value)
+                  updateField('municipioId', event.target.value)
                 }
-                className={inputClassName}
-                placeholder="https://..."
+                className={formInputClassName}
+                placeholder="Ex.: Ponta Grossa"
               />
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Content-Type
-              </span>
+            </FormField>
+          </div>
+          <FormField
+            label="História do produtor"
+            hint={`${form.historia.length}/${MAX_HISTORIA_LENGTH} caracteres`}
+          >
+            <textarea
+              required
+              value={form.historia}
+              maxLength={MAX_HISTORIA_LENGTH}
+              rows={5}
+              onChange={(event) => updateField('historia', event.target.value)}
+              className={formInputClassName}
+              placeholder="Conte a história e a identidade produtiva do produtor"
+            />
+          </FormField>
+        </>
+      ),
+    },
+    {
+      id: 'documentos',
+      label: 'Documentos',
+      description: 'Documento do empreendimento e registro sanitário.',
+      status: filled(
+        form.documento.numero,
+        ...form.registros.map((registro) => registro.numero),
+        ...form.registros
+          .filter((registro) => registro.tipo === 'Outro')
+          .map((registro) => registro.tipoOutros ?? ''),
+      )
+        ? 'ok'
+        : 'incompleto',
+      content: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+            <FormField label="Tipo">
               <select
                 required
-                value={photo.contentType}
+                value={form.documento.tipo}
                 onChange={(event) =>
-                  updatePhoto(index, 'contentType', event.target.value)
+                  updateField('documento', {
+                    ...form.documento,
+                    tipo: event.target
+                      .value as CreateProducerInput['documento']['tipo'],
+                  })
                 }
-                className={inputClassName}
+                className={formInputClassName}
               >
-                {IMAGE_CONTENT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                {DOCUMENT_TYPES.map((tipo) => (
+                  <option key={tipo} value={tipo}>
+                    {tipo}
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Nome original
-              </span>
+            </FormField>
+            <FormField label="Número do documento">
+              <div className="flex">
+                {form.documento.tipo === 'CAD_PRO' && (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center rounded-l-md border border-r-0 bg-slate-100 px-3 text-sm font-semibold text-slate-700"
+                  >
+                    CAD-
+                  </span>
+                )}
+                <input
+                  required
+                  type="text"
+                  value={form.documento.numero}
+                  onChange={(event) =>
+                    updateField('documento', {
+                      ...form.documento,
+                      numero:
+                        form.documento.tipo === 'CAD_PRO'
+                          ? event.target.value.replace(/^CAD-/i, '')
+                          : event.target.value,
+                    })
+                  }
+                  className={`${formInputClassName} min-w-0 flex-1 ${form.documento.tipo === 'CAD_PRO' ? 'rounded-l-none' : ''}`}
+                />
+              </div>
+            </FormField>
+          </div>
+          {form.registros.map((registro, index) => (
+            <div
+              key={index}
+              className="flex flex-wrap items-end gap-2 sm:flex-nowrap"
+            >
+              <FormField
+                label={`Tipo de registro ${form.registros.length > 1 ? index + 1 : ''}`.trim()}
+                className="w-full sm:w-52 sm:shrink-0"
+              >
+                <select
+                  required
+                  value={registro.tipo}
+                  onChange={(event) =>
+                    updateRegistration(index, {
+                      tipo: event.target.value as ProducerRegistration['tipo'],
+                    })
+                  }
+                  className={formInputClassName}
+                >
+                  {REGISTRATION_TYPES.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              {registro.tipo === 'Outro' ? (
+                <FormField label="Qual registro?" className="flex-1">
+                  <input
+                    required
+                    type="text"
+                    value={registro.tipoOutros ?? ''}
+                    onChange={(event) =>
+                      updateRegistration(index, {
+                        tipoOutros: event.target.value,
+                      })
+                    }
+                    className={formInputClassName}
+                    placeholder="Ex.: SESA-PR"
+                  />
+                </FormField>
+              ) : null}
+              <FormField label="Número do registro" className="flex-1">
+                <input
+                  required
+                  type="text"
+                  value={registro.numero}
+                  onChange={(event) =>
+                    updateRegistration(index, { numero: event.target.value })
+                  }
+                  className={formInputClassName}
+                />
+              </FormField>
+              {form.registros.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateField(
+                      'registros',
+                      form.registros.filter(
+                        (_, itemIndex) => itemIndex !== index,
+                      ),
+                    )
+                  }
+                  className="mb-5 min-h-11 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger-soft"
+                >
+                  Remover
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              updateField('registros', [
+                ...form.registros,
+                { ...emptyRegistration },
+              ])
+            }
+            className="self-start text-sm font-semibold text-primary-darker hover:text-primary-dark"
+          >
+            + Adicionar registro
+          </button>
+        </>
+      ),
+    },
+    {
+      id: 'contato',
+      label: 'Contato',
+      description: 'O WhatsApp recebe os pedidos do catálogo.',
+      status: filled(form.contato.telefone, form.contato.email)
+        ? 'ok'
+        : 'incompleto',
+      content: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              label="WhatsApp"
+              hint="Formato internacional: +5542999999999"
+            >
+              <input
+                required
+                type="tel"
+                value={form.contato.telefone}
+                onChange={(event) =>
+                  updateField('contato', {
+                    ...form.contato,
+                    telefone: event.target.value,
+                  })
+                }
+                className={formInputClassName}
+                placeholder="+5542999999999"
+              />
+            </FormField>
+            <FormField label="E-mail">
+              <input
+                required
+                type="email"
+                value={form.contato.email}
+                onChange={(event) =>
+                  updateField('contato', {
+                    ...form.contato,
+                    email: event.target.value,
+                  })
+                }
+                className={formInputClassName}
+              />
+            </FormField>
+            <FormField label="Instagram (opcional)">
+              <input
+                type="text"
+                value={form.instagram}
+                onChange={(event) =>
+                  updateField('instagram', event.target.value)
+                }
+                className={formInputClassName}
+                placeholder="@produtor"
+              />
+            </FormField>
+            <FormField label="Facebook (opcional)">
+              <input
+                type="text"
+                value={form.facebook}
+                onChange={(event) =>
+                  updateField('facebook', event.target.value)
+                }
+                className={formInputClassName}
+                placeholder="produtor.oficial"
+              />
+            </FormField>
+          </div>
+          <FormField label="Site (opcional)">
+            <input
+              type="url"
+              value={form.site ?? ''}
+              onChange={(event) => updateField('site', event.target.value)}
+              className={formInputClassName}
+              placeholder="https://..."
+            />
+          </FormField>
+        </>
+      ),
+    },
+    {
+      id: 'endereco',
+      label: 'Endereço',
+      description: 'O produtor escolhe se o endereço aparece no site.',
+      status:
+        filled(form.endereco.rua, form.endereco.bairro, form.endereco.cidade) &&
+        form.endereco.cep.replace(/\D/g, '').length === MAX_CEP_DIGITS
+          ? 'ok'
+          : 'incompleto',
+      content: (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="CEP" hint="8 dígitos">
+            <input
+              required
+              type="text"
+              inputMode="numeric"
+              pattern="\d{5}-?\d{3}"
+              title="CEP com 8 dígitos (ex.: 84010-000)"
+              value={form.endereco.cep}
+              onChange={(event) =>
+                updateField('endereco', {
+                  ...form.endereco,
+                  cep: event.target.value,
+                })
+              }
+              className={formInputClassName}
+              placeholder="84010-000"
+            />
+          </FormField>
+          <FormField label="Exibir endereço no site?">
+            <select
+              required
+              value={form.exibirEndereco ? 'Sim' : 'Não'}
+              onChange={(event) =>
+                updateField('exibirEndereco', event.target.value === 'Sim')
+              }
+              className={formInputClassName}
+            >
+              <option value="Sim">Sim, mostrar na página do produtor</option>
+              <option value="Não">Não, mostrar só o município</option>
+            </select>
+          </FormField>
+          <FormField label="Rua e número" className="sm:col-span-2">
+            <input
+              required
+              type="text"
+              value={form.endereco.rua}
+              onChange={(event) =>
+                updateField('endereco', {
+                  ...form.endereco,
+                  rua: event.target.value,
+                })
+              }
+              className={formInputClassName}
+            />
+          </FormField>
+          <FormField label="Bairro">
+            <input
+              required
+              type="text"
+              value={form.endereco.bairro}
+              onChange={(event) =>
+                updateField('endereco', {
+                  ...form.endereco,
+                  bairro: event.target.value,
+                })
+              }
+              className={formInputClassName}
+            />
+          </FormField>
+          <div className="grid grid-cols-[1fr_6rem] gap-4">
+            <FormField label="Cidade">
               <input
                 required
                 type="text"
-                value={photo.nomeOriginal}
+                value={form.endereco.cidade}
                 onChange={(event) =>
-                  updatePhoto(index, 'nomeOriginal', event.target.value)
+                  updateField('endereco', {
+                    ...form.endereco,
+                    cidade: event.target.value,
+                  })
                 }
-                className={inputClassName}
-                placeholder="foto-produtor.jpg"
+                className={formInputClassName}
               />
-            </label>
+            </FormField>
+            <FormField label="UF">
+              <select
+                required
+                value={form.endereco.estado}
+                onChange={(event) =>
+                  updateField('endereco', {
+                    ...form.endereco,
+                    estado: event.target.value,
+                  })
+                }
+                className={formInputClassName}
+              >
+                {BRAZILIAN_STATES.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {estado}
+                  </option>
+                ))}
+              </select>
+            </FormField>
           </div>
-        ))}
+        </div>
+      ),
+    },
+    {
+      id: 'imagens',
+      label: 'Logo e fotos',
+      description:
+        'A logo é obrigatória; fotos ajudam na análise e na vitrine.',
+      status:
+        form.logo.length === 0 || form.fotos.length === 0
+          ? 'incompleto'
+          : form.fotos.length < 2
+            ? 'aviso'
+            : 'ok',
+      content: (
+        <>
+          <ImageDropzone
+            label="Logo"
+            files={form.logo}
+            max={1}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('logo', files)}
+          />
+          <ImageDropzone
+            label="Fotos do produtor"
+            description="Recomendado: ao menos 2 fotos do local ou da produção."
+            files={form.fotos}
+            max={MAX_PRODUCER_PHOTOS}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('fotos', files)}
+          />
+        </>
+      ),
+    },
+  ]
 
-        {form.fotos.length < MAX_PRODUCER_PHOTOS ? (
-          <Button type="button" variant="secondary" onClick={addPhoto}>
-            Adicionar foto
-          </Button>
-        ) : null}
-      </fieldset>
-
-      {error ? (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <Button type="submit" fullWidth disabled={isLoading}>
-        {isLoading
-          ? isEditMode
-            ? 'Salvando...'
-            : 'Enviando cadastro...'
-          : isEditMode
-            ? 'Salvar alterações'
-            : 'Enviar cadastro'}
-      </Button>
-    </form>
+  return (
+    <SectionedForm
+      sections={sections}
+      isDirty={isDirty}
+      isSubmitting={isLoading}
+      submitLabel={
+        isEditMode
+          ? 'Salvar alterações'
+          : approveAfterCreate
+            ? 'Cadastrar e aprovar'
+            : 'Enviar cadastro'
+      }
+      submittingLabel={isEditMode ? 'Salvando...' : 'Enviando cadastro...'}
+      error={error}
+      onSubmit={() => void handleSubmit()}
+      onCancel={onCancel}
+    />
   )
 }

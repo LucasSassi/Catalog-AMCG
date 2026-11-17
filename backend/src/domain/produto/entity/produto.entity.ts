@@ -28,9 +28,16 @@ export interface Premiacao {
 }
 
 export interface Produto {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   id: string;
   produtorId: string;
   nome: string;
+  descricaoBreve: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -51,6 +58,7 @@ export interface Produto {
 export interface CadastrarProdutoInput {
   produtorId: string;
   nome: string;
+  descricaoBreve: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -63,8 +71,11 @@ export interface CadastrarProdutoInput {
 }
 
 export interface AtualizarProdutoInput {
+  revisao?: number;
+  autorId?: string;
   produtorId?: string;
   nome?: string;
+  descricaoBreve?: string;
   descricao?: string;
   categoria?: CategoriaProduto;
   unidadeMedida?: UnidadeMedida;
@@ -91,6 +102,7 @@ export interface CatalogoFiltros {
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  premiado?: boolean;
   pageSize?: number;
   lastItemId?: string;
 }
@@ -102,11 +114,20 @@ export interface CatalogoSimilaresFiltros {
   lastItemId?: string;
 }
 
+export interface CatalogoDoProdutorFiltros {
+  produtorId: string;
+  excludeId?: string;
+  pageSize?: number;
+  lastItemId?: string;
+}
+
 export interface CatalogoCursorFiltros {
   busca?: string;
   categoria?: CategoriaProduto;
   municipio?: string;
   certificacao?: CertificacaoCatalogo;
+  premiado?: boolean;
+  produtorId?: string;
   pageSize: number;
   lastItemId?: string;
   destaque?: boolean;
@@ -127,7 +148,7 @@ export interface CatalogoCursorMeta {
 export interface ProdutoCatalogo {
   id: string;
   nome: string;
-  descricao: string;
+  descricaoBreve: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
   valorCentavos: number;
@@ -143,8 +164,9 @@ export interface ProdutoCatalogo {
 }
 
 export interface ProdutoCatalogoDetalhe extends ProdutoCatalogo {
+  descricao: string;
   fotosDivulgacao: Arquivo[];
-  registros: Array<{ tipo: RegistroProdutoTipo }>;
+  registros: Array<{ tipo: RegistroProdutoTipo; tipoOutros?: string }>;
   premiacoes: Array<{ nome: string; descricao: string; ano: number }>;
   observacoes?: string;
   produtor: ProdutoCatalogo["produtor"] & {
@@ -165,5 +187,9 @@ export interface CatalogoDestaquesProdutos {
 }
 
 export interface CatalogoSimilaresProdutos extends CatalogoCursorMeta {
+  produtos: ProdutoCatalogo[];
+}
+
+export interface CatalogoDoProdutorProdutos extends CatalogoCursorMeta {
   produtos: ProdutoCatalogo[];
 }

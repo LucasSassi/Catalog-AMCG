@@ -10,6 +10,15 @@ export interface UsuarioDocument {
   nome: string;
   email: string;
   senhaHash: string;
+  produtorId?: string;
+  historicoVinculos?: {
+    administradorId?: string;
+    usuarioId?: string;
+    origem?: string;
+    anterior?: string;
+    novo?: string;
+    data: Date;
+  }[];
   role: RoleUsuario;
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +26,23 @@ export interface UsuarioDocument {
 
 export const usuarioSchema = new Schema<UsuarioDocument>(
   {
+    produtorId: { type: String, index: true },
+    historicoVinculos: {
+      type: [
+        new Schema(
+          {
+            administradorId: String,
+            usuarioId: String,
+            origem: String,
+            anterior: String,
+            novo: String,
+            data: Date,
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     nome: { type: String, required: true, trim: true },
     email: {
       type: String,

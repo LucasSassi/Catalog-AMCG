@@ -1,14 +1,27 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { MyProfilePage } from '../pages/account/MyProfilePage'
+import { AccountLoginPage } from '../pages/account/MyProductsPage'
+import { UserLinksPage } from '../pages/backoffice/UserLinksPage'
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from 'react-router-dom'
 import {
   isAdminAuthToken,
   isAuthTokenValid,
   removeAuthToken,
 } from '../shared/api/auth-token'
-import { BackofficePage } from '../pages/backoffice/BackofficePage'
+import { BannersPage } from '../pages/backoffice/BannersPage'
+import { DestaquesPage } from '../pages/backoffice/DestaquesPage'
 import { LoginPage } from '../pages/backoffice/LoginPage'
+import { ProducersReviewPage } from '../pages/backoffice/ProducersReviewPage'
+import { ProductsReviewPage } from '../pages/backoffice/ProductsReviewPage'
 import { AboutPage } from '../pages/catalog/AboutPage'
 import { CatalogPage } from '../pages/catalog/CatalogPage'
 import { InscriptionPage } from '../pages/catalog/InscriptionPage'
+import { ProducerDetailPage } from '../pages/catalog/ProducerDetailPage'
 import { ProductDetailPage } from '../pages/catalog/ProductDetailPage'
 import { ProducersPage } from '../pages/catalog/ProducersPage'
 import { BackofficeLayout } from './BackofficeLayout'
@@ -21,7 +34,7 @@ function ProtectedRoute() {
   }
 
   if (!isAdminAuthToken()) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/backoffice/login" replace />
   }
 
   return <Outlet />
@@ -35,7 +48,14 @@ export function AppRouter() {
           <Route index element={<CatalogPage />} />
           <Route path="quem-somos" element={<AboutPage />} />
           <Route path="produtores" element={<ProducersPage />} />
+          <Route path="produtores/:id" element={<ProducerDetailPage />} />
           <Route path="produtos/:id" element={<ProductDetailPage />} />
+          <Route path="minha-conta/login" element={<AccountLoginPage />} />
+          <Route path="minha-conta/perfil" element={<MyProfilePage />} />
+          <Route
+            path="minha-conta/produtos"
+            element={<Navigate to="/minha-conta/perfil" replace />}
+          />
           <Route path="inscricao" element={<InscriptionPage />} />
         </Route>
 
@@ -43,7 +63,21 @@ export function AppRouter() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<BackofficeLayout />}>
-            <Route path="/backoffice" element={<BackofficePage />} />
+            <Route
+              path="/backoffice"
+              element={<Navigate to="/backoffice/produtores" replace />}
+            />
+            <Route
+              path="/backoffice/produtores"
+              element={<ProducersReviewPage />}
+            />
+            <Route
+              path="/backoffice/produtos"
+              element={<ProductsReviewPage />}
+            />
+            <Route path="/backoffice/usuarios" element={<UserLinksPage />} />
+            <Route path="/backoffice/destaques" element={<DestaquesPage />} />
+            <Route path="/backoffice/banners" element={<BannersPage />} />
           </Route>
         </Route>
 

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import logoPlaceholder from '../../../shared/assets/logo-catalogo-campos-gerais.png'
 import {
   buildThumbnailUrl,
@@ -7,10 +8,9 @@ import type { CatalogProducer } from '../types'
 
 interface ProducerCardProps {
   producer: CatalogProducer
-  onSelect: (producerId: string) => void
 }
 
-export function ProducerCard({ producer, onSelect }: ProducerCardProps) {
+export function ProducerCard({ producer }: ProducerCardProps) {
   const hasLogo = Boolean(producer.logo)
   const cover = producer.logo ?? producer.fotos[0]
   const imageSrc = cover
@@ -21,9 +21,8 @@ export function ProducerCard({ producer, onSelect }: ProducerCardProps) {
 
   return (
     <article className="[contain-intrinsic-size:auto_320px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_420px]">
-      <button
-        type="button"
-        onClick={() => onSelect(producer.id)}
+      <Link
+        to={`/produtores/${producer.id}`}
         className="group flex h-full w-full flex-col rounded-2xl border border-slate-300 bg-white p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-success hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:rounded-3xl sm:p-3"
       >
         <div
@@ -57,7 +56,7 @@ export function ProducerCard({ producer, onSelect }: ProducerCardProps) {
             {producer.municipio}
           </p>
         </div>
-      </button>
+      </Link>
     </article>
   )
 }

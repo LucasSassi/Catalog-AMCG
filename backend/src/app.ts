@@ -1,5 +1,7 @@
 import cors from "cors";
+import { createContaController } from "./application/controllers/conta.controller";
 import express, { type Express } from "express";
+import { createBannerController } from "./application/controllers/banner.controller";
 import { createInscricaoController } from "./application/controllers/inscricao.controller";
 import { createProdutorController } from "./application/controllers/produtor.controller";
 import { createProdutoController } from "./application/controllers/produto.controller";
@@ -12,9 +14,11 @@ import {
   LOGIN_RATE_LIMIT,
   type RateLimitPreset,
 } from "./application/middleware/rate-limit.middleware";
+import { createBannerService } from "./configuration/factory/banner.factory";
 import { createProdutorService } from "./configuration/factory/produtor.factory";
 import { createProdutoService } from "./configuration/factory/produto.factory";
 import { createUsuarioService } from "./configuration/factory/usuario.factory";
+import type { IBannerService } from "./domain/banner/entity/interfaces/banner.service.interface";
 import type { IProdutorService } from "./domain/produtor/entity/interfaces/produtor.service.interface";
 import type { IProdutoService } from "./domain/produto/entity/interfaces/produto.service.interface";
 import type { IUsuarioService } from "./domain/usuario/entity/interfaces/usuario.service.interface";
@@ -32,6 +36,7 @@ export interface CreateAppOptions {
   usuarioService?: IUsuarioService;
   produtorService?: IProdutorService;
   produtoService?: IProdutoService;
+  bannerService?: IBannerService;
   rateLimits?: CreateAppRateLimits;
 }
 
@@ -43,6 +48,7 @@ export function createApp(options: CreateAppOptions): Express {
     options.produtorService ?? createProdutorService();
   const produtoService =
     options.produtoService ?? createProdutoService();
+  const bannerService = options.bannerService ?? createBannerService();
   const rateLimits = options.rateLimits ?? {};
   const catalogLimiter = createRateLimiter(
     rateLimits.catalog ?? CATALOG_RATE_LIMIT,
@@ -57,6 +63,7 @@ export function createApp(options: CreateAppOptions): Express {
 
   app.use("/api/produtos/catalogo", catalogLimiter);
   app.use("/api/produtores/catalogo", catalogLimiter);
+  app.use("/api/banners/catalogo", catalogLimiter);
 
   app.use(
     "/api/usuarios",
@@ -94,6 +101,16 @@ export function createApp(options: CreateAppOptions): Express {
       jwtSecret: options.jwtSecret,
     }),
   );
+
+  app.use(
+    "/api/banners",
+    createBannerController({
+      bannerService,
+      jwtSecret: options.jwtSecret,
+    }),
+  );
+
+  app.use("/api", createContaController(options.jwtSecret, produtoService, produtorService));
 
   app.use(errorHandler);
 

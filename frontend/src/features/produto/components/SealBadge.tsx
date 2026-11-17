@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import mapaImg from '../../../shared/assets/mapa.png'
+import seloArteImg from '../../../shared/assets/selo-arte.png'
 import sifImg from '../../../shared/assets/sif.png'
 import simImg from '../../../shared/assets/sim.png'
+import susafImg from '../../../shared/assets/susaf.png'
 import { Modal } from '../../../shared/components/Modal'
 import { SEAL_INFO, type SealInfoType } from '../constants'
 
@@ -11,7 +13,9 @@ interface SealBadgeProps {
 
 const SEAL_IMAGES: Record<SealInfoType, string> = {
   SIM: simImg,
+  SUSAF: susafImg,
   SIF: sifImg,
+  'SELO ARTE': seloArteImg,
   MAPA: mapaImg,
 }
 

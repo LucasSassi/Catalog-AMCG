@@ -1,4 +1,4 @@
-export type ProductStatus = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
+export type ProductStatus = 'PENDENTE' | 'ALTERADO' | 'APROVADO' | 'REJEITADO'
 
 export type ProductCategory =
   | 'BEBIDAS_ARTESANAIS'
@@ -42,9 +42,15 @@ export interface ProductAward {
 }
 
 export interface Product {
+  revisao?: number
+  origemPendencia?: 'CADASTRO' | 'ALTERACAO'
+  camposAlterados?: string[]
+  alteradoPor?: string
+  alteradoEm?: string
   id: string
   produtorId: string
   nome: string
+  descricaoBreve: string
   descricao: string
   categoria: ProductCategory
   unidadeMedida: MeasurementUnit
@@ -65,7 +71,7 @@ export interface Product {
 export interface CatalogProduct {
   id: string
   nome: string
-  descricao: string
+  descricaoBreve: string
   categoria: ProductCategory
   unidadeMedida: MeasurementUnit
   valorCentavos: number
@@ -81,8 +87,9 @@ export interface CatalogProduct {
 }
 
 export interface CatalogProductDetail extends CatalogProduct {
+  descricao: string
   fotosDivulgacao: ProductFile[]
-  registros: Array<{ tipo: ProductRegistration['tipo'] }>
+  registros: Array<{ tipo: ProductRegistration['tipo']; tipoOutros?: string }>
   premiacoes: Array<{ nome: string; descricao: string; ano: number }>
   observacoes?: string
   produtor: CatalogProduct['produtor'] & {
@@ -96,6 +103,7 @@ export interface CatalogFilters {
   categoria: string
   municipio: string
   certificacao: string
+  premiado?: boolean
   pageSize?: number
   lastItemId?: string
 }
@@ -128,9 +136,24 @@ export interface SimilarProductsResponse {
   hasNext: boolean
 }
 
+export interface ProducerProductsFilters {
+  produtorId: string
+  excludeId: string
+  pageSize?: number
+  lastItemId?: string
+}
+
+export interface ProducerProductsResponse {
+  produtos: CatalogProduct[]
+  pageSize: number
+  nextLastItemId: string | null
+  hasNext: boolean
+}
+
 export interface CreateProductInput {
   produtorId: string
   nome: string
+  descricaoBreve: string
   descricao: string
   categoria: ProductCategory
   unidadeMedida: MeasurementUnit

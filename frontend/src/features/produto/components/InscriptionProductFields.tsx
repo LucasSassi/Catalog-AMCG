@@ -112,6 +112,7 @@ export function InscriptionProductFields({
           <input
             required
             type="text"
+            maxLength={200}
             value={product.descricaoBreve}
             onChange={(event) => handleDescricaoBreve(event.target.value)}
             className={inscriptionControlClassName}

@@ -33,8 +33,16 @@ export interface PremiacaoDocument {
 }
 
 export interface ProdutoDocument {
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+
   produtorId: string;
   nome: string;
+  /** Opcional em documentos antigos, cadastrados antes da descrição breve existir. */
+  descricaoBreve?: string;
   descricao: string;
   categoria: CategoriaProduto;
   unidadeMedida: UnidadeMedida;
@@ -84,8 +92,14 @@ const premiacaoSchema = new Schema<PremiacaoDocument>(
 
 export const produtoSchema = new Schema<ProdutoDocument>(
   {
+    revisao: { type: Number, default: 0 },
+    origemPendencia: { type: String, enum: ["CADASTRO", "ALTERACAO"], default: "CADASTRO" },
+    camposAlterados: { type: [String], default: [] },
+    alteradoPor: String,
+    alteradoEm: Date,
     produtorId: { type: String, required: true, trim: true },
     nome: { type: String, required: true, trim: true },
+    descricaoBreve: { type: String, trim: true },
     descricao: { type: String, required: true, trim: true },
     categoria: { type: String, required: true, enum: CATEGORIA_PRODUTO },
     unidadeMedida: { type: String, required: true, enum: UNIDADE_MEDIDA },
@@ -116,5 +130,7 @@ produtoSchema.index({ produtorId: 1, ativo: 1, status: 1 });
 produtoSchema.index({ categoria: 1, status: 1, ativo: 1 });
 produtoSchema.index({ destaque: 1, status: 1, ativo: 1 });
 produtoSchema.index({ status: 1, ativo: 1, _id: -1 });
-produtoSchema.index({ "registros.numero": 1 }, { unique: true, sparse: true });
+// Não é único: o mesmo registro (ex.: SIM do estabelecimento) cobre vários
+// produtos do mesmo produtor. A regra "um número por produtor" fica no service.
+produtoSchema.index({ "registros.numero": 1 });
 produtoSchema.index({ "registros.tipo": 1, status: 1, ativo: 1 });

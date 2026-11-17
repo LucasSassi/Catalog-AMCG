@@ -1,6 +1,6 @@
 export const PRODUTO_COLLECTION = "produtos";
 
-export const STATUS_PRODUTO = ["PENDENTE", "APROVADO", "REJEITADO"] as const;
+export const STATUS_PRODUTO = ["PENDENTE", "ALTERADO", "APROVADO", "REJEITADO"] as const;
 export type StatusProduto = (typeof STATUS_PRODUTO)[number];
 
 export const CATEGORIA_PRODUTO = [
@@ -63,6 +63,8 @@ export const CONTENT_TYPES_COMPROVANTE = [
 ] as const;
 
 export const ANO_MIN = 1900;
+
+export const MAX_DESCRICAO_BREVE_LENGTH = 200;
 
 export function listCategoriasProduto(): readonly CategoriaProduto[] {
   return CATEGORIA_PRODUTO;

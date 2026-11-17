@@ -10,6 +10,10 @@ export interface IProdutoRepositoryRead {
   list(filtros?: ListarProdutosFiltros): Promise<Produto[]>;
   listCatalogCursor(filtros: CatalogoCursorFiltros): Promise<CatalogoCursorPage>;
   sampleApproved(excludeIds: string[], size: number): Promise<Produto[]>;
-  findByRegistroNumero(numero: string): Promise<Produto | null>;
+  /** Produto de OUTRO produtor que já usa este número de registro. */
+  findByRegistroNumeroDeOutroProdutor(
+    numero: string,
+    produtorId: string,
+  ): Promise<Produto | null>;
   countDestaques(): Promise<number>;
 }

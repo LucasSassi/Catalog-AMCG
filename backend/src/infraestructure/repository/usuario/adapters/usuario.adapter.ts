@@ -5,6 +5,7 @@ import type { UsuarioModelDocument } from "../../../db/mongo/models/usuario.mode
 export function toUsuarioEntity(document: UsuarioModelDocument): Usuario {
   return {
     id: document._id.toString(),
+    produtorId: document.produtorId,
     nome: document.nome,
     email: document.email,
     senhaHash: document.senhaHash,

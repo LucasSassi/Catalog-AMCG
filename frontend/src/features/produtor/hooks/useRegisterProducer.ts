@@ -22,7 +22,7 @@ export function useRegisterProducer(
 
       if (options.approveAfterCreate) {
         try {
-          producer = await approveProducer(producer.id)
+          producer = await approveProducer(producer.id, producer.revisao ?? 0)
         } catch {
           setCreatedProducer(producer)
           setError(

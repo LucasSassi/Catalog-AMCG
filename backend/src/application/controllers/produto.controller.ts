@@ -4,6 +4,7 @@ import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   CATEGORIA_PRODUTO,
   CERTIFICACAO_CATALOGO,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_FOTOS,
   MAX_REGISTROS,
   MIN_FOTOS,
@@ -15,7 +16,7 @@ import {
   listUnidadesMedida,
 } from "../../domain/produto/entity/produto.constants";
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
-import { createRequireAdmin } from "../middleware/auth.middleware";
+import { type AuthenticatedRequest, createRequireAdmin } from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -48,10 +49,20 @@ const premiacaoSchema = z.object({
   comprovante: arquivoSchema,
 });
 
+const descricaoBreveSchema = z
+    .string()
+    .trim()
+    .min(1, "Descrição breve é obrigatória")
+    .max(
+      MAX_DESCRICAO_BREVE_LENGTH,
+      `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+    );
+
 const cadastrarSchema = z.object({
   produtorId: z.string().trim().min(1, "Produtor é obrigatório"),
   nome: z.string().trim().min(1, "Nome do produto é obrigatório"),
-  descricao: z.string().trim().min(1, "Descrição é obrigatória"),
+  descricaoBreve: descricaoBreveSchema,
+  descricao: z.string().trim().min(1, "Descrição completa é obrigatória"),
   categoria: z.enum(CATEGORIA_PRODUTO),
   unidadeMedida: z.enum(UNIDADE_MEDIDA),
   registros: z
@@ -73,9 +84,15 @@ const cadastrarSchema = z.object({
 
 const atualizarSchema = z
   .object({
+    revisao: z.number().int().min(0).optional(),
     produtorId: z.string().trim().min(1, "Produtor é obrigatório").optional(),
     nome: z.string().trim().min(1, "Nome do produto é obrigatório").optional(),
-    descricao: z.string().trim().min(1, "Descrição é obrigatória").optional(),
+    descricaoBreve: descricaoBreveSchema.optional(),
+    descricao: z
+      .string()
+      .trim()
+      .min(1, "Descrição completa é obrigatória")
+      .optional(),
     categoria: z.enum(CATEGORIA_PRODUTO).optional(),
     unidadeMedida: z.enum(UNIDADE_MEDIDA).optional(),
     registros: z
@@ -116,6 +133,7 @@ const atualizarSchema = z
     (data) =>
       data.produtorId !== undefined ||
       data.nome !== undefined ||
+      data.descricaoBreve !== undefined ||
       data.descricao !== undefined ||
       data.categoria !== undefined ||
       data.unidadeMedida !== undefined ||
@@ -147,12 +165,25 @@ const catalogQuerySchema = z.object({
   categoria: z.enum(CATEGORIA_PRODUTO).optional(),
   municipio: z.string().trim().optional(),
   certificacao: z.enum(CERTIFICACAO_CATALOGO).optional(),
-  pageSize: z.coerce.number().int().min(1).max(12).optional(),
+  premiado: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : value === "true",
+    ),
+  pageSize: z.coerce.number().int().min(1).max(20).optional(),
   lastItemId: z.string().trim().min(1).optional(),
 });
 
 const similaresQuerySchema = z.object({
   categoria: z.enum(CATEGORIA_PRODUTO),
+  excludeId: z.string().trim().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(10).optional(),
+  lastItemId: z.string().trim().min(1).optional(),
+});
+
+const doProdutorQuerySchema = z.object({
+  produtorId: z.string().trim().min(1, "Produtor é obrigatório"),
   excludeId: z.string().trim().min(1).optional(),
   pageSize: z.coerce.number().int().min(1).max(10).optional(),
   lastItemId: z.string().trim().min(1).optional(),
@@ -226,6 +257,19 @@ export function createProdutoController(
         const filtros = parseOrThrow(similaresQuerySchema, request.query);
         const similares = await produtoService.listSimilares(filtros);
         response.status(200).json(similares);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/catalogo/do-produtor",
+    async (request: Request, response: Response, next: NextFunction) => {
+      try {
+        const filtros = parseOrThrow(doProdutorQuerySchema, request.query);
+        const produtos = await produtoService.listDoProdutor(filtros);
+        response.status(200).json(produtos);
       } catch (error) {
         next(error);
       }
@@ -315,7 +359,8 @@ export function createProdutoController(
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
-        const produto = await produtoService.update(getRouteId(request), body);
+        if (body.status !== undefined && body.revisao === undefined) throw new ValidationError("Revisão do produto é obrigatória");
+        const produto = await produtoService.update(getRouteId(request), { ...body, autorId: (request as AuthenticatedRequest).userId });
         response.status(200).json(produto);
       } catch (error) {
         next(error);

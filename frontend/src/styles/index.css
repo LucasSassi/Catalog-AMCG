@@ -17,6 +17,17 @@
   --color-accent-yellow: #f7c948;
   --color-warning: #e7ad17;
 
+  /* Backoffice — curadoria */
+  --color-backoffice: #f4f7f4;
+  --color-border-soft: #e1e9e3;
+  --color-text-muted: #55655a;
+  --color-pending: #6b4e00;
+  --color-pending-soft: #fdf1cc;
+  --color-approved-soft: #e3f3e8;
+  --color-danger: #9a2a1c;
+  --color-danger-soft: #fbe4e1;
+  --color-danger-border: #e3b4ad;
+
   /* Typography */
   --font-sans: "Onest", "Segoe UI", sans-serif;
 }
@@ -58,4 +69,42 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-accent-yellow) 75%, white);
   outline-offset: 2px;
+}
+
+/* Backoffice: animacoes (usadas com motion-safe) */
+@theme {
+  --animate-slide-in-right: slide-in-right 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-toast-in: toast-in 0.2s ease-out;
+  --animate-fade-in: fade-in 0.15s ease-out;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   approveProduct,
   listProducts,
   rejectProduct,
+  reopenProduct,
   setProductAtivo,
   setProductDestaque,
   type ProductListFilter,
 } from '../api/products'
-import type { Product } from '../types'
+import type { Product, ProductStatus } from '../types'
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
 
 export function useReviewProducts(status: ProductListFilter) {
+  const decisionRevisions = useRef(new Map<string, number>())
   const [products, setProducts] = useState<Product[]>([])
   const [loadedStatus, setLoadedStatus] = useState<ProductListFilter | null>(
     null,
@@ -29,14 +35,10 @@ export function useReviewProducts(status: ProductListFilter) {
         }
       })
       .catch((requestError) => {
-        if (!isCurrent) {
-          return
-        }
-
-        if (requestError instanceof Error) {
-          setError(requestError.message)
-        } else {
-          setError('Não foi possível carregar os produtos.')
+        if (isCurrent) {
+          setError(
+            errorMessage(requestError, 'Não foi possível carregar os produtos.'),
+          )
         }
       })
       .finally(() => {
@@ -50,88 +52,95 @@ export function useReviewProducts(status: ProductListFilter) {
     }
   }, [reloadKey, status])
 
-  async function approve(id: string): Promise<boolean> {
-    return updateProduct(() => approveProduct(id), id)
+  function replace(updated: Product[]) {
+    const byId = new Map(updated.map((product) => [product.id, product]))
+    setProducts((current) =>
+      current.map((product) => byId.get(product.id) ?? product),
+    )
   }
 
-  async function reject(id: string, reason: string): Promise<boolean> {
-    return updateProduct(() => rejectProduct(id, reason), id)
-  }
-
-  async function toggleDestaque(
-    id: string,
-    destaque: boolean,
+  /** Executa as requisições e atualiza a lista com o que voltou da API. */
+  async function mutate(
+    requests: Array<() => Promise<Product>>,
+    fallback: string,
   ): Promise<boolean> {
     setIsUpdating(true)
     setError('')
 
-    try {
-      const updated = await setProductDestaque(id, destaque)
-      setProducts((currentProducts) =>
-        currentProducts.map((product) =>
-          product.id === id ? updated : product,
-        ),
-      )
-      return true
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setError(requestError.message)
-      } else {
-        setError('Não foi possível atualizar o destaque.')
-      }
+    const results = await Promise.allSettled(requests.map((request) => request()))
+    const updated = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    )
+    const failure = results.find((result) => result.status === 'rejected')
+
+    updated.forEach(product => decisionRevisions.current.set(product.id, product.revisao ?? 0))
+    replace(updated)
+    setIsUpdating(false)
+
+    if (failure && failure.status === 'rejected') {
+      setError(errorMessage(failure.reason, fallback))
       return false
-    } finally {
-      setIsUpdating(false)
     }
+
+    return true
   }
 
-  async function toggleAtivo(id: string, ativo: boolean): Promise<boolean> {
-    setIsUpdating(true)
-    setError('')
+  const revision = (id: string) => products.find(p => p.id === id)?.revisao ?? 0
 
-    try {
-      const updated = await setProductAtivo(id, ativo)
-      setProducts((currentProducts) =>
-        currentProducts.map((product) =>
-          product.id === id ? updated : product,
-        ),
-      )
-      return true
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setError(requestError.message)
-      } else {
-        setError('Não foi possível atualizar a visibilidade no catálogo.')
-      }
-      return false
-    } finally {
-      setIsUpdating(false)
-    }
+  function approve(id: string, revisao = revision(id)) {
+    return mutate([() => approveProduct(id, revisao)], 'Não foi possível aprovar o produto.')
   }
 
-  async function updateProduct(
-    request: () => Promise<Product>,
-    id: string,
-  ): Promise<boolean> {
-    setIsUpdating(true)
-    setError('')
+  function reject(id: string, reason: string, revisao = revision(id)) {
+    return mutate(
+      [() => rejectProduct(id, reason, revisao)],
+      'Não foi possível rejeitar o produto.',
+    )
+  }
 
-    try {
-      await request()
-      setProducts((currentProducts) =>
-        currentProducts.filter((product) => product.id !== id),
-      )
-      return true
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setError(requestError.message)
-      } else {
-        setError('Não foi possível atualizar o produto.')
-      }
-      return false
-    } finally {
-      setIsUpdating(false)
-    }
+  function toggleDestaque(id: string, destaque: boolean) {
+    return mutate(
+      [() => setProductDestaque(id, destaque)],
+      'Não foi possível atualizar o destaque.',
+    )
+  }
+
+  function toggleAtivo(id: string, ativo: boolean) {
+    return mutate(
+      [() => setProductAtivo(id, ativo)],
+      'Não foi possível atualizar a visibilidade no catálogo.',
+    )
+  }
+
+  function setAtivoMany(ids: string[], ativo: boolean) {
+    return mutate(
+      ids.map((id) => () => setProductAtivo(id, ativo)),
+      'Não foi possível atualizar a visibilidade de todos os produtos.',
+    )
+  }
+
+  /** Restaura o status anterior de cada produto (desfazer). */
+  function restore(
+    previous: ReadonlyArray<{
+      id: string
+      status: ProductStatus
+      motivoRejeicao?: string
+    }>,
+  ) {
+    return mutate(
+      previous.map((item) => () => {
+        if (item.status === 'APROVADO') {
+          return approveProduct(item.id, decisionRevisions.current.get(item.id) ?? revision(item.id))
+        }
+
+        if (item.status === 'REJEITADO') {
+          return rejectProduct(item.id, item.motivoRejeicao ?? 'Rejeitado', decisionRevisions.current.get(item.id) ?? revision(item.id))
+        }
+
+        return reopenProduct(item.id, decisionRevisions.current.get(item.id) ?? revision(item.id))
+      }),
+      'Não foi possível desfazer a decisão.',
+    )
   }
 
   function reload() {
@@ -148,6 +157,10 @@ export function useReviewProducts(status: ProductListFilter) {
     reject,
     toggleDestaque,
     toggleAtivo,
+    setAtivoMany,
+    restore,
     reload,
   }
 }
+
+export type ReviewProductsState = ReturnType<typeof useReviewProducts>

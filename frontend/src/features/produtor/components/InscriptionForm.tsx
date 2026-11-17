@@ -1,3 +1,4 @@
+import type { ProducerDocument } from '../types'
 import { useState, type FormEvent } from 'react'
 import { InscriptionProductFields } from '../../produto/components/InscriptionProductFields'
 import { MAX_PRODUCT_PHOTOS } from '../../produto/constants'
@@ -31,8 +32,7 @@ import {
 import { InscriptionFileInput } from './InscriptionFileInput'
 import { InscriptionSection } from './InscriptionSection'
 
-const IMAGE_ACCEPT =
-  '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
+const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
 
 const AWARD_CONTENT_TYPES = [
   'application/pdf',
@@ -42,6 +42,7 @@ const AWARD_CONTENT_TYPES = [
 
 interface InscriptionFormProps {
   onSuccess: () => void
+  initialDocument?: ProducerDocument
 }
 
 function createProductDraft(): InscriptionProductDraft {
@@ -81,8 +82,17 @@ const initialForm: InscriptionFormState = {
   produtos: [createProductDraft()],
 }
 
-export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
-  const [form, setForm] = useState<InscriptionFormState>(initialForm)
+export function InscriptionForm({
+  onSuccess,
+  initialDocument,
+}: InscriptionFormProps) {
+  const [form, setForm] = useState<InscriptionFormState>(() => ({
+    ...initialForm,
+    documentoNumero:
+      initialDocument?.tipo === 'CAD_PRO'
+        ? initialDocument.numero.replace(/^CAD-/i, '')
+        : (initialDocument?.numero ?? ''),
+  }))
   const [companyOpen, setCompanyOpen] = useState(true)
   const [productOpen, setProductOpen] = useState(true)
   const [localError, setLocalError] = useState('')
@@ -213,15 +223,13 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
       return
     }
 
-    if (form.tipoRegistro !== 'SIM') {
-      setLocalError(
-        'O tipo de registro da empresa aceito no catálogo é SIM (Inspeção Municipal).',
-      )
-      return
-    }
-
     try {
-      const payload = buildInscriptionPayload(form)
+      const payload = buildInscriptionPayload(
+        form,
+        initialDocument
+          ? { tipo: initialDocument.tipo, numero: form.documentoNumero }
+          : undefined,
+      )
       const didSubmit = await submit(payload)
 
       if (didSubmit) {
@@ -281,17 +289,38 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             />
           </InscriptionField>
 
-          <InscriptionField label="CNPJ / CPF / CAD-PRO" required>
-            <input
-              required
-              type="text"
-              value={form.documentoNumero}
-              onChange={(event) =>
-                updateField('documentoNumero', event.target.value)
-              }
-              className={inscriptionControlClassName}
-              placeholder="Nº documento"
-            />
+          <InscriptionField
+            label={
+              initialDocument
+                ? `Documento: ${initialDocument.tipo === 'CAD_PRO' ? 'CAD/PRO' : initialDocument.tipo}`
+                : 'CNPJ / CPF / CAD-PRO'
+            }
+            required
+          >
+            <div className="flex">
+              {(initialDocument?.tipo === 'CAD_PRO' ||
+                (!initialDocument &&
+                  form.documentoNumero.replace(/\D/g, '').length !== 11 &&
+                  form.documentoNumero.replace(/\D/g, '').length !== 14 &&
+                  form.documentoNumero.length > 0)) && (
+                <span
+                  aria-hidden="true"
+                  className="inline-flex min-h-11 items-center rounded-bl-md border border-t-0 border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-700"
+                >
+                  CAD-
+                </span>
+              )}
+              <input
+                required
+                type="text"
+                value={form.documentoNumero}
+                onChange={(event) =>
+                  updateField('documentoNumero', event.target.value)
+                }
+                className={`${inscriptionControlClassName} min-w-0 flex-1 ${initialDocument?.tipo === 'CAD_PRO' || (!initialDocument && form.documentoNumero.replace(/\D/g, '').length !== 11 && form.documentoNumero.replace(/\D/g, '').length !== 14 && form.documentoNumero.length > 0) ? 'rounded-bl-none' : ''}`}
+                placeholder="Nº documento"
+              />
+            </div>
           </InscriptionField>
 
           <InscriptionField label="Tipo de Registro" required>
@@ -315,8 +344,12 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             </select>
           </InscriptionField>
 
-          <InscriptionField label="Outro">
+          <InscriptionField
+            label="Outro"
+            required={form.tipoRegistro === 'Outro'}
+          >
             <input
+              required={form.tipoRegistro === 'Outro'}
               type="text"
               value={form.tipoRegistroOutro}
               onChange={(event) =>
@@ -345,9 +378,13 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-[0.7fr_1.3fr_1fr]">
-          <InscriptionField label="CEP">
+          <InscriptionField label="CEP" required>
             <input
+              required
               type="text"
+              inputMode="numeric"
+              pattern="\d{5}-?\d{3}"
+              title="CEP com 8 dígitos (ex.: 84010-000)"
               value={form.cep}
               onChange={(event) => updateField('cep', event.target.value)}
               className={inscriptionControlClassName}
@@ -366,8 +403,12 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             />
           </InscriptionField>
 
-          <InscriptionField label="Deseja informar o endereço no site?">
+          <InscriptionField
+            label="Deseja informar o endereço no site?"
+            required
+          >
             <select
+              required
               value={form.informarEnderecoNoSite}
               onChange={(event) =>
                 updateField(
@@ -416,9 +457,7 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
             <input
               type="text"
               value={form.instagram}
-              onChange={(event) =>
-                updateField('instagram', event.target.value)
-              }
+              onChange={(event) => updateField('instagram', event.target.value)}
               className={inscriptionControlClassName}
               placeholder="@usuario ou link"
             />
@@ -512,9 +551,7 @@ export function InscriptionForm({ onSuccess }: InscriptionFormProps) {
         </Button>
       </div>
 
-      {displayError ? (
-        <Feedback tone="error" title={displayError} />
-      ) : null}
+      {displayError ? <Feedback tone="error" title={displayError} /> : null}
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isLoading}>

@@ -1,7 +1,13 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
+  CEP_LENGTH,
   E164_PHONE_REGEX,
   MAX_FOTOS,
   MAX_HISTORIA_LENGTH,
@@ -16,6 +22,7 @@ import {
 } from "../../domain/produtor/entity/produtor.constants";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
 import {
+  type AuthenticatedRequest,
   createAuthMiddleware,
   createRequireAdmin,
 } from "../middleware/auth.middleware";
@@ -25,12 +32,23 @@ const documentoSchema = z.object({
   numero: z.string().trim().min(1, "Número do documento é obrigatório"),
 });
 
-const registroSchema = z.object({
-  tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
-  numero: z.string().trim().min(1, "Número do registro é obrigatório"),
-  dataEmissao: z.coerce.date().optional(),
-  dataValidade: z.coerce.date().optional(),
-});
+const registroSchema = z
+  .object({
+    tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
+    tipoOutros: z.string().trim().optional(),
+    numero: z.string().trim().min(1, "Número do registro é obrigatório"),
+    dataEmissao: z.coerce.date().optional(),
+    dataValidade: z.coerce.date().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "Outro" && !data.tipoOutros?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe qual é o tipo de registro quando o tipo for Outro",
+        path: ["tipoOutros"],
+      });
+    }
+  });
 
 const contatoSchema = z.object({
   telefone: z
@@ -41,6 +59,13 @@ const contatoSchema = z.object({
 });
 
 const enderecoSchema = z.object({
+  cep: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === CEP_LENGTH, {
+      message: `CEP deve ter ${CEP_LENGTH} dígitos`,
+    }),
   rua: z.string().trim().min(1, "Rua é obrigatória"),
   bairro: z.string().trim().min(1, "Bairro é obrigatório"),
   cidade: z.string().trim().min(1, "Cidade é obrigatória"),
@@ -96,15 +121,22 @@ const optionalSiteSchema = z
   .url("Site inválido")
   .optional()
   .or(z.literal(""))
-  .transform((value) => (value === "" || value === undefined ? undefined : value));
+  .transform((value) =>
+    value === "" || value === undefined ? undefined : value,
+  );
 
 const cadastrarSchema = z.object({
   nomeEmpresa: z.string().trim().min(1, "Nome da empresa é obrigatório"),
   municipioId: z.string().trim().min(1, "Município é obrigatório"),
   documento: documentoSchema,
-  registros: z.array(registroSchema).min(1, "Ao menos um registro é obrigatório"),
+  registros: z
+    .array(registroSchema)
+    .min(1, "Ao menos um registro é obrigatório"),
   contato: contatoSchema,
   endereco: enderecoSchema,
+  exibirEndereco: z.boolean({
+    error: "Informe se o endereço deve ser exibido no site",
+  }),
   historia: historiaSchema,
   logo: arquivoSchema,
   fotos: fotosSchema,
@@ -114,6 +146,7 @@ const cadastrarSchema = z.object({
 
 const atualizarSchema = z
   .object({
+    revisao: z.number().int().min(0).optional(),
     nomeEmpresa: z
       .string()
       .trim()
@@ -127,9 +160,10 @@ const atualizarSchema = z
       .optional(),
     contato: contatoSchema.optional(),
     endereco: enderecoSchema.optional(),
+    exibirEndereco: z.boolean().optional(),
     historia: historiaSchema.optional(),
-    logo: arquivoSchema.optional(),
-    fotos: fotosSchema.optional(),
+    logo: arquivoSchema.nullable().optional(),
+    fotos: z.array(arquivoSchema).max(MAX_FOTOS).optional(),
     redesSociais: redesSociaisSchema.optional(),
     site: z
       .union([z.string().trim().url("Site inválido"), z.literal(""), z.null()])
@@ -141,7 +175,8 @@ const atualizarSchema = z
     if (data.status === "REJEITADO" && !data.motivoRejeicao?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Motivo da rejeição é obrigatório quando o status for REJEITADO",
+        message:
+          "Motivo da rejeição é obrigatório quando o status for REJEITADO",
         path: ["motivoRejeicao"],
       });
     }
@@ -154,6 +189,7 @@ const atualizarSchema = z
       data.registros !== undefined ||
       data.contato !== undefined ||
       data.endereco !== undefined ||
+      data.exibirEndereco !== undefined ||
       data.historia !== undefined ||
       data.logo !== undefined ||
       data.fotos !== undefined ||
@@ -168,9 +204,7 @@ const listQuerySchema = z.object({
   ativo: z
     .enum(["true", "false"])
     .optional()
-    .transform((value) =>
-      value === undefined ? undefined : value === "true",
-    ),
+    .transform((value) => (value === undefined ? undefined : value === "true")),
   status: z.enum(STATUS_PRODUTOR).optional(),
 });
 
@@ -182,7 +216,9 @@ function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    const message = result.error.issues.map((issue) => issue.message).join("; ");
+    const message = result.error.issues
+      .map((issue) => issue.message)
+      .join("; ");
     throw new ValidationError(message);
   }
 
@@ -235,7 +271,9 @@ export function createProdutorController(
     "/catalogo/:id",
     async (request: Request, response: Response, next: NextFunction) => {
       try {
-        const produtor = await produtorService.getCatalogById(getRouteId(request));
+        const produtor = await produtorService.getCatalogById(
+          getRouteId(request),
+        );
         response.status(200).json(produtor);
       } catch (error) {
         next(error);
@@ -302,10 +340,12 @@ export function createProdutorController(
     async (request: Request, response: Response, next: NextFunction) => {
       try {
         const body = parseOrThrow(atualizarSchema, request.body);
-        const produtor = await produtorService.update(
-          getRouteId(request),
-          body,
-        );
+        if (body.status !== undefined && body.revisao === undefined)
+          throw new ValidationError("Revisão do perfil é obrigatória");
+        const produtor = await produtorService.update(getRouteId(request), {
+          ...body,
+          autorId: (request as AuthenticatedRequest).userId,
+        });
         response.status(200).json(produtor);
       } catch (error) {
         next(error);

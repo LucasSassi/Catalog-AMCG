@@ -27,11 +27,13 @@ const payloadBase = {
     email: "contato@fazenda.com",
   },
   endereco: {
+    cep: "84010000",
     rua: "Rua das Flores",
     bairro: "Centro",
     cidade: "Ponta Grossa",
     estado: "PR",
   },
+  exibirEndereco: true,
   historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
   logo: {
     url: "https://cdn.example.com/logo.jpg",
@@ -91,7 +93,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", usuarioAuth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
     expect(aprovar.status).toBe(403);
   });
 
@@ -141,7 +143,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
       .send({ nomeEmpresa: "Fazenda Atualizada" });
     expect(atualizar.status).toBe(200);
     expect(atualizar.body.nomeEmpresa).toBe("Fazenda Atualizada");
-    expect(atualizar.body.status).toBe("PENDENTE");
+    expect(atualizar.body.status).toBe("ALTERADO");
 
     const remover = await request(app)
       .delete(`/api/produtores/${cadastrar.body.id}`)
@@ -166,6 +168,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
         registros: [],
         contato: { telefone: "123", email: "invalido" },
         endereco: {
+          cep: "84010000",
           rua: "",
           bairro: "",
           cidade: "",
@@ -230,7 +233,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     const aprovar = await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     expect(aprovar.status).toBe(200);
     expect(aprovar.body.status).toBe("APROVADO");
@@ -240,6 +243,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
       .set("Authorization", auth)
       .send({
         status: "REJEITADO",
+        revisao: aprovar.body.revisao,
         motivoRejeicao: "Documentação incompleta",
       });
 
@@ -274,7 +278,7 @@ describe("Quando usar o ProdutorController (integration)", () => {
     await request(app)
       .put(`/api/produtores/${cadastrar.body.id}`)
       .set("Authorization", auth)
-      .send({ status: "APROVADO" });
+      .send({ status: "APROVADO", revisao: 0 });
 
     const catalogo = await request(app).get("/api/produtores/catalogo");
     expect(catalogo.status).toBe(200);

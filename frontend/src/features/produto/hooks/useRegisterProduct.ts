@@ -22,7 +22,7 @@ export function useRegisterProduct(
 
       if (options.approveAfterCreate) {
         try {
-          product = await approveProduct(product.id)
+          product = await approveProduct(product.id, product.revisao ?? 0)
         } catch {
           setCreatedProduct(product)
           setError(

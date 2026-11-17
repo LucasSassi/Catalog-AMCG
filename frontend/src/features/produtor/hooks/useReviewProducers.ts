@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   approveProducer,
   listProducers,
   rejectProducer,
+  reopenProducer,
   setProducerDestaque,
   type ProducerListFilter,
 } from '../api/producers'
-import type { Producer } from '../types'
+import type { Producer, ProducerStatus } from '../types'
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
 
 export function useReviewProducers(status: ProducerListFilter) {
+  const decisionRevisions = useRef(new Map<string, number>())
   const [producers, setProducers] = useState<Producer[]>([])
   const [loadedStatus, setLoadedStatus] = useState<ProducerListFilter | null>(
     null,
@@ -28,14 +34,13 @@ export function useReviewProducers(status: ProducerListFilter) {
         }
       })
       .catch((requestError) => {
-        if (!isCurrent) {
-          return
-        }
-
-        if (requestError instanceof Error) {
-          setError(requestError.message)
-        } else {
-          setError('Não foi possível carregar os produtores.')
+        if (isCurrent) {
+          setError(
+            errorMessage(
+              requestError,
+              'Não foi possível carregar os produtores.',
+            ),
+          )
         }
       })
       .finally(() => {
@@ -49,64 +54,103 @@ export function useReviewProducers(status: ProducerListFilter) {
     }
   }, [reloadKey, status])
 
-  async function approve(id: string): Promise<boolean> {
-    return updateProducer(() => approveProducer(id), id)
+  function replace(updated: Producer[]) {
+    const byId = new Map(updated.map((producer) => [producer.id, producer]))
+    setProducers((current) =>
+      current.map((producer) => byId.get(producer.id) ?? producer),
+    )
   }
 
-  async function reject(id: string, reason: string): Promise<boolean> {
-    return updateProducer(() => rejectProducer(id, reason), id)
-  }
-
-  async function toggleDestaque(
-    id: string,
-    destaque: boolean,
+  /** Executa as requisições e atualiza a lista com o que voltou da API. */
+  async function mutate(
+    requests: Array<() => Promise<Producer>>,
+    fallback: string,
   ): Promise<boolean> {
     setIsUpdating(true)
     setError('')
 
-    try {
-      const updated = await setProducerDestaque(id, destaque)
-      setProducers((currentProducers) =>
-        currentProducers.map((producer) =>
-          producer.id === id ? updated : producer,
-        ),
-      )
-      return true
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setError(requestError.message)
-      } else {
-        setError('Não foi possível atualizar o destaque.')
-      }
+    const results = await Promise.allSettled(
+      requests.map((request) => request()),
+    )
+    const updated = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    )
+    const failure = results.find((result) => result.status === 'rejected')
+
+    updated.forEach((p) => decisionRevisions.current.set(p.id, p.revisao ?? 0))
+    replace(updated)
+    setIsUpdating(false)
+
+    if (failure && failure.status === 'rejected') {
+      setError(errorMessage(failure.reason, fallback))
       return false
-    } finally {
-      setIsUpdating(false)
     }
+
+    return true
   }
 
-  async function updateProducer(
-    request: () => Promise<Producer>,
-    id: string,
-  ): Promise<boolean> {
-    setIsUpdating(true)
-    setError('')
+  const revision = (id: string) =>
+    producers.find((p) => p.id === id)?.revisao ?? 0
+  function approve(id: string, revisao = revision(id)) {
+    return mutate(
+      [() => approveProducer(id, revisao)],
+      'Não foi possível aprovar o produtor.',
+    )
+  }
 
-    try {
-      await request()
-      setProducers((currentProducers) =>
-        currentProducers.filter((producer) => producer.id !== id),
-      )
-      return true
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setError(requestError.message)
-      } else {
-        setError('Não foi possível atualizar o produtor.')
-      }
-      return false
-    } finally {
-      setIsUpdating(false)
-    }
+  function approveMany(items: Producer[]) {
+    return mutate(
+      items.map((item) => () => approveProducer(item.id, item.revisao ?? 0)),
+      'Não foi possível aprovar todos os produtores.',
+    )
+  }
+
+  function reject(id: string, reason: string, revisao = revision(id)) {
+    return mutate(
+      [() => rejectProducer(id, reason, revisao)],
+      'Não foi possível rejeitar o produtor.',
+    )
+  }
+
+  function toggleDestaque(id: string, destaque: boolean) {
+    return mutate(
+      [() => setProducerDestaque(id, destaque)],
+      'Não foi possível atualizar o destaque.',
+    )
+  }
+
+  /** Restaura o status anterior de cada produtor (desfazer). */
+  function restore(
+    previous: ReadonlyArray<{
+      id: string
+      status: ProducerStatus
+      motivoRejeicao?: string
+    }>,
+  ) {
+    return mutate(
+      previous.map((item) => () => {
+        if (item.status === 'APROVADO') {
+          return approveProducer(
+            item.id,
+            decisionRevisions.current.get(item.id) ?? revision(item.id),
+          )
+        }
+
+        if (item.status === 'REJEITADO') {
+          return rejectProducer(
+            item.id,
+            item.motivoRejeicao ?? 'Rejeitado',
+            decisionRevisions.current.get(item.id) ?? revision(item.id),
+          )
+        }
+
+        return reopenProducer(
+          item.id,
+          decisionRevisions.current.get(item.id) ?? revision(item.id),
+        )
+      }),
+      'Não foi possível desfazer a decisão.',
+    )
   }
 
   function reload() {
@@ -120,8 +164,12 @@ export function useReviewProducers(status: ProducerListFilter) {
     isUpdating,
     error,
     approve,
+    approveMany,
     reject,
     toggleDestaque,
+    restore,
     reload,
   }
 }
+
+export type ReviewProducersState = ReturnType<typeof useReviewProducers>

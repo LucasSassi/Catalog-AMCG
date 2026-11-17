@@ -1,15 +1,10 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ProducerInfoModal } from '../../features/produto/components/ProducerInfoModal'
 import { ProducerCard } from '../../features/produtor/components/ProducerCard'
 import { useCatalogProducers } from '../../features/produtor/hooks/useCatalogProducers'
 import { Feedback } from '../../shared/components/Feedback'
 
 export function ProducersPage() {
   const { producers, isLoading, error } = useCatalogProducers()
-  const [selectedProducerId, setSelectedProducerId] = useState<string | null>(
-    null,
-  )
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -39,11 +34,7 @@ export function ProducersPage() {
       {!isLoading && !error && producers.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {producers.map((producer) => (
-            <ProducerCard
-              key={producer.id}
-              producer={producer}
-              onSelect={setSelectedProducerId}
-            />
+            <ProducerCard key={producer.id} producer={producer} />
           ))}
         </div>
       ) : null}
@@ -56,13 +47,6 @@ export function ProducersPage() {
           Voltar ao catálogo
         </Link>
       </div>
-
-      {selectedProducerId ? (
-        <ProducerInfoModal
-          producerId={selectedProducerId}
-          onClose={() => setSelectedProducerId(null)}
-        />
-      ) : null}
     </main>
   )
 }

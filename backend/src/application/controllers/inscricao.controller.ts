@@ -1,8 +1,14 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { z } from "zod";
 import { ValidationError } from "../../domain/common/errors/app-error";
 import {
   CATEGORIA_PRODUTO,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_FOTOS as MAX_FOTOS_PRODUTO,
   MAX_REGISTROS,
   MIN_FOTOS as MIN_FOTOS_PRODUTO,
@@ -13,6 +19,7 @@ import {
 import type { IProdutoService } from "../../domain/produto/entity/interfaces/produto.service.interface";
 import type { CadastrarProdutoInput } from "../../domain/produto/entity/produto.entity";
 import {
+  CEP_LENGTH,
   E164_PHONE_REGEX,
   MAX_FOTOS as MAX_FOTOS_PRODUTOR,
   MAX_HISTORIA_LENGTH,
@@ -25,7 +32,14 @@ import {
 } from "../../domain/produtor/entity/produtor.constants";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
 import type { CadastrarProdutorInput } from "../../domain/produtor/entity/produtor.entity";
-import { createAuthMiddleware } from "../middleware/auth.middleware";
+import {
+  contaSemVinculo,
+  vincularConta,
+} from "../services/pre-cadastro.service";
+import {
+  type AuthenticatedRequest,
+  createAuthMiddleware,
+} from "../middleware/auth.middleware";
 
 const arquivoSchema = z.object({
   url: z.string().trim().min(1, "URL do arquivo é obrigatória"),
@@ -38,12 +52,23 @@ const documentoSchema = z.object({
   numero: z.string().trim().min(1, "Número do documento é obrigatório"),
 });
 
-const registroProdutorSchema = z.object({
-  tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
-  numero: z.string().trim().min(1, "Número do registro é obrigatório"),
-  dataEmissao: z.coerce.date().optional(),
-  dataValidade: z.coerce.date().optional(),
-});
+const registroProdutorSchema = z
+  .object({
+    tipo: z.enum(REGISTRO_PRODUTOR_TIPO),
+    tipoOutros: z.string().trim().optional(),
+    numero: z.string().trim().min(1, "Número do registro é obrigatório"),
+    dataEmissao: z.coerce.date().optional(),
+    dataValidade: z.coerce.date().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === "Outro" && !data.tipoOutros?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe qual é o tipo de registro quando o tipo for Outro",
+        path: ["tipoOutros"],
+      });
+    }
+  });
 
 const contatoSchema = z.object({
   telefone: z
@@ -54,6 +79,13 @@ const contatoSchema = z.object({
 });
 
 const enderecoSchema = z.object({
+  cep: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === CEP_LENGTH, {
+      message: `CEP deve ter ${CEP_LENGTH} dígitos`,
+    }),
   rua: z.string().trim().min(1, "Rua é obrigatória"),
   bairro: z.string().trim().min(1, "Bairro é obrigatório"),
   cidade: z.string().trim().min(1, "Cidade é obrigatória"),
@@ -102,6 +134,9 @@ const produtorSchema = z.object({
     .min(1, "Ao menos um registro é obrigatório"),
   contato: contatoSchema,
   endereco: enderecoSchema,
+  exibirEndereco: z.boolean({
+    error: "Informe se o endereço deve ser exibido no site",
+  }),
   historia: z
     .string()
     .trim()
@@ -146,7 +181,15 @@ const premiacaoSchema = z.object({
 
 const produtoSchema = z.object({
   nome: z.string().trim().min(1, "Nome do produto é obrigatório"),
-  descricao: z.string().trim().min(1, "Descrição é obrigatória"),
+  descricaoBreve: z
+    .string()
+    .trim()
+    .min(1, "Descrição breve é obrigatória")
+    .max(
+      MAX_DESCRICAO_BREVE_LENGTH,
+      `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+    ),
+  descricao: z.string().trim().min(1, "Descrição completa é obrigatória"),
   categoria: z.enum(CATEGORIA_PRODUTO),
   unidadeMedida: z.enum(UNIDADE_MEDIDA),
   registros: z
@@ -180,9 +223,7 @@ const produtoSchema = z.object({
 
 const inscricaoSchema = z.object({
   produtor: produtorSchema,
-  produtos: z
-    .array(produtoSchema)
-    .min(1, "Ao menos um produto é obrigatório"),
+  produtos: z.array(produtoSchema).min(1, "Ao menos um produto é obrigatório"),
 });
 
 function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -220,6 +261,8 @@ export function createInscricaoController(
 
       try {
         const body = parseOrThrow(inscricaoSchema, request.body);
+        const userId = (request as AuthenticatedRequest).userId!;
+        await contaSemVinculo(userId);
         const produtorInput = body.produtor as CadastrarProdutorInput;
 
         const produtor = await produtorService.create(produtorInput);
@@ -238,6 +281,7 @@ export function createInscricaoController(
           produtos.push(produto);
         }
 
+        await vincularConta(userId, produtor.id, "INSCRICAO");
         response.status(201).json({ produtor, produtos });
       } catch (error) {
         for (const produtoId of createdProdutoIds) {

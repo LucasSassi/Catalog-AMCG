@@ -132,6 +132,7 @@ export class InMemoryProdutorRepository
         email: data.contato.email.toLowerCase().trim(),
       },
       endereco: data.endereco,
+      exibirEndereco: data.exibirEndereco,
       historia: data.historia,
       logo: data.logo,
       fotos: data.fotos,
@@ -153,8 +154,14 @@ export class InMemoryProdutorRepository
       return null;
     }
 
+    if (data.revisaoEsperada !== undefined && data.revisaoEsperada !== (atual.revisao ?? 0)) return null;
     const atualizado: Produtor = {
       ...atual,
+      revisao: (atual.revisao ?? 0) + 1,
+      origemPendencia: data.origemPendencia ?? atual.origemPendencia,
+      camposAlterados: data.camposAlterados ?? atual.camposAlterados,
+      alteradoPor: data.alteradoPor ?? atual.alteradoPor,
+      alteradoEm: data.alteradoEm ?? atual.alteradoEm,
       nomeEmpresa: data.nomeEmpresa ?? atual.nomeEmpresa,
       municipioId: data.municipioId ?? atual.municipioId,
       documento: data.documento ?? atual.documento,
@@ -166,6 +173,7 @@ export class InMemoryProdutorRepository
           }
         : atual.contato,
       endereco: data.endereco ?? atual.endereco,
+      exibirEndereco: data.exibirEndereco ?? atual.exibirEndereco,
       historia: data.historia ?? atual.historia,
       logo: data.logo ?? atual.logo,
       fotos: data.fotos ?? atual.fotos,
@@ -175,6 +183,8 @@ export class InMemoryProdutorRepository
       destaque: data.destaque ?? atual.destaque,
       updatedAt: new Date(),
     };
+
+    if (data.logo === null) delete atualizado.logo;
 
     if (data.site === null) {
       delete atualizado.site;

@@ -24,11 +24,13 @@ function buildProdutorInput(
       email: "contato@fazenda.com",
     },
     endereco: {
+      cep: "84010000",
       rua: "Rua das Flores",
       bairro: "Centro",
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    exibirEndereco: true,
     historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
     logo: arquivoValido,
     fotos: [arquivoValido],
@@ -43,6 +45,7 @@ function buildInput(
   return {
     produtorId,
     nome: "Mel Artesanal",
+    descricaoBreve: "Produto artesanal dos Campos Gerais",
     descricao: "Mel puro de Campos Gerais",
     categoria: "MEL_E_DERIVADOS",
     unidadeMedida: "KG",
@@ -91,6 +94,16 @@ describe("Quando usar o ProdutoService", () => {
     );
   });
 
+
+  it("Oculta produtos públicos enquanto o perfil do produtor aguarda reaprovação", async () => {
+    const product = await service.create(buildInput(produtorAprovadoId));
+    await service.update(product.id, { status: "APROVADO" });
+    await produtorService.update(produtorAprovadoId, { historia: "História atualizada" });
+    expect((await service.listCatalog()).produtos).toHaveLength(0);
+    await expect(service.getCatalogById(product.id)).rejects.toMatchObject({ statusCode: 404 });
+    await produtorService.update(produtorAprovadoId, { status: "APROVADO" });
+    expect((await service.listCatalog()).produtos).toHaveLength(1);
+  });
   describe("Quando cadastrar um produto", () => {
     it("Deve criar o produto com status PENDENTE e ativo true", async () => {
       const produto = await service.create(buildInput(produtorAprovadoId));
@@ -164,16 +177,48 @@ describe("Quando usar o ProdutoService", () => {
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    it("Deve lançar conflito quando o número de registro já existe", async () => {
+    it("Deve lançar conflito quando o número de registro já é de outro produtor", async () => {
       await service.create(buildInput(produtorAprovadoId));
+
+      const outroProdutor = await produtorService.create(
+        buildProdutorInput({
+          documento: { tipo: "CNPJ", numero: "98765432000155" },
+          registros: [{ tipo: "SIM", numero: "REG-OUTRO-PRODUTOR" }],
+        }),
+      );
+      await produtorService.update(outroProdutor.id, { status: "APROVADO" });
 
       await expect(
         service.create(
-          buildInput(produtorAprovadoId, {
+          buildInput(outroProdutor.id, {
             registros: [{ tipo: "MAPA", numero: "REG-PROD-001" }],
           }),
         ),
       ).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+    it("Deve permitir o mesmo número de registro em produtos do mesmo produtor", async () => {
+      await service.create(buildInput(produtorAprovadoId));
+
+      const segundo = await service.create(
+        buildInput(produtorAprovadoId, { nome: "Mel Silvestre" }),
+      );
+
+      expect(segundo.registros[0].numero).toBe("REG-PROD-001");
+    });
+
+    it("Deve exigir descrição breve", async () => {
+      await expect(
+        service.create(buildInput(produtorAprovadoId, { descricaoBreve: "  " })),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve rejeitar descrição breve acima do limite", async () => {
+      await expect(
+        service.create(
+          buildInput(produtorAprovadoId, { descricaoBreve: "a".repeat(201) }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
 
     it("Deve aceitar premiacoes vazio", async () => {
@@ -233,6 +278,35 @@ describe("Quando usar o ProdutoService", () => {
       expect(catalogo.pageSize).toBe(12);
       expect(catalogo.hasNext).toBe(false);
     });
+
+    it("Deve retornar apenas produtos premiados quando filtrar por premiado", async () => {
+      const comum = await service.create(buildInput(produtorAprovadoId));
+      await service.update(comum.id, { status: "APROVADO" });
+      const premiado = await service.create(
+        buildInput(produtorAprovadoId, {
+          nome: "Mel Premiado",
+          registros: [{ tipo: "MAPA", numero: "REG-PREMIADO-001" }],
+          premiacoes: [
+            {
+              nome: "Prêmio Campos Gerais",
+              descricao: "Melhor mel artesanal da região",
+              ano: 2024,
+              comprovante: arquivoValido,
+            },
+          ],
+        }),
+      );
+      await service.update(premiado.id, { status: "APROVADO" });
+
+      const filtrado = await service.listCatalog({ premiado: true });
+      const todos = await service.listCatalog({});
+
+      expect(filtrado.produtos.map((produto) => produto.nome)).toEqual([
+        "Mel Premiado",
+      ]);
+      expect(filtrado.produtos[0]?.premiado).toBe(true);
+      expect(todos.produtos).toHaveLength(2);
+    });
   });
 
   describe("Quando buscar o detalhe do catálogo público", () => {
@@ -288,6 +362,72 @@ describe("Quando usar o ProdutoService", () => {
     });
   });
 
+  describe("Quando listar produtos do produtor no catálogo público", () => {
+    it("Deve retornar apenas produtos aprovados do produtor, excluir o id informado e paginar de 3", async () => {
+      const outrosProdutor = await produtorService.create(
+        buildProdutorInput({
+          nomeEmpresa: "Outra Fazenda",
+          documento: { tipo: "CNPJ", numero: "98765432000188" },
+          registros: [{ tipo: "SIM", numero: "REG-OUTRO-001" }],
+          contato: {
+            telefone: "+5542888888888",
+            email: "outra@fazenda.com",
+          },
+        }),
+      );
+      await produtorService.update(outrosProdutor.id, { status: "APROVADO" });
+
+      const produtosDoProdutor = [];
+      for (let index = 1; index <= 5; index += 1) {
+        const produto = await service.create(
+          buildInput(produtorAprovadoId, {
+            nome: `Produto ${index}`,
+            registros: [{ tipo: "SELO ARTE", numero: `REG-DO-PROD-${index}` }],
+          }),
+        );
+        await service.update(produto.id, { status: "APROVADO" });
+        produtosDoProdutor.push(produto);
+      }
+
+      const pendente = await service.create(
+        buildInput(produtorAprovadoId, {
+          nome: "Produto Pendente",
+          registros: [{ tipo: "SELO ARTE", numero: "REG-DO-PROD-PENDENTE" }],
+        }),
+      );
+
+      const deOutro = await service.create(
+        buildInput(outrosProdutor.id, {
+          nome: "Produto de Outro",
+          registros: [{ tipo: "SELO ARTE", numero: "REG-OUTRO-PROD-001" }],
+        }),
+      );
+      await service.update(deOutro.id, { status: "APROVADO" });
+
+      const excludeId = produtosDoProdutor[0].id;
+      const pagina = await service.listDoProdutor({
+        produtorId: produtorAprovadoId,
+        excludeId,
+        pageSize: 3,
+      });
+
+      expect(pagina.pageSize).toBe(3);
+      expect(pagina.produtos).toHaveLength(3);
+      expect(pagina.hasNext).toBe(true);
+      expect(
+        pagina.produtos.every(
+          (produto) =>
+            produto.produtor.id === produtorAprovadoId &&
+            produto.id !== excludeId &&
+            produto.id !== pendente.id,
+        ),
+      ).toBe(true);
+      expect(
+        pagina.produtos.some((produto) => produto.id === deOutro.id),
+      ).toBe(false);
+    });
+  });
+
   describe("Quando listar produtos", () => {
     it("Deve filtrar por produtorId e categoria", async () => {
       await service.create(buildInput(produtorAprovadoId));
@@ -323,7 +463,64 @@ describe("Quando usar o ProdutoService", () => {
   });
 
   describe("Quando atualizar um produto", () => {
-    it("Deve voltar o status para PENDENTE quando estava APROVADO", async () => {
+    it("Acumula alterações e mantém o produto na fila própria", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.update(criado.id, { nome: "Nome revisado" });
+      const alterado = await service.update(criado.id, { valorCentavos: 9900 });
+      expect(alterado).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(alterado.camposAlterados).toEqual(["nome", "valorCentavos"]);
+      expect(await service.list({ status: "PENDENTE" })).toHaveLength(0);
+      expect(await service.list({ status: "ALTERADO" })).toHaveLength(1);
+    });
+
+    it.each([
+      { nome: "Novo nome" },
+      { descricaoBreve: "Nova descrição breve" },
+      { descricao: "Nova descrição completa do produto" },
+      { valorCentavos: 9900 },
+      { fotosDivulgacao: [{ ...arquivoValido, url: "https://example.com/nova.jpg" }] },
+      { fotosAvaliacao: [{ ...arquivoValido, url: "https://example.com/nova.jpg" }] },
+    ])("Deve retirar do catálogo e registrar alteração: %j", async (input) => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.setDestaque(criado.id, true);
+      const atualizado = await service.update(criado.id, { ...input, autorId: "conta-1" });
+      expect(atualizado).toMatchObject({ status: "ALTERADO", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "conta-1" });
+      expect(atualizado.camposAlterados).toEqual(Object.keys(input));
+      expect((await service.listCatalog()).produtos).toHaveLength(0);
+      expect((await service.listDestaques()).produtos).toHaveLength(0);
+      await expect(service.getCatalogById(criado.id)).rejects.toMatchObject({ statusCode: 404 });
+      const aprovado = await service.update(criado.id, { status: "APROVADO", revisao: atualizado.revisao });
+      expect(aprovado).toMatchObject({ ativo: true, status: "APROVADO", destaque: false });
+    });
+    it("Deve manter aprovação quando não há mudança efetiva", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      const aprovado = await service.update(criado.id, { status: "APROVADO" });
+      const atualizado = await service.update(criado.id, { nome: `  ${criado.nome}  `, valorCentavos: criado.valorCentavos, fotosDivulgacao: criado.fotosDivulgacao, descricao: `  ${criado.descricao}  `, descricaoBreve: `  ${criado.descricaoBreve}  ` });
+      expect(atualizado.status).toBe("APROVADO");
+      expect(atualizado.ativo).toBe(true);
+      await expect(service.update(criado.id, { status: "APROVADO", revisao: aprovado.revisao })).rejects.toMatchObject({ statusCode: 409 });
+    });
+    it.each([{ descricaoBreve: "   " }, { descricaoBreve: "a".repeat(201) }, { descricao: "  " }])("Deve rejeitar descrição inválida sem alterar o produto: %j", async (input) => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "APROVADO" });
+      await expect(service.update(criado.id, input)).rejects.toMatchObject({ statusCode: 400 });
+      expect(await service.getById(criado.id)).toMatchObject({ status: "APROVADO", ativo: true, descricao: criado.descricao, descricaoBreve: criado.descricaoBreve });
+    });
+    it("Deve impedir edição e aprovação na mesma operação", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await expect(service.update(criado.id, { nome: "Novo nome", status: "APROVADO" })).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("Deve permitir correção de rejeitado com nova pendência e remover motivo", async () => {
+      const criado = await service.create(buildInput(produtorAprovadoId));
+      await service.update(criado.id, { status: "REJEITADO", motivoRejeicao: "Corrigir preço" });
+      const atualizado = await service.update(criado.id, { valorCentavos: 4000 });
+      expect(atualizado).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(atualizado.motivoRejeicao).toBeUndefined();
+    });
+
+    it("Deve mover para ALTERADO quando estava APROVADO", async () => {
       const criado = await service.create(buildInput(produtorAprovadoId));
       await service.update(criado.id, { status: "APROVADO" });
 
@@ -332,7 +529,7 @@ describe("Quando usar o ProdutoService", () => {
       });
 
       expect(atualizado.nome).toBe("Mel Premium");
-      expect(atualizado.status).toBe("PENDENTE");
+      expect(atualizado.status).toBe("ALTERADO");
     });
 
     it("Deve rejeitar body vazio", async () => {

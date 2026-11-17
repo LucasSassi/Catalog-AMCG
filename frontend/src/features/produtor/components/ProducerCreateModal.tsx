@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import { Button } from '../../../shared/components/Button'
-import { Modal } from '../../../shared/components/Modal'
+import { FormModal } from '../../../shared/components/FormModal'
 import { ProducerRegistrationForm } from './ProducerRegistrationForm'
 
 interface ProducerCreateModalProps {
@@ -12,42 +10,23 @@ export function ProducerCreateModal({
   onClose,
   onSuccess,
 }: ProducerCreateModalProps) {
-  const [didSucceed, setDidSucceed] = useState(false)
-
-  function handleSuccess() {
-    setDidSucceed(true)
-    onSuccess()
-  }
-
-  function handleClose() {
-    setDidSucceed(false)
-    onClose()
-  }
-
   return (
-    <Modal title="Novo produtor" onClose={handleClose}>
-      {didSucceed ? (
-        <div className="space-y-5">
-          <p className="text-sm leading-6 text-slate-700">
-            Produtor cadastrado e aprovado com sucesso. Ele já aparece na lista
-            de aprovados e pode receber produtos.
-          </p>
-          <Button fullWidth onClick={handleClose}>
-            Fechar
-          </Button>
-        </div>
-      ) : (
-        <div>
-          <p className="mb-5 text-sm leading-6 text-slate-600">
-            Cadastro administrativo: o produtor será aprovado automaticamente
-            após o envio.
-          </p>
-          <ProducerRegistrationForm
-            approveAfterCreate
-            onSuccess={handleSuccess}
-          />
-        </div>
+    <FormModal
+      title="Novo produtor"
+      subtitle="Cadastro administrativo: o produtor é aprovado automaticamente após o envio."
+      successTitle="Produtor cadastrado"
+      successMessage="Ele já aparece na lista de aprovados e pode receber produtos."
+      onClose={onClose}
+      onSuccess={onSuccess}
+    >
+      {(props) => (
+        <ProducerRegistrationForm
+          approveAfterCreate
+          onSuccess={props.onSuccess}
+          onCancel={props.onCancel}
+          onDirtyChange={props.onDirtyChange}
+        />
       )}
-    </Modal>
+    </FormModal>
   )
 }

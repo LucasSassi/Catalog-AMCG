@@ -27,11 +27,13 @@ function buildInput(
       email: "contato@fazenda.com",
     },
     endereco: {
+      cep: "84010000",
       rua: "Rua das Flores",
       bairro: "Centro",
       cidade: "Ponta Grossa",
       estado: "PR",
     },
+    exibirEndereco: true,
     historia: "Produtor familiar dos Campos Gerais com tradição artesanal.",
     logo: logoPadrao,
     fotos: [fotoPadrao],
@@ -51,6 +53,71 @@ describe("Quando usar o ProdutorService", () => {
     });
   });
 
+
+  describe("Revisão de alterações do perfil", () => {
+    it("Acumula campos modificados até a nova decisão", async () => {
+      const criado = await service.create(buildInput());
+      await service.update(criado.id, { status: "APROVADO" });
+      await service.update(criado.id, { nomeEmpresa: "Nome revisado" });
+      const alterado = await service.update(criado.id, { historia: "História revisada" });
+      expect(alterado).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(alterado.camposAlterados).toEqual(["nomeEmpresa", "historia"]);
+      expect(await service.list({ status: "PENDENTE" })).toHaveLength(0);
+      expect(await service.list({ status: "ALTERADO" })).toHaveLength(1);
+    });
+
+    it("Permite remover logo e fotos na edição e exige reaprovação", async () => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { logo: null, fotos: [], revisao: approved.revisao });
+      expect(edited.logo).toBeUndefined();
+      expect(edited.fotos).toEqual([]);
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false, camposAlterados: ["logo", "fotos"] });
+      const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
+      const unchanged = await service.update(created.id, { logo: null, fotos: [], revisao: reviewed.revisao });
+      expect(unchanged).toMatchObject({ status: "APROVADO", ativo: true, fotos: [] });
+      expect(unchanged.logo).toBeUndefined();
+    });
+    it("Mantém imagens existentes quando não são enviadas na edição", async () => {
+      const created = await service.create(buildInput());
+      const edited = await service.update(created.id, { historia: "História atualizada" });
+      expect(edited.logo).toEqual(created.logo);
+      expect(edited.fotos).toEqual(created.fotos);
+    });
+
+    it.each([
+      { nomeEmpresa: "Novo nome" }, { historia: "Nova história" },
+      { logo: { ...logoPadrao, url: "https://example.com/nova-logo.jpg" } },
+      { fotos: [{ ...fotoPadrao, url: "https://example.com/nova-foto.jpg" }] },
+      { contato: { telefone: "+5542988888888", email: "novo@example.com" } },
+    ])("Oculta perfil alterado até reaprovação: %j", async input => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { ...input, autorId: "usuario-1", revisao: approved.revisao });
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false, destaque: false, origemPendencia: "ALTERACAO", alteradoPor: "usuario-1", camposAlterados: Object.keys(input) });
+      expect((await service.listCatalog()).produtores).toHaveLength(0);
+      await expect(service.update(created.id, { status: "APROVADO", revisao: approved.revisao })).rejects.toMatchObject({ statusCode: 409 });
+      const reviewed = await service.update(created.id, { status: "APROVADO", revisao: edited.revisao });
+      expect(reviewed).toMatchObject({ status: "APROVADO", ativo: true });
+    });
+    it("Mantém publicação quando os dados normalizados não mudam", async () => {
+      const created = await service.create(buildInput());
+      const approved = await service.update(created.id, { status: "APROVADO" });
+      const edited = await service.update(created.id, { nomeEmpresa: ` ${created.nomeEmpresa} `, historia: ` ${created.historia} `, revisao: approved.revisao });
+      expect(edited).toMatchObject({ status: "APROVADO", ativo: true });
+    });
+    it("Impede publicação de conteúdo alterado na mesma operação", async () => {
+      const created = await service.create(buildInput());
+      await expect(service.update(created.id, { nomeEmpresa: "Alterado", status: "APROVADO" })).rejects.toMatchObject({ statusCode: 400 });
+    });
+    it("Permite corrigir perfil rejeitado e reenviar para revisão", async () => {
+      const created = await service.create(buildInput());
+      await service.update(created.id, { status: "REJEITADO", motivoRejeicao: "Corrigir história" });
+      const edited = await service.update(created.id, { historia: "História corrigida" });
+      expect(edited).toMatchObject({ status: "ALTERADO", ativo: false });
+      expect(edited.motivoRejeicao).toBeUndefined();
+    });
+  });
   describe("Quando cadastrar um produtor", () => {
     it("Deve criar o produtor com status PENDENTE e ativo true", async () => {
       const produtor = await service.create(buildInput());
@@ -96,8 +163,84 @@ describe("Quando usar o ProdutorService", () => {
       await expect(
         service.create(
           buildInput({
-            registros: [{ tipo: "SIF" as "SIM", numero: "REG-OUTRO" }],
+            registros: [{ tipo: "XYZ" as "SIM", numero: "REG-OUTRO" }],
           }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve aceitar registros de produtor além do SIM", async () => {
+      const produtor = await service.create(
+        buildInput({
+          registros: [
+            { tipo: "SIF", numero: "SIF-001" },
+            { tipo: "VIGILÂNCIA SANITÁRIA", numero: "VISA-001" },
+          ],
+        }),
+      );
+
+      expect(produtor.registros.map((registro) => registro.tipo)).toEqual([
+        "SIF",
+        "VIGILÂNCIA SANITÁRIA",
+      ]);
+    });
+
+    it("Deve exigir tipoOutros quando o registro do produtor for Outro", async () => {
+      await expect(
+        service.create(
+          buildInput({ registros: [{ tipo: "Outro", numero: "REG-OUTRO" }] }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+
+      const produtor = await service.create(
+        buildInput({
+          registros: [
+            { tipo: "Outro", tipoOutros: "SESA-PR", numero: "REG-OUTRO" },
+          ],
+        }),
+      );
+      expect(produtor.registros[0]).toMatchObject({
+        tipo: "Outro",
+        tipoOutros: "SESA-PR",
+      });
+    });
+
+    it("Deve normalizar o CEP para 8 dígitos", async () => {
+      const produtor = await service.create(
+        buildInput({
+          endereco: {
+            cep: "84010-000",
+            rua: "Rua das Flores",
+            bairro: "Centro",
+            cidade: "Ponta Grossa",
+            estado: "PR",
+          },
+        }),
+      );
+
+      expect(produtor.endereco.cep).toBe("84010000");
+    });
+
+    it("Deve rejeitar CEP com quantidade de dígitos inválida", async () => {
+      await expect(
+        service.create(
+          buildInput({
+            endereco: {
+              cep: "8401",
+              rua: "Rua das Flores",
+              bairro: "Centro",
+              cidade: "Ponta Grossa",
+              estado: "PR",
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    it("Deve exigir a resposta sobre exibir o endereço no site", async () => {
+      await expect(
+        service.create(
+          buildInput({ exibirEndereco: undefined as unknown as boolean }),
         ),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
@@ -120,6 +263,7 @@ describe("Quando usar o ProdutorService", () => {
         service.create(
           buildInput({
             endereco: {
+              cep: "84010000",
               rua: "Rua das Flores",
               bairro: "Centro",
               cidade: "Ponta Grossa",
@@ -260,6 +404,29 @@ describe("Quando usar o ProdutorService", () => {
       expect(catalogo.fotos).toHaveLength(1);
     });
 
+    it("Deve exibir o endereço completo quando o produtor autorizou", async () => {
+      const criado = await service.create(buildInput({ exibirEndereco: true }));
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.getCatalogById(criado.id);
+      expect(catalogo.endereco).toEqual({
+        cep: "84010000",
+        rua: "Rua das Flores",
+        bairro: "Centro",
+        cidade: "Ponta Grossa",
+        estado: "PR",
+      });
+    });
+
+    it("Deve omitir o endereço quando o produtor não autorizou", async () => {
+      const criado = await service.create(buildInput({ exibirEndereco: false }));
+      await service.update(criado.id, { status: "APROVADO" });
+
+      const catalogo = await service.getCatalogById(criado.id);
+      expect(catalogo.endereco).toBeUndefined();
+      expect(catalogo.municipio).toBe("Ponta Grossa");
+    });
+
     it("Deve lançar not found quando o produtor não está aprovado", async () => {
       const criado = await service.create(buildInput());
 
@@ -284,14 +451,14 @@ describe("Quando usar o ProdutorService", () => {
   });
 
   describe("Quando atualizar um produtor", () => {
-    it("Deve atualizar o nome sem alterar o status", async () => {
+    it("Deve separar uma alteração dos novos cadastros", async () => {
       const criado = await service.create(buildInput());
       const atualizado = await service.update(criado.id, {
         nomeEmpresa: "Fazenda Nova",
       });
 
       expect(atualizado.nomeEmpresa).toBe("Fazenda Nova");
-      expect(atualizado.status).toBe("PENDENTE");
+      expect(atualizado.status).toBe("ALTERADO");
     });
 
     it("Deve aprovar o produtor via status APROVADO", async () => {

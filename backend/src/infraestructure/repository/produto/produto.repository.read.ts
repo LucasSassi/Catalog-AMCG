@@ -1,3 +1,4 @@
+import { reviewStatusFilter } from "../../../domain/common/review-status";
 import { Types, type PipelineStage } from "mongoose";
 import { PRODUTOR_COLLECTION } from "../../../domain/produtor/entity/produtor.constants";
 import type { IProdutoRepositoryRead } from "../../../domain/produto/repository/produto.repository.read";
@@ -63,6 +64,14 @@ function buildCatalogMatch(
     match.destaque = filtros.destaque;
   }
 
+  if (filtros.produtorId !== undefined) {
+    match.produtorId = filtros.produtorId;
+  }
+
+  if (filtros.premiado === true) {
+    match["premiacoes.0"] = { $exists: true };
+  }
+
   if (filtros.certificacao !== undefined && filtros.certificacao !== "SIM") {
     match["registros.tipo"] = filtros.certificacao;
   }
@@ -108,6 +117,7 @@ function buildCatalogFilterStages(
       $match: {
         $or: [
           { nome: regex },
+          { descricaoBreve: regex },
           { descricao: regex },
           { "produtorDoc.nomeEmpresa": regex },
         ],
@@ -140,7 +150,7 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
     }
 
     if (filtros?.status !== undefined) {
-      query.status = filtros.status;
+      Object.assign(query, reviewStatusFilter(filtros.status));
     }
 
     if (filtros?.destaque !== undefined) {
@@ -211,9 +221,13 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
     );
   }
 
-  async findByRegistroNumero(numero: string): Promise<Produto | null> {
+  async findByRegistroNumeroDeOutroProdutor(
+    numero: string,
+    produtorId: string,
+  ): Promise<Produto | null> {
     const document = await ProdutoModel.findOne({
       "registros.numero": numero,
+      produtorId: { $ne: produtorId },
     }).exec();
     return document ? toProdutoEntity(document) : null;
   }

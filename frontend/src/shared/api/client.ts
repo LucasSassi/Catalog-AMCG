@@ -53,7 +53,7 @@ export async function apiRequest<T>(
   if (!response.ok) {
     if (options.authenticated && response.status === 401) {
       removeAuthToken()
-      window.location.assign(LOGIN_PATH)
+      window.location.assign(window.location.pathname.startsWith('/backoffice') ? LOGIN_PATH : '/minha-conta/login')
     }
 
     const payload = (await response.json()) as ApiErrorResponse

@@ -1,5 +1,6 @@
 import type { CreateProductInput } from '../../produto/types'
 import type {
+  ProducerDocument,
   CreateInscriptionInput,
   CreateProducerInput,
   InscriptionFormState,
@@ -12,36 +13,52 @@ import { stripSocialHandle } from './social-url'
 
 export function buildInscriptionPayload(
   form: InscriptionFormState,
+  documento?: ProducerDocument,
 ): CreateInscriptionInput {
   return {
-    produtor: buildProducerPayload(form),
+    produtor: buildProducerPayload(form, documento),
     produtos: form.produtos.map(buildProductPayload),
   }
 }
 
 function buildProducerPayload(
   form: InscriptionFormState,
+  documento?: ProducerDocument,
 ): CreateProducerInput {
   if (!form.logo) {
     throw new Error('Logo da empresa é obrigatório.')
   }
 
   if (form.fotosDivulgacao.length === 0) {
-    throw new Error('Ao menos uma foto de divulgação do produtor é obrigatória.')
+    throw new Error(
+      'Ao menos uma foto de divulgação do produtor é obrigatória.',
+    )
+  }
+
+  if (!form.tipoRegistro) {
+    throw new Error('Tipo de registro é obrigatório.')
+  }
+
+  if (form.tipoRegistro === 'Outro' && !form.tipoRegistroOutro.trim()) {
+    throw new Error('Informe qual é o tipo de registro no campo "Outro".')
+  }
+
+  if (!form.informarEnderecoNoSite) {
+    throw new Error('Informe se deseja exibir o endereço no site.')
   }
 
   const municipio = form.municipio.trim()
-  const enderecoBase = form.endereco.trim()
-  const cep = form.cep.trim()
-  const rua = cep ? `${enderecoBase}, CEP ${cep}` : enderecoBase
 
   return {
     nomeEmpresa: form.nomeEmpresa.trim(),
     municipioId: municipio,
-    documento: parseDocumentNumber(form.documentoNumero),
+    documento: documento ?? parseDocumentNumber(form.documentoNumero),
     registros: [
       {
-        tipo: 'SIM',
+        tipo: form.tipoRegistro,
+        ...(form.tipoRegistro === 'Outro'
+          ? { tipoOutros: form.tipoRegistroOutro.trim() }
+          : {}),
         numero: form.numeroRegistro.trim(),
       },
     ],
@@ -50,11 +67,13 @@ function buildProducerPayload(
       email: form.email.trim(),
     },
     endereco: {
-      rua,
+      cep: form.cep.replace(/\D/g, ''),
+      rua: form.endereco.trim(),
       bairro: municipio,
       cidade: municipio,
       estado: 'PR',
     },
+    exibirEndereco: form.informarEnderecoNoSite === 'Sim',
     historia: form.historia.trim(),
     logo: form.logo,
     fotos: form.fotosDivulgacao,
@@ -81,15 +100,10 @@ function buildProductPayload(
     throw new Error('Comprovação de premiação é obrigatória quando premiado.')
   }
 
-  const descricaoBreve = product.descricaoBreve.trim()
-  const descricaoCompleta = product.descricaoCompleta.trim()
-  const descricao = descricaoBreve
-    ? `${descricaoBreve}\n\n${descricaoCompleta}`
-    : descricaoCompleta
-
   return {
     nome: product.nome.trim(),
-    descricao,
+    descricaoBreve: product.descricaoBreve.trim(),
+    descricao: product.descricaoCompleta.trim(),
     categoria: product.categoria,
     unidadeMedida: 'UNIDADE',
     registros: [

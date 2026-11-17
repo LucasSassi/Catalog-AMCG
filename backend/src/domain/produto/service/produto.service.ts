@@ -11,6 +11,7 @@ import {
   CONTENT_TYPES_IMAGEM,
   MAX_DESTAQUES,
   MAX_FOTOS,
+  MAX_DESCRICAO_BREVE_LENGTH,
   MAX_REGISTROS,
   MIN_FOTOS,
   MIN_REGISTROS,
@@ -30,6 +31,8 @@ import type {
   Arquivo,
   AtualizarProdutoInput,
   CatalogoDestaquesProdutos,
+  CatalogoDoProdutorFiltros,
+  CatalogoDoProdutorProdutos,
   CatalogoFiltros,
   CatalogoProdutos,
   CatalogoSimilaresFiltros,
@@ -44,9 +47,11 @@ import type {
 } from "../entity/produto.entity";
 
 const CATALOG_DEFAULT_PAGE_SIZE = 12;
-const CATALOG_MAX_PAGE_SIZE = 12;
+const CATALOG_MAX_PAGE_SIZE = 20;
 const SIMILARES_DEFAULT_PAGE_SIZE = 10;
 const SIMILARES_MAX_PAGE_SIZE = 10;
+const DO_PRODUTOR_DEFAULT_PAGE_SIZE = 3;
+const DO_PRODUTOR_MAX_PAGE_SIZE = 10;
 import type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
 import type { IProdutoRepositoryWrite } from "../repository/produto.repository.write";
 
@@ -86,6 +91,7 @@ export class ProdutoService implements IProdutoService {
     produtorId: string,
   ): Promise<Produto> {
     const nome = this.assertNome(input.nome);
+    const descricaoBreve = this.assertDescricaoBreve(input.descricaoBreve);
     const descricao = this.assertDescricao(input.descricao);
     const categoria = this.assertCategoria(input.categoria);
     const unidadeMedida = this.assertUnidadeMedida(input.unidadeMedida);
@@ -102,11 +108,15 @@ export class ProdutoService implements IProdutoService {
     const valorCentavos = this.assertValorCentavos(input.valorCentavos);
     const observacoes = this.normalizeObservacoes(input.observacoes);
 
-    await this.assertRegistrosDisponiveis(registros.map((r) => r.numero));
+    await this.assertRegistrosDisponiveis(
+      registros.map((r) => r.numero),
+      produtorId,
+    );
 
     return this.writeRepository.create({
       produtorId,
       nome,
+      descricaoBreve,
       descricao,
       categoria,
       unidadeMedida,
@@ -142,6 +152,7 @@ export class ProdutoService implements IProdutoService {
       ...(lastItemId !== undefined ? { lastItemId } : {}),
       ...(categoria !== undefined ? { categoria } : {}),
       ...(certificacao !== undefined ? { certificacao } : {}),
+      ...(filtros.premiado === true ? { premiado: true } : {}),
       ...(filtros.busca?.trim() ? { busca: filtros.busca.trim() } : {}),
       ...(filtros.municipio?.trim()
         ? { municipio: filtros.municipio.trim() }
@@ -212,6 +223,34 @@ export class ProdutoService implements IProdutoService {
     };
   }
 
+  async listDoProdutor(
+    filtros: CatalogoDoProdutorFiltros,
+  ): Promise<CatalogoDoProdutorProdutos> {
+    const produtorId = this.assertProdutorId(filtros.produtorId);
+    const pageSize = this.assertPageSize(
+      filtros.pageSize ?? DO_PRODUTOR_DEFAULT_PAGE_SIZE,
+      DO_PRODUTOR_MAX_PAGE_SIZE,
+    );
+    const lastItemId = this.normalizeOptionalId(filtros.lastItemId);
+    const excludeId = filtros.excludeId?.trim();
+
+    const page = await this.readRepository.listCatalogCursor({
+      pageSize,
+      produtorId,
+      ...(lastItemId !== undefined ? { lastItemId } : {}),
+      ...(excludeId ? { excludeIds: [excludeId] } : {}),
+    });
+
+    const produtos = await this.mapProdutosCatalogo(page.items);
+
+    return {
+      produtos,
+      pageSize,
+      nextLastItemId: page.nextLastItemId,
+      hasNext: page.nextLastItemId !== null,
+    };
+  }
+
   async getCatalogById(id: string): Promise<ProdutoCatalogoDetalhe> {
     const produto = await this.readRepository.findById(id);
 
@@ -238,7 +277,13 @@ export class ProdutoService implements IProdutoService {
     return {
       ...base,
       fotosDivulgacao: produto.fotosDivulgacao,
-      registros: produto.registros.map((registro) => ({ tipo: registro.tipo })),
+      descricao: produto.descricao,
+      registros: produto.registros.map((registro) => ({
+        tipo: registro.tipo,
+        ...(registro.tipo === "Outro" && registro.tipoOutros
+          ? { tipoOutros: registro.tipoOutros }
+          : {}),
+      })),
       premiacoes: produto.premiacoes.map((premiacao) => ({
         nome: premiacao.nome,
         descricao: premiacao.descricao,
@@ -348,6 +393,7 @@ export class ProdutoService implements IProdutoService {
     if (
       input.produtorId === undefined &&
       input.nome === undefined &&
+      input.descricaoBreve === undefined &&
       input.descricao === undefined &&
       input.categoria === undefined &&
       input.unidadeMedida === undefined &&
@@ -372,6 +418,7 @@ export class ProdutoService implements IProdutoService {
     const data: {
       produtorId?: string;
       nome?: string;
+      descricaoBreve?: string;
       descricao?: string;
       categoria?: CategoriaProduto;
       unidadeMedida?: UnidadeMedida;
@@ -383,6 +430,14 @@ export class ProdutoService implements IProdutoService {
       observacoes?: string;
       status?: StatusProduto;
       motivoRejeicao?: string | null;
+  revisao?: number;
+  origemPendencia?: "CADASTRO" | "ALTERACAO";
+  camposAlterados?: string[];
+  alteradoPor?: string;
+  alteradoEm?: Date;
+      ativo?: boolean;
+      destaque?: boolean;
+      revisaoEsperada?: number;
     } = {};
 
     if (input.produtorId !== undefined) {
@@ -393,6 +448,10 @@ export class ProdutoService implements IProdutoService {
 
     if (input.nome !== undefined) {
       data.nome = this.assertNome(input.nome);
+    }
+
+    if (input.descricaoBreve !== undefined) {
+      data.descricaoBreve = this.assertDescricaoBreve(input.descricaoBreve);
     }
 
     if (input.descricao !== undefined) {
@@ -409,11 +468,10 @@ export class ProdutoService implements IProdutoService {
 
     if (input.registros !== undefined) {
       const registros = this.normalizeRegistros(input.registros);
-      const numerosAtuais = new Set(atual.registros.map((r) => r.numero));
-      const novosNumeros = registros
-        .map((r) => r.numero)
-        .filter((numero) => !numerosAtuais.has(numero));
-      await this.assertRegistrosDisponiveis(novosNumeros);
+      await this.assertRegistrosDisponiveis(
+        registros.map((r) => r.numero),
+        data.produtorId ?? atual.produtorId,
+      );
       data.registros = registros;
     }
 
@@ -443,6 +501,22 @@ export class ProdutoService implements IProdutoService {
       data.observacoes = this.normalizeObservacoes(input.observacoes);
     }
 
+    const campos = ["nome", "descricaoBreve", "descricao", "valorCentavos", "fotosAvaliacao", "fotosDivulgacao"] as const;
+    const alterados = campos.filter((campo) => data[campo] !== undefined && JSON.stringify(data[campo]) !== JSON.stringify(atual[campo]));
+    if (input.revisao !== undefined && input.revisao !== (atual.revisao ?? 0)) {
+      throw new ConflictError("Produto alterado. Atualize a página antes de continuar");
+    }
+    data.revisaoEsperada = input.revisao ?? atual.revisao ?? 0;
+    if (alterados.length && input.status !== undefined) {
+      throw new ValidationError("Salve as alterações antes de decidir a aprovação");
+    }
+    if (input.status === "APROVADO") {
+      await this.assertProdutorAprovado(atual.produtorId);
+      data.ativo = true;
+    } else if (input.status !== undefined) {
+      data.ativo = false;
+      data.destaque = false;
+    }
     if (input.status !== undefined) {
       this.assertStatus(input.status);
       data.status = input.status;
@@ -461,15 +535,22 @@ export class ProdutoService implements IProdutoService {
       throw new ValidationError(
         "Motivo da rejeição só pode ser informado quando o status for REJEITADO",
       );
-    } else if (atual.status === "APROVADO") {
-      data.status = "PENDENTE";
+    }
+    if (alterados.length) {
+      data.status = "ALTERADO";
+      data.ativo = false;
+      data.destaque = false;
       data.motivoRejeicao = null;
+      data.origemPendencia = "ALTERACAO";
+      data.camposAlterados = [...new Set([...((atual.status === "PENDENTE" || atual.status === "ALTERADO") ? atual.camposAlterados ?? [] : []), ...alterados])];
+      data.alteradoPor = input.autorId;
+      data.alteradoEm = new Date();
     }
 
     const atualizado = await this.writeRepository.update(id, data);
 
     if (!atualizado) {
-      throw new NotFoundError("Produto não encontrado");
+      throw new ConflictError("Produto alterado. Atualize a página antes de continuar");
     }
 
     return atualizado;
@@ -529,7 +610,14 @@ export class ProdutoService implements IProdutoService {
     return produtor;
   }
 
-  private async assertRegistrosDisponiveis(numeros: string[]): Promise<void> {
+  /**
+   * O mesmo número de registro pode se repetir entre produtos do MESMO
+   * produtor (ex.: SIM do estabelecimento), mas não entre produtores.
+   */
+  private async assertRegistrosDisponiveis(
+    numeros: string[],
+    produtorId: string,
+  ): Promise<void> {
     const unique = new Set<string>();
 
     for (const numero of numeros) {
@@ -540,9 +628,15 @@ export class ProdutoService implements IProdutoService {
       }
       unique.add(numero);
 
-      const existing = await this.readRepository.findByRegistroNumero(numero);
+      const existing =
+        await this.readRepository.findByRegistroNumeroDeOutroProdutor(
+          numero,
+          produtorId,
+        );
       if (existing) {
-        throw new ConflictError("Número de registro já cadastrado");
+        throw new ConflictError(
+          "Número de registro já cadastrado por outro produtor",
+        );
       }
     }
   }
@@ -559,6 +653,19 @@ export class ProdutoService implements IProdutoService {
     const trimmed = nome.trim();
     if (!trimmed) {
       throw new ValidationError("Nome do produto é obrigatório");
+    }
+    return trimmed;
+  }
+
+  private assertDescricaoBreve(descricaoBreve: string): string {
+    const trimmed = (descricaoBreve ?? "").trim();
+    if (!trimmed) {
+      throw new ValidationError("Descrição breve é obrigatória");
+    }
+    if (trimmed.length > MAX_DESCRICAO_BREVE_LENGTH) {
+      throw new ValidationError(
+        `Descrição breve deve ter no máximo ${MAX_DESCRICAO_BREVE_LENGTH} caracteres`,
+      );
     }
     return trimmed;
   }
@@ -650,7 +757,7 @@ export class ProdutoService implements IProdutoService {
     return {
       id: produto.id,
       nome: produto.nome,
-      descricao: produto.descricao,
+      descricaoBreve: produto.descricaoBreve,
       categoria: produto.categoria,
       unidadeMedida: produto.unidadeMedida,
       valorCentavos: produto.valorCentavos,

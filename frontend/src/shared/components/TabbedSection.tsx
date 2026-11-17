@@ -8,6 +8,7 @@ export interface SectionTab {
 
 interface TabbedSectionProps {
   title: string
+  eyebrow?: string
   tabs: SectionTab[]
   activeTabId: string
   onTabChange: (tabId: string) => void
@@ -15,14 +16,15 @@ interface TabbedSectionProps {
 
 function getTabClassName(isActive: boolean): string {
   const stateClassName = isActive
-    ? 'bg-primary text-white shadow-sm'
-    : 'text-slate-600 hover:text-primary-darker'
+    ? 'bg-primary-dark font-bold text-white shadow-sm'
+    : 'font-semibold text-text-muted hover:text-primary-darker'
 
-  return `rounded-full px-4 py-1.5 text-sm font-semibold transition ${stateClassName}`
+  return `min-h-9 rounded-full px-4 text-sm transition ${stateClassName}`
 }
 
 export function TabbedSection({
   title,
+  eyebrow,
   tabs,
   activeTabId,
   onTabChange,
@@ -40,16 +42,23 @@ export function TabbedSection({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold uppercase tracking-wide text-foreground">
-          {title}
-        </h2>
+      <div className="mb-3.5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          {eyebrow ? (
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#8a5a00]">
+              {eyebrow}
+            </p>
+          ) : null}
+          <h2 className="text-xl font-extrabold text-foreground sm:text-2xl">
+            {title}
+          </h2>
+        </div>
 
         {hasMultipleTabs ? (
           <div
             role="tablist"
             aria-label={title}
-            className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1"
+            className="inline-flex rounded-full border border-[#e8dfcf] bg-white p-1"
           >
             {tabs.map((tab) => {
               const isActive = tab.id === activeTab.id
