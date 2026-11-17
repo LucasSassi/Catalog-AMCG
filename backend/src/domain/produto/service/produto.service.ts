@@ -48,8 +48,7 @@ import type {
 
 const CATALOG_DEFAULT_PAGE_SIZE = 12;
 const CATALOG_MAX_PAGE_SIZE = 20;
-const SIMILARES_DEFAULT_PAGE_SIZE = 10;
-const SIMILARES_MAX_PAGE_SIZE = 10;
+const SIMILARES_QUANTIDADE = 3;
 const DO_PRODUTOR_DEFAULT_PAGE_SIZE = 3;
 const DO_PRODUTOR_MAX_PAGE_SIZE = 10;
 import type { IProdutoRepositoryRead } from "../repository/produto.repository.read";
@@ -198,29 +197,22 @@ export class ProdutoService implements IProdutoService {
   async listSimilares(
     filtros: CatalogoSimilaresFiltros,
   ): Promise<CatalogoSimilaresProdutos> {
-    const categoria = this.assertCategoria(filtros.categoria);
-    const pageSize = this.assertPageSize(
-      filtros.pageSize ?? SIMILARES_DEFAULT_PAGE_SIZE,
-      SIMILARES_MAX_PAGE_SIZE,
-    );
-    const lastItemId = this.normalizeOptionalId(filtros.lastItemId);
-    const excludeId = filtros.excludeId?.trim();
+    const produtoId = filtros.produtoId?.trim();
+    const produto = produtoId
+      ? await this.readRepository.findById(produtoId)
+      : null;
 
-    const page = await this.readRepository.listCatalogCursor({
-      pageSize,
-      categoria,
-      ...(lastItemId !== undefined ? { lastItemId } : {}),
-      ...(excludeId ? { excludeIds: [excludeId] } : {}),
+    if (!produto) {
+      throw new NotFoundError("Produto não encontrado");
+    }
+
+    const sorteados = await this.readRepository.sampleSimilares({
+      categoria: produto.categoria,
+      excludeProdutorId: produto.produtorId,
+      size: SIMILARES_QUANTIDADE,
     });
 
-    const produtos = await this.mapProdutosCatalogo(page.items);
-
-    return {
-      produtos,
-      pageSize,
-      nextLastItemId: page.nextLastItemId,
-      hasNext: page.nextLastItemId !== null,
-    };
+    return { produtos: await this.mapProdutosCatalogo(sorteados) };
   }
 
   async listDoProdutor(

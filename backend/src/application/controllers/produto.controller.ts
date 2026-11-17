@@ -176,10 +176,7 @@ const catalogQuerySchema = z.object({
 });
 
 const similaresQuerySchema = z.object({
-  categoria: z.enum(CATEGORIA_PRODUTO),
-  excludeId: z.string().trim().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(10).optional(),
-  lastItemId: z.string().trim().min(1).optional(),
+  produtoId: z.string().trim().min(1, "Produto é obrigatório"),
 });
 
 const doProdutorQuerySchema = z.object({

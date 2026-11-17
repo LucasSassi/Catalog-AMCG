@@ -7,6 +7,7 @@ import type { IProdutoRepositoryRead } from "../../domain/produto/repository/pro
 import type {
   CatalogoCursorFiltros,
   CatalogoCursorPage,
+  CatalogoSimilaresSorteioFiltros,
   ListarProdutosFiltros,
   Produto,
 } from "../../domain/produto/entity/produto.entity";
@@ -129,6 +130,41 @@ export class InMemoryProdutoRepository
     }
 
     return shuffled.slice(0, size);
+  }
+
+  async sampleSimilares(
+    filtros: CatalogoSimilaresSorteioFiltros,
+  ): Promise<Produto[]> {
+    if (filtros.size <= 0) {
+      return [];
+    }
+
+    const candidatos = (
+      await this.list({
+        ativo: true,
+        status: "APROVADO",
+        categoria: filtros.categoria,
+      })
+    )
+      .filter((produto) => produto.fotosDivulgacao.length > 0)
+      .filter((produto) => produto.produtorId !== filtros.excludeProdutorId);
+
+    const shuffled = [...candidatos];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      const current = shuffled[index];
+      shuffled[index] = shuffled[swapIndex];
+      shuffled[swapIndex] = current;
+    }
+
+    const porProdutor = new Map<string, Produto>();
+    for (const produto of shuffled) {
+      if (!porProdutor.has(produto.produtorId)) {
+        porProdutor.set(produto.produtorId, produto);
+      }
+    }
+
+    return [...porProdutor.values()].slice(0, filtros.size);
   }
 
   async findByRegistroNumeroDeOutroProdutor(
