@@ -122,23 +122,14 @@ export interface FeaturedProductsResponse {
   produtos: CatalogProduct[]
 }
 
-export interface SimilarProductsFilters {
-  categoria: string
-  excludeId: string
-  pageSize?: number
-  lastItemId?: string
-}
-
+/** Até 3 produtos sorteados: mesma categoria, de outros produtores, um por produtor. */
 export interface SimilarProductsResponse {
   produtos: CatalogProduct[]
-  pageSize: number
-  nextLastItemId: string | null
-  hasNext: boolean
 }
 
 export interface ProducerProductsFilters {
   produtorId: string
-  excludeId: string
+  excludeId?: string
   pageSize?: number
   lastItemId?: string
 }

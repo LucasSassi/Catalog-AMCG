@@ -6,9 +6,9 @@ const PRODUCER_PAGE_SIZE = 10
 
 export function useProducerProducts(
   produtorId: string | undefined,
-  excludeId: string | undefined,
+  excludeId?: string,
 ) {
-  const enabled = Boolean(produtorId && excludeId)
+  const enabled = Boolean(produtorId)
   const resetKey = `${produtorId ?? ''}:${excludeId ?? ''}`
 
   const fetchPage = useCallback(
@@ -19,13 +19,13 @@ export function useProducerProducts(
       pageSize: number
       lastItemId: string | null
     }) => {
-      if (!produtorId || !excludeId) {
+      if (!produtorId) {
         return Promise.resolve({ produtos: [], hasNext: false })
       }
 
       return listProducerProducts({
         produtorId,
-        excludeId,
+        ...(excludeId ? { excludeId } : {}),
         pageSize,
         ...(lastItemId ? { lastItemId } : {}),
       })

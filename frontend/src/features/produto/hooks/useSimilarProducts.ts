@@ -1,43 +1,46 @@
-import { useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { listSimilarProducts } from '../api/products'
-import { useCatalogProductCursor } from './useCatalogProductCursor'
+import type { CatalogProduct } from '../types'
 
-const SIMILAR_PAGE_SIZE = 10
+/**
+ * Até 3 produtos sorteados pelo backend: mesma categoria do produto, de
+ * produtores diferentes do dono dele (um por produtor).
+ */
+export function useSimilarProducts(produtoId: string | undefined) {
+  const [result, setResult] = useState<{
+    produtoId: string
+    products: CatalogProduct[]
+  } | null>(null)
 
-export function useSimilarProducts(
-  categoria: string | undefined,
-  excludeId: string | undefined,
-) {
-  const enabled = Boolean(categoria && excludeId)
-  const resetKey = `${categoria ?? ''}:${excludeId ?? ''}`
+  useEffect(() => {
+    if (!produtoId) {
+      return
+    }
 
-  const fetchPage = useCallback(
-    ({
-      pageSize,
-      lastItemId,
-    }: {
-      pageSize: number
-      lastItemId: string | null
-    }) => {
-      if (!categoria || !excludeId) {
-        return Promise.resolve({ produtos: [], hasNext: false })
-      }
+    let isCurrent = true
 
-      return listSimilarProducts({
-        categoria,
-        excludeId,
-        pageSize,
-        ...(lastItemId ? { lastItemId } : {}),
+    listSimilarProducts(produtoId)
+      .then((response) => {
+        if (isCurrent) {
+          setResult({ produtoId, products: response.produtos })
+        }
       })
-    },
-    [categoria, excludeId],
-  )
+      .catch(() => {
+        // Seção complementar: em caso de erro ela simplesmente não aparece.
+        if (isCurrent) {
+          setResult({ produtoId, products: [] })
+        }
+      })
 
-  return useCatalogProductCursor({
-    enabled,
-    pageSize: SIMILAR_PAGE_SIZE,
-    resetKey,
-    fetchPage,
-    errorMessage: 'Não foi possível carregar produtos similares.',
-  })
+    return () => {
+      isCurrent = false
+    }
+  }, [produtoId])
+
+  const isCurrentResult = Boolean(produtoId) && result?.produtoId === produtoId
+
+  return {
+    products: isCurrentResult && result ? result.products : [],
+    isLoading: Boolean(produtoId) && !isCurrentResult,
+  }
 }
