@@ -103,8 +103,9 @@ export function ProductDetailPage() {
           </Link>
         </nav>
 
-        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-12">
+        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-16">
           <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+            <div className="relative">
             <div className="relative overflow-hidden rounded-3xl bg-slate-100 shadow-sm sm:rounded-[1.75rem]">
               <img
                 src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
@@ -116,16 +117,23 @@ export function ProductDetailPage() {
                 decoding="async"
                 className="aspect-square w-full object-cover"
               />
-              {product.premiado ? (
-                <div className="absolute left-3.5 top-3.5 sm:left-5 sm:top-5">
-                  <AwardSeal premiacoes={product.premiacoes} />
-                </div>
-              ) : null}
               {photos.length > 1 ? (
                 <span className="absolute bottom-3.5 right-3.5 rounded-full bg-foreground/80 px-3 py-1.5 text-xs font-semibold text-white sm:bottom-5 sm:right-5">
                   {selectedPhotoIndex + 1} / {photos.length}
                 </span>
               ) : null}
+            </div>
+            {product.premiado ? (
+              // Fora do `overflow-hidden` da foto para 35% do selo ficar para
+              // fora (translate em % do próprio selo). Em telas menores sai
+              // menos para a direita para não passar da margem da página
+              // (px-4 / sm:px-6). No desktop a foto fica na coluna esquerda e
+              // o selo sai para o gap (lg:gap-16).
+              <AwardSeal
+                premiacoes={product.premiacoes}
+                className="absolute right-0 top-0 z-10 h-24 w-24 -translate-y-[35%] translate-x-[12%] sm:h-28 sm:w-28 sm:translate-x-[20%] lg:h-36 lg:w-36 lg:translate-x-[35%]"
+              />
+            ) : null}
             </div>
 
             {photos.length > 1 ? (
