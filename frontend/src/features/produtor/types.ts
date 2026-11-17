@@ -75,6 +75,8 @@ export interface Producer {
   historia: string
   logo?: ProducerFile
   fotos: ProducerFile[]
+  /** Capa larga usada quando o produtor aparece em destaque no catálogo. */
+  banner?: ProducerFile
   redesSociais: ProducerSocialNetwork[]
   site?: string
   ativo: boolean
@@ -94,6 +96,7 @@ export interface CatalogProducer {
   historia: string
   logo?: ProducerFile
   fotos: ProducerFile[]
+  banner?: ProducerFile
   /** Ausente quando o produtor optou por não exibir o endereço no site. */
   endereco?: CatalogProducerAddress
   redesSociais: ProducerSocialNetwork[]

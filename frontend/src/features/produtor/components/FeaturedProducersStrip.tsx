@@ -17,7 +17,8 @@ export function FeaturedProducersStrip({
   return (
     <div className="-mx-4 flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
       {producers.map((producer) => {
-        const cover = producer.fotos[0]
+        // O banner enviado pelo produtor tem prioridade sobre a 1ª foto.
+        const cover = producer.banner ?? producer.fotos[0]
         const logo = producer.logo ?? producer.fotos[0]
 
         return (
