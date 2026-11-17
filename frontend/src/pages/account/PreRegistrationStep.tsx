@@ -8,6 +8,7 @@ import { InscriptionForm } from '../../features/produtor/components/InscriptionF
 import { login } from '../../features/auth/api/login'
 import { register } from '../../features/auth/api/register'
 import { ImageDropzone } from '../../features/produtor/components/ImageDropzone'
+import { revealFirstInvalidField } from '../../shared/lib/form-validation'
 import type {
   ProducerDocument,
   ProducerFile,
@@ -59,8 +60,13 @@ export function PreRegistrationStep({
   const [photos, setPhotos] = useState<ProducerFile[]>([])
   const submissionLock = useRef(false)
   const navigate = useNavigate()
-  async function lookup(e: FormEvent) {
+  async function lookup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
     setBusy(true)
     setError('')
     setResult(null)
@@ -81,8 +87,13 @@ export function PreRegistrationStep({
       setBusy(false)
     }
   }
-  async function confirm(e: FormEvent) {
+  async function confirm(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
     if (submissionLock.current) return
     if (!result?.produtor || !result.confirmacaoToken) return
     if (createAccountMode && password !== passwordConfirmation) {
@@ -191,7 +202,7 @@ export function PreRegistrationStep({
         Já participou de uma edição anterior do catálogo? Informe exatamente o
         mesmo tipo e número de documento utilizado naquela edição.
       </p>
-      <form onSubmit={lookup} className="space-y-4">
+      <form noValidate onSubmit={lookup} className="space-y-4">
         <fieldset disabled={busy || notice} className="space-y-4">
           <label className="block">
             Tipo de documento
@@ -295,7 +306,7 @@ export function PreRegistrationStep({
         </div>
       )}
       {reviewing && result?.produtor && (
-        <form onSubmit={(e) => void confirm(e)} className="space-y-4 rounded-lg border p-4">
+        <form noValidate onSubmit={(e) => void confirm(e)} className="space-y-4 rounded-lg border p-4">
           <h3 className="text-lg font-semibold">Revise seu cadastro e crie sua conta</h3>
           <p>Corrija os dados do pré-cadastro e informe um e-mail e uma senha para acessar seu perfil posteriormente. Alterações no perfil passam pela aprovação da administração.</p>
           <label className="block">Nome do produtor<input required className="mt-1 block w-full rounded border p-3" value={producerName} onChange={(e) => setProducerName(e.target.value)} /></label>

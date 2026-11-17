@@ -108,3 +108,34 @@ textarea:focus-visible {
     opacity: 1;
   }
 }
+
+/*
+ * Validação de formulários (ver shared/lib/form-validation.ts): depois da
+ * primeira tentativa de envio, campos inválidos ficam com borda vermelha e o
+ * rótulo do campo também é destacado.
+ */
+form[data-validated] :is(input, select, textarea):not([type='file']):invalid {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+  background-color: #fffafa;
+}
+
+form[data-validated] label:has(:is(input, select, textarea):invalid) > span:first-child {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+form[data-validated] [data-dropzone]:has([data-required-proxy]:invalid) [data-dropzone-target] {
+  border-color: var(--color-danger);
+  background-color: #fffafa;
+}
+
+form[data-validated] [data-dropzone]:has([data-required-proxy]:invalid) [data-dropzone-error] {
+  display: block;
+}
+
+form[data-validated] [data-file-input]:has([data-required-proxy]:invalid) > button {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+  background-color: #fffafa;
+}

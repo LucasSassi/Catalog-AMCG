@@ -9,8 +9,12 @@ import {
   inscriptionControlClassName,
   inscriptionTextareaClassName,
 } from '../../produtor/components/InscriptionField'
+import { ImageDropzone } from '../../produtor/components/ImageDropzone'
 import { InscriptionFileInput } from '../../produtor/components/InscriptionFileInput'
-import { YES_NO_OPTIONS } from '../../produtor/constants'
+import {
+  IMAGE_CONTENT_TYPES,
+  YES_NO_OPTIONS,
+} from '../../produtor/constants'
 import type {
   InscriptionProductDraft,
   ProducerFile,
@@ -24,8 +28,6 @@ interface InscriptionProductFieldsProps {
   canRemove: boolean
   onRemove: () => void
   onChange: (product: InscriptionProductDraft) => void
-  onPickAvaliacao: (files: FileList | null) => void
-  onPickDivulgacao: (files: FileList | null) => void
   onPickComprovante: (files: FileList | null) => void
 }
 
@@ -44,8 +46,6 @@ export function InscriptionProductFields({
   canRemove,
   onRemove,
   onChange,
-  onPickAvaliacao,
-  onPickDivulgacao,
   onPickComprovante,
 }: InscriptionProductFieldsProps) {
   function update<K extends keyof InscriptionProductDraft>(
@@ -64,7 +64,6 @@ export function InscriptionProductFields({
   }
 
   const comprovanteRequired = product.premiado === 'Sim'
-  const photosHint = `Até ${MAX_PRODUCT_PHOTOS} arquivos`
 
   return (
     <div className="space-y-4">
@@ -187,31 +186,30 @@ export function InscriptionProductFields({
             accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
             fileNames={fileNames(product.comprovantePremiacao)}
             onChange={onPickComprovante}
+            required={comprovanteRequired}
           />
         </InscriptionField>
+      </div>
 
-        <InscriptionField
-          label="Fotos de AVALIAÇÃO (rótulo - jpg, png)"
+      <div className="grid gap-6 md:grid-cols-2">
+        <ImageDropzone
+          label="Fotos de avaliação (rótulo)"
+          description="Usadas só pela curadoria: rótulo, embalagem e registro."
+          files={product.fotosAvaliacao}
+          max={MAX_PRODUCT_PHOTOS}
+          allowedTypes={IMAGE_CONTENT_TYPES}
+          onChange={(files) => update('fotosAvaliacao', files)}
           required
-        >
-          <InscriptionFileInput
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-            multiple
-            fileNames={product.fotosAvaliacao.map((file) => file.nomeOriginal)}
-            onChange={onPickAvaliacao}
-            hint={photosHint}
-          />
-        </InscriptionField>
-
-        <InscriptionField label="Fotos de DIVULGAÇÃO (jpg, png)" required>
-          <InscriptionFileInput
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-            multiple
-            fileNames={product.fotosDivulgacao.map((file) => file.nomeOriginal)}
-            onChange={onPickDivulgacao}
-            hint={photosHint}
-          />
-        </InscriptionField>
+        />
+        <ImageDropzone
+          label="Fotos de divulgação"
+          description="Aparecem no catálogo. A primeira foto vira a capa."
+          files={product.fotosDivulgacao}
+          max={MAX_PRODUCT_PHOTOS}
+          allowedTypes={IMAGE_CONTENT_TYPES}
+          onChange={(files) => update('fotosDivulgacao', files)}
+          required
+        />
       </div>
 
       <div className="max-w-xs">
