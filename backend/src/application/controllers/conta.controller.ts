@@ -2,6 +2,8 @@ import { reviewStatusFilter } from "../../domain/common/review-status";
 import type { IProdutorService } from "../../domain/produtor/entity/interfaces/produtor.service.interface";
 import { toProdutorEntity } from "../../infraestructure/repository/produtor/adapters/produtor.adapter";
 import { PreCadastroService } from "../services/pre-cadastro.service";
+import type { IEmailSender } from "../services/email/email-sender";
+import type { ICodigoVerificacaoRepository } from "../services/verificacao/codigo-verificacao.repository";
 import { createRateLimiter } from "../middleware/rate-limit.middleware";
 import { Router, type Request, type RequestHandler } from "express";
 import { isValidObjectId } from "mongoose";
@@ -84,10 +86,16 @@ function responsePage<T extends { _id: unknown }>(items: T[], size: number) {
   };
 }
 
+export interface ContaControllerVerificacaoDeps {
+  emailSender?: IEmailSender;
+  codigosVerificacao?: ICodigoVerificacaoRepository;
+}
+
 export function createContaController(
   jwtSecret: string,
   produtoService: IProdutoService,
   produtorService?: IProdutorService,
+  verificacao: ContaControllerVerificacaoDeps = {},
 ) {
   const router = Router();
   const auth = createAuthMiddleware(jwtSecret),
@@ -97,7 +105,12 @@ export function createContaController(
     if (!user) throw new NotFoundError("Usuário não encontrado");
     return user;
   }
-  const preCadastro = new PreCadastroService(jwtSecret);
+  const preCadastro = new PreCadastroService(jwtSecret, {
+    ...(verificacao.emailSender ? { emailSender: verificacao.emailSender } : {}),
+    ...(verificacao.codigosVerificacao
+      ? { codigos: verificacao.codigosVerificacao }
+      : {}),
+  });
   const lookupLimiter = createRateLimiter({
     windowMs: 15 * 60 * 1000,
     limit: 20,
@@ -107,6 +120,13 @@ export function createContaController(
     lookupLimiter,
     wrap(async (req, res) => {
       res.json(await preCadastro.consultar(undefined, req.body));
+    }),
+  );
+  router.post(
+    "/minha-conta/pre-cadastro/verificar",
+    lookupLimiter,
+    wrap(async (req, res) => {
+      res.json(await preCadastro.verificar(undefined, req.body));
     }),
   );
   router.post(
