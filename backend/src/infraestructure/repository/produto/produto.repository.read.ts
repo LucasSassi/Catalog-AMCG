@@ -5,6 +5,7 @@ import type { IProdutoRepositoryRead } from "../../../domain/produto/repository/
 import type {
   CatalogoCursorFiltros,
   CatalogoCursorPage,
+  CatalogoSimilaresSorteioFiltros,
   ListarProdutosFiltros,
   Produto,
 } from "../../../domain/produto/entity/produto.entity";
@@ -213,6 +214,35 @@ export class ProdutoRepositoryRead implements IProdutoRepositoryRead {
       }),
       { $sample: { size } },
       { $project: { produtorDoc: 0 } },
+    ];
+
+    const documents = await ProdutoModel.aggregate(pipeline).exec();
+    return documents.map((document) =>
+      toProdutoEntity(document as Parameters<typeof toProdutoEntity>[0]),
+    );
+  }
+
+  async sampleSimilares(
+    filtros: CatalogoSimilaresSorteioFiltros,
+  ): Promise<Produto[]> {
+    if (filtros.size <= 0) {
+      return [];
+    }
+
+    const pipeline: PipelineStage[] = [
+      ...buildCatalogFilterStages({
+        pageSize: filtros.size,
+        categoria: filtros.categoria,
+      }),
+      { $match: { produtorId: { $ne: filtros.excludeProdutorId } } },
+      // Embaralha antes de agrupar para que o produto escolhido de cada
+      // produtor também seja aleatório, e depois sorteia entre os produtores.
+      { $set: { _sorteio: { $rand: {} } } },
+      { $sort: { _sorteio: 1 } },
+      { $group: { _id: "$produtorId", produto: { $first: "$$ROOT" } } },
+      { $sample: { size: filtros.size } },
+      { $replaceRoot: { newRoot: "$produto" } },
+      { $project: { produtorDoc: 0, _sorteio: 0 } },
     ];
 
     const documents = await ProdutoModel.aggregate(pipeline).exec();

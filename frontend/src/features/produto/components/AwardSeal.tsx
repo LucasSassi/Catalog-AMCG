@@ -7,13 +7,15 @@ type CatalogAward = CatalogProductDetail['premiacoes'][number]
 
 interface AwardSealProps {
   premiacoes: CatalogAward[]
+  /** Posição e tamanho do selo, definidos por quem usa. */
+  className?: string
 }
 
 function formatAwardSummary(award: CatalogAward): string {
   return `${award.nome} (${award.ano})`
 }
 
-export function AwardSeal({ premiacoes }: AwardSealProps) {
+export function AwardSeal({ premiacoes, className = '' }: AwardSealProps) {
   const [isHintVisible, setIsHintVisible] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -25,7 +27,7 @@ export function AwardSeal({ premiacoes }: AwardSealProps) {
 
   return (
     <>
-      <div className="relative">
+      <div className={className}>
         <button
           type="button"
           aria-label={`Produto premiado. ${summary}. Clique para ver detalhes.`}
@@ -35,25 +37,22 @@ export function AwardSeal({ premiacoes }: AwardSealProps) {
           onFocus={() => setIsHintVisible(true)}
           onBlur={() => setIsHintVisible(false)}
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white py-1.5 pl-1.5 pr-3.5 shadow-[0_6px_20px_rgba(10,59,37,.14)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-yellow sm:min-h-12 sm:gap-2.5 sm:pr-4"
+          className="block h-full w-full rounded-full transition hover:rotate-6 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-yellow"
         >
           <img
             src={premiadoBadge}
             alt=""
-            width={64}
-            height={64}
+            width={144}
+            height={144}
             loading="lazy"
             decoding="async"
-            className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
+            className="h-full w-full object-contain drop-shadow-[0_6px_12px_rgba(10,59,37,0.35)]"
           />
-          <span className="text-sm font-bold uppercase tracking-wide text-foreground sm:text-base">
-            Produto premiado
-          </span>
         </button>
         {isHintVisible ? (
           <p
             role="tooltip"
-            className="absolute left-0 top-full z-20 mt-2 w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium leading-4 text-slate-800 shadow-md"
+            className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium leading-4 text-slate-800 shadow-md"
           >
             {premiacoes.map((award) => (
               <span key={`${award.nome}-${award.ano}`} className="block">

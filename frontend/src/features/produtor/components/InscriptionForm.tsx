@@ -1,9 +1,13 @@
 import type { ProducerDocument } from '../types'
 import { useState, type FormEvent } from 'react'
 import { InscriptionProductFields } from '../../produto/components/InscriptionProductFields'
-import { MAX_PRODUCT_PHOTOS } from '../../produto/constants'
 import { Button } from '../../../shared/components/Button'
 import { Feedback } from '../../../shared/components/Feedback'
+import {
+  describeInvalidField,
+  findFirstInvalidField,
+  revealField,
+} from '../../../shared/lib/form-validation'
 import {
   AMCG_MUNICIPIOS,
   COMPANY_REGISTRATION_TYPE_OPTIONS,
@@ -13,11 +17,7 @@ import {
 } from '../constants'
 import { useSubmitInscription } from '../hooks/useSubmitInscription'
 import { buildInscriptionPayload } from '../lib/build-inscription-payload'
-import {
-  FileConversionError,
-  fileToArquivo,
-  filesToArquivos,
-} from '../lib/file-to-arquivo'
+import { FileConversionError, fileToArquivo } from '../lib/file-to-arquivo'
 import { maskPhoneInput } from '../lib/phone-mask'
 import type {
   InscriptionFormState,
@@ -29,10 +29,8 @@ import {
   inscriptionControlClassName,
   inscriptionTextareaClassName,
 } from './InscriptionField'
-import { InscriptionFileInput } from './InscriptionFileInput'
+import { ImageDropzone } from './ImageDropzone'
 import { InscriptionSection } from './InscriptionSection'
-
-const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
 
 const AWARD_CONTENT_TYPES = [
   'application/pdf',
@@ -137,52 +135,6 @@ export function InscriptionForm({
     })
   }
 
-  async function handleLogoChange(files: FileList | null) {
-    setLocalError('')
-
-    try {
-      const arquivos = await filesToArquivos(files, IMAGE_CONTENT_TYPES, 1)
-      updateField('logo', arquivos[0])
-    } catch (conversionError) {
-      setLocalError(toErrorMessage(conversionError))
-    }
-  }
-
-  async function handleProducerPhotosChange(files: FileList | null) {
-    setLocalError('')
-
-    try {
-      const arquivos = await filesToArquivos(
-        files,
-        IMAGE_CONTENT_TYPES,
-        MAX_PRODUCER_PHOTOS,
-      )
-      updateField('fotosDivulgacao', arquivos)
-    } catch (conversionError) {
-      setLocalError(toErrorMessage(conversionError))
-    }
-  }
-
-  async function handleProductPhotos(
-    index: number,
-    field: 'fotosAvaliacao' | 'fotosDivulgacao',
-    files: FileList | null,
-  ) {
-    setLocalError('')
-
-    try {
-      const arquivos = await filesToArquivos(
-        files,
-        IMAGE_CONTENT_TYPES,
-        MAX_PRODUCT_PHOTOS,
-      )
-      const product = form.produtos[index]
-      updateProduct(index, { ...product, [field]: arquivos })
-    } catch (conversionError) {
-      setLocalError(toErrorMessage(conversionError))
-    }
-  }
-
   async function handleComprovanteChange(
     index: number,
     files: FileList | null,
@@ -211,15 +163,16 @@ export function InscriptionForm({
     event.preventDefault()
     setLocalError('')
 
-    if (!form.logo) {
-      setLocalError('Logo da empresa é obrigatório (jpg, png ou webp).')
-      return
-    }
-
-    if (form.fotosDivulgacao.length === 0) {
-      setLocalError(
-        'Ao menos uma foto de divulgação do produtor é obrigatória.',
-      )
+    const invalidField = findFirstInvalidField(event.currentTarget)
+    if (invalidField) {
+      setLocalError(describeInvalidField(invalidField))
+      // Abre a seção recolhida que contém o campo antes de rolar até ele.
+      const section = invalidField
+        .closest('[data-section]')
+        ?.getAttribute('data-section')
+      if (section === 'empresa') setCompanyOpen(true)
+      if (section === 'produtos') setProductOpen(true)
+      requestAnimationFrame(() => revealField(invalidField))
       return
     }
 
@@ -244,8 +197,9 @@ export function InscriptionForm({
   const canRemoveProduct = form.produtos.length > 1
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <form className="space-y-6" noValidate onSubmit={handleSubmit}>
       <InscriptionSection
+        id="empresa"
         title="Dados da Empresa (Produtor)"
         open={companyOpen}
         onToggle={() => setCompanyOpen((current) => !current)}
@@ -265,15 +219,6 @@ export function InscriptionForm({
                 </option>
               ))}
             </select>
-          </InscriptionField>
-
-          <InscriptionField label="Logo (jpg, png, webp)" required>
-            <InscriptionFileInput
-              accept={IMAGE_ACCEPT}
-              fileNames={form.logo ? [form.logo.nomeOriginal] : []}
-              onChange={handleLogoChange}
-              hint="1 arquivo"
-            />
           </InscriptionField>
 
           <InscriptionField label="Nome da Empresa" required>
@@ -484,19 +429,24 @@ export function InscriptionForm({
           </InscriptionField>
         </div>
 
-        <div className="mt-4">
-          <InscriptionField
-            label="Fotos de divulgação (jpg, png, webp)"
+        <div className="mt-6 grid gap-6 md:grid-cols-[1fr_2fr]">
+          <ImageDropzone
+            label="Logo"
+            files={form.logo ? [form.logo] : []}
+            max={1}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('logo', files[0])}
             required
-          >
-            <InscriptionFileInput
-              accept={IMAGE_ACCEPT}
-              multiple
-              fileNames={form.fotosDivulgacao.map((file) => file.nomeOriginal)}
-              onChange={handleProducerPhotosChange}
-              hint={`Até ${MAX_PRODUCER_PHOTOS} arquivos`}
-            />
-          </InscriptionField>
+          />
+          <ImageDropzone
+            label="Fotos de divulgação"
+            description="Mostre a propriedade, a produção e a família. A primeira foto vira a capa."
+            files={form.fotosDivulgacao}
+            max={MAX_PRODUCER_PHOTOS}
+            allowedTypes={IMAGE_CONTENT_TYPES}
+            onChange={(files) => updateField('fotosDivulgacao', files)}
+            required
+          />
         </div>
 
         <div className="mt-4">
@@ -513,6 +463,7 @@ export function InscriptionForm({
       </InscriptionSection>
 
       <InscriptionSection
+        id="produtos"
         title="Dados do Produto"
         open={productOpen}
         onToggle={() => setProductOpen((current) => !current)}
@@ -529,12 +480,6 @@ export function InscriptionForm({
                 canRemove={canRemoveProduct}
                 onRemove={() => removeProduct(index)}
                 onChange={(next) => updateProduct(index, next)}
-                onPickAvaliacao={(files) =>
-                  void handleProductPhotos(index, 'fotosAvaliacao', files)
-                }
-                onPickDivulgacao={(files) =>
-                  void handleProductPhotos(index, 'fotosDivulgacao', files)
-                }
                 onPickComprovante={(files) =>
                   void handleComprovanteChange(index, files)
                 }

@@ -13,6 +13,10 @@ interface ImageDropzoneProps {
   max: number
   allowedTypes: readonly string[]
   onChange: (files: ProducerFile[]) => void
+  /** Exige ao menos uma imagem ao enviar o formulário (ver form-validation). */
+  required?: boolean
+  /** Formato da prévia; banners usam uma prévia larga. */
+  previewAspect?: 'square' | 'wide'
 }
 
 /**
@@ -26,6 +30,8 @@ export function ImageDropzone({
   max,
   allowedTypes,
   onChange,
+  required = false,
+  previewAspect = 'square',
 }: ImageDropzoneProps) {
   const inputId = useId()
   const [errors, setErrors] = useState<string[]>([])
@@ -76,9 +82,31 @@ export function ImageDropzone({
   }
 
   return (
-    <div>
+    <div className="relative" data-dropzone>
+      {required ? (
+        // Input oculto só para a validação do formulário enxergar o campo.
+        <input
+          tabIndex={-1}
+          aria-hidden="true"
+          required
+          // Sem readOnly: campos somente leitura ficam fora da validação.
+          onChange={() => {}}
+          value={files.length > 0 ? String(files.length) : ''}
+          data-required-proxy=""
+          data-required-message="adicione ao menos uma imagem"
+          data-field-label={label}
+          className="sr-only"
+        />
+      ) : null}
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <span className="text-sm font-semibold text-foreground">
+          {label}
+          {required ? (
+            <span className="ml-0.5 text-red-600" aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </span>
         <span className="text-xs text-text-muted">
           {files.length}/{max}
         </span>
@@ -88,16 +116,29 @@ export function ImageDropzone({
       ) : null}
 
       {files.length > 0 ? (
-        <ul className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-2.5">
+        <ul
+          className={`mt-2.5 grid gap-2.5 ${
+            previewAspect === 'wide'
+              ? 'grid-cols-1'
+              : 'grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))]'
+          }`}
+        >
           {files.map((file, index) => (
             <li
               key={`${file.nomeOriginal}-${index}`}
               className="group relative overflow-hidden rounded-xl border border-border-soft bg-background"
             >
               <img
-                src={buildThumbnailUrl(file.url, THUMBNAIL_WIDTH.gallery)}
+                src={buildThumbnailUrl(
+                  file.url,
+                  previewAspect === 'wide'
+                    ? THUMBNAIL_WIDTH.card
+                    : THUMBNAIL_WIDTH.gallery,
+                )}
                 alt={file.nomeOriginal}
-                className="aspect-square w-full object-cover"
+                className={`w-full object-cover ${
+                  previewAspect === 'wide' ? 'aspect-[3/1]' : 'aspect-square'
+                }`}
               />
               {index === 0 && max > 1 ? (
                 <span className="absolute left-1.5 top-1.5 rounded-md bg-foreground/85 px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -126,6 +167,7 @@ export function ImageDropzone({
           }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
+          data-dropzone-target=""
           className={`mt-2.5 flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus-within:border-primary ${
             isDragging
               ? 'border-primary bg-secondary-background'
@@ -158,6 +200,13 @@ export function ImageDropzone({
           />
         </label>
       ) : null}
+
+      <p
+        data-dropzone-error=""
+        className="mt-1.5 hidden text-xs font-semibold text-danger"
+      >
+        Adicione ao menos uma imagem.
+      </p>
 
       {errors.length > 0 ? (
         <ul role="alert" className="mt-2 flex flex-col gap-1">

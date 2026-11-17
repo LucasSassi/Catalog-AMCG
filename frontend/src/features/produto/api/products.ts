@@ -9,7 +9,6 @@ import type {
   Product,
   ProductCatalog,
   ProductStatus,
-  SimilarProductsFilters,
   SimilarProductsResponse,
 } from '../types'
 
@@ -65,19 +64,9 @@ export function listFeaturedProducts(): Promise<FeaturedProductsResponse> {
 }
 
 export function listSimilarProducts(
-  filters: SimilarProductsFilters,
+  produtoId: string,
 ): Promise<SimilarProductsResponse> {
-  const searchParams = new URLSearchParams()
-  searchParams.set('categoria', filters.categoria)
-  searchParams.set('excludeId', filters.excludeId)
-
-  if (filters.pageSize !== undefined) {
-    searchParams.set('pageSize', String(filters.pageSize))
-  }
-
-  if (filters.lastItemId) {
-    searchParams.set('lastItemId', filters.lastItemId)
-  }
+  const searchParams = new URLSearchParams({ produtoId })
 
   return apiRequest<SimilarProductsResponse>(
     `/api/produtos/catalogo/similares?${searchParams.toString()}`,
@@ -89,7 +78,10 @@ export function listProducerProducts(
 ): Promise<ProducerProductsResponse> {
   const searchParams = new URLSearchParams()
   searchParams.set('produtorId', filters.produtorId)
-  searchParams.set('excludeId', filters.excludeId)
+
+  if (filters.excludeId) {
+    searchParams.set('excludeId', filters.excludeId)
+  }
 
   if (filters.pageSize !== undefined) {
     searchParams.set('pageSize', String(filters.pageSize))

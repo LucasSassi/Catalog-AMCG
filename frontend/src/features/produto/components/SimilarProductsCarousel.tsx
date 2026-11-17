@@ -229,7 +229,7 @@ export function SimilarProductsCarousel({
   )
 }
 
-function ProductCarouselCard({ product }: { product: CatalogProduct }) {
+export function ProductCarouselCard({ product }: { product: CatalogProduct }) {
   const whatsappUrl = buildProductWhatsAppUrl(product)
 
   return (

@@ -1,5 +1,7 @@
 import cors from "cors";
 import { createContaController } from "./application/controllers/conta.controller";
+import type { IEmailSender } from "./application/services/email/email-sender";
+import type { ICodigoVerificacaoRepository } from "./application/services/verificacao/codigo-verificacao.repository";
 import express, { type Express } from "express";
 import { createBannerController } from "./application/controllers/banner.controller";
 import { createInscricaoController } from "./application/controllers/inscricao.controller";
@@ -38,6 +40,9 @@ export interface CreateAppOptions {
   produtoService?: IProdutoService;
   bannerService?: IBannerService;
   rateLimits?: CreateAppRateLimits;
+  /** Envio do código de verificação do pré-cadastro (padrão: log no console). */
+  emailSender?: IEmailSender;
+  codigosVerificacao?: ICodigoVerificacaoRepository;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -110,7 +115,15 @@ export function createApp(options: CreateAppOptions): Express {
     }),
   );
 
-  app.use("/api", createContaController(options.jwtSecret, produtoService, produtorService));
+  app.use(
+    "/api",
+    createContaController(options.jwtSecret, produtoService, produtorService, {
+      ...(options.emailSender ? { emailSender: options.emailSender } : {}),
+      ...(options.codigosVerificacao
+        ? { codigosVerificacao: options.codigosVerificacao }
+        : {}),
+    }),
+  );
 
   app.use(errorHandler);
 

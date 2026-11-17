@@ -11,6 +11,7 @@ import { isAuthTokenValid } from '../../shared/api/auth-token'
 import { Modal } from '../../shared/components/Modal'
 import { Button } from '../../shared/components/Button'
 import { useManagementPage } from '../../shared/lib/useManagementPage'
+import { revealFirstInvalidField } from '../../shared/lib/form-validation'
 import { formatCurrency } from '../../shared/lib/formatCurrency'
 
 export function AccountLoginPage() {
@@ -137,8 +138,13 @@ function ProductOwnerEdit({
     [divulgacao, setDivulgacao] = useState(product.fotosDivulgacao)
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false)
-  async function save(e: FormEvent) {
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -169,7 +175,7 @@ function ProductOwnerEdit({
         if (!busy) onClose()
       }}
     >
-      <form onSubmit={save} className="space-y-5">
+      <form noValidate onSubmit={save} className="space-y-5">
         <fieldset disabled={busy} className="space-y-5">
           <label className="block">
             Nome
@@ -218,6 +224,7 @@ function ProductOwnerEdit({
           </label>
           <ImageDropzone
             label="Fotos de avaliação"
+            required
             files={avaliacao}
             max={5}
             allowedTypes={['image/jpeg', 'image/png', 'image/webp']}
@@ -225,6 +232,7 @@ function ProductOwnerEdit({
           />
           <ImageDropzone
             label="Fotos de divulgação"
+            required
             files={divulgacao}
             max={5}
             allowedTypes={['image/jpeg', 'image/png', 'image/webp']}

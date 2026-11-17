@@ -69,6 +69,8 @@ export interface Produtor {
   historia: string;
   logo?: Arquivo;
   fotos: Arquivo[];
+  /** Imagem larga usada como capa quando o produtor aparece em destaque. */
+  banner?: Arquivo;
   redesSociais: RedeSocialItem[];
   site?: string;
   ativo: boolean;
@@ -88,6 +90,7 @@ export interface ProdutorCatalogo {
   historia: string;
   logo?: Arquivo;
   fotos: Arquivo[];
+  banner?: Arquivo;
   endereco?: EnderecoCatalogo;
   redesSociais: RedeSocialItem[];
   site?: string;
@@ -129,6 +132,7 @@ export interface AtualizarProdutorInput {
   historia?: string;
   logo?: Arquivo | null;
   fotos?: Arquivo[];
+  banner?: Arquivo | null;
   redesSociais?: RedeSocialItem[];
   site?: string | null;
   status?: StatusProdutor;

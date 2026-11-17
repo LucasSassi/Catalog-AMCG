@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AwardSeal } from '../../features/produto/components/AwardSeal'
 import { SealBadge } from '../../features/produto/components/SealBadge'
 import { SimilarProductsCarousel } from '../../features/produto/components/SimilarProductsCarousel'
+import { SimilarProductsSection } from '../../features/produto/components/SimilarProductsSection'
 import {
   SEAL_INFO_TYPES,
   type SealInfoType,
@@ -27,7 +28,7 @@ function isSealInfoType(tipo: string): tipo is SealInfoType {
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { product, isLoading, error } = useCatalogProduct(id)
-  const similares = useSimilarProducts(product?.categoria, product?.id)
+  const similares = useSimilarProducts(product?.id)
   const doProdutor = useProducerProducts(product?.produtor.id, product?.id)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
 
@@ -103,8 +104,9 @@ export function ProductDetailPage() {
           </Link>
         </nav>
 
-        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-12">
+        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:gap-16">
           <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+            <div className="relative">
             <div className="relative overflow-hidden rounded-3xl bg-slate-100 shadow-sm sm:rounded-[1.75rem]">
               <img
                 src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
@@ -116,16 +118,23 @@ export function ProductDetailPage() {
                 decoding="async"
                 className="aspect-square w-full object-cover"
               />
-              {product.premiado ? (
-                <div className="absolute left-3.5 top-3.5 sm:left-5 sm:top-5">
-                  <AwardSeal premiacoes={product.premiacoes} />
-                </div>
-              ) : null}
               {photos.length > 1 ? (
                 <span className="absolute bottom-3.5 right-3.5 rounded-full bg-foreground/80 px-3 py-1.5 text-xs font-semibold text-white sm:bottom-5 sm:right-5">
                   {selectedPhotoIndex + 1} / {photos.length}
                 </span>
               ) : null}
+            </div>
+            {product.premiado ? (
+              // Fora do `overflow-hidden` da foto para 35% do selo ficar para
+              // fora (translate em % do próprio selo). Em telas menores sai
+              // menos para a direita para não passar da margem da página
+              // (px-4 / sm:px-6). No desktop a foto fica na coluna esquerda e
+              // o selo sai para o gap (lg:gap-16).
+              <AwardSeal
+                premiacoes={product.premiacoes}
+                className="absolute right-0 top-0 z-10 h-24 w-24 -translate-y-[35%] translate-x-[12%] sm:h-28 sm:w-28 sm:translate-x-[20%] lg:h-36 lg:w-36 lg:translate-x-[35%]"
+              />
+            ) : null}
             </div>
 
             {photos.length > 1 ? (
@@ -266,19 +275,6 @@ export function ProductDetailPage() {
         </section>
 
         <SimilarProductsCarousel
-          title="Produtos similares"
-          previousLabel="Página anterior de produtos similares"
-          nextLabel="Próxima página de produtos similares"
-          loadingLabel="Carregando produtos similares..."
-          products={similares.products}
-          hasPrevious={similares.hasPrevious}
-          hasNext={similares.hasNext}
-          onPrevious={similares.goToPreviousPage}
-          onNext={similares.goToNextPage}
-          isLoading={similares.isLoading}
-        />
-
-        <SimilarProductsCarousel
           title="Outros produtos do produtor"
           previousLabel="Página anterior de produtos do produtor"
           nextLabel="Próxima página de produtos do produtor"
@@ -289,6 +285,12 @@ export function ProductDetailPage() {
           onPrevious={doProdutor.goToPreviousPage}
           onNext={doProdutor.goToNextPage}
           isLoading={doProdutor.isLoading}
+        />
+
+        <SimilarProductsSection
+          title="Produtos similares de outros produtores"
+          products={similares.products}
+          isLoading={similares.isLoading}
         />
       </div>
 

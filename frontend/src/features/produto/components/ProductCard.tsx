@@ -18,10 +18,13 @@ export function ProductCard({ product }: ProductCardProps) {
     PRODUCT_CATEGORY_LABELS[product.categoria] ?? product.categoria
 
   return (
-    <article className="[contain-intrinsic-size:auto_300px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_340px]">
+    // O selo de premiado fica fora do wrapper com `content-visibility` e fora
+    // do `overflow-hidden` do link, senão a metade que sai do card é cortada.
+    <article className="group relative">
+      <div className="h-full [contain-intrinsic-size:auto_300px] [content-visibility:auto] sm:[contain-intrinsic-size:auto_340px]">
       <Link
         to={`/produtos/${product.id}`}
-        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border-soft bg-white text-left transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(10,59,37,0.35)]"
+        className="flex h-full flex-col overflow-hidden rounded-2xl border border-border-soft bg-white text-left transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(10,59,37,0.35)]"
       >
         <div className="relative aspect-square overflow-hidden bg-slate-100">
           <img
@@ -36,20 +39,9 @@ export function ProductCard({ product }: ProductCardProps) {
             decoding="async"
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
-          <span className={`absolute left-2 top-2 ${product.premiado ? 'max-w-[calc(100%-5rem)] sm:max-w-[calc(100%-6rem)]' : 'max-w-[calc(100%-1rem)]'} truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-primary-darker shadow-sm sm:text-[11px]`}>
+          <span className={`absolute left-2 top-2 ${product.premiado ? 'max-w-[calc(100%-3rem)] sm:max-w-[calc(100%-4rem)]' : 'max-w-[calc(100%-1rem)]'} truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-primary-darker shadow-sm sm:text-[11px]`}>
             {categoryLabel}
           </span>
-          {product.premiado ? (
-            <img
-              src={premiadoBadge}
-              alt="Produto premiado"
-              width={80}
-              height={80}
-              loading="lazy"
-              decoding="async"
-              className="absolute right-1.5 top-1.5 h-16 w-16 object-contain drop-shadow sm:h-20 sm:w-20"
-            />
-          ) : null}
         </div>
 
         <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2 sm:px-3.5 sm:pb-3.5 sm:pt-3">
@@ -84,6 +76,23 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </Link>
+      </div>
+
+      {product.premiado ? (
+        // 65% sobre a foto e 35% para fora (translate em % do próprio selo).
+        // Em telas menores sai menos para a direita para não ultrapassar o
+        // espaçamento da grade e a margem da página (px-4 / sm:px-6).
+        <img
+          src={premiadoBadge}
+          alt="Produto premiado"
+          title="Produto premiado"
+          width={80}
+          height={80}
+          loading="lazy"
+          decoding="async"
+          className="pointer-events-none absolute right-0 top-0 z-10 h-14 w-14 -translate-y-[35%] translate-x-[18%] object-contain drop-shadow-[0_4px_8px_rgba(10,59,37,0.35)] transition duration-300 group-hover:-translate-y-[calc(35%+2px)] group-hover:rotate-6 sm:h-20 sm:w-20 sm:translate-x-[28%] lg:translate-x-[35%]"
+        />
+      ) : null}
     </article>
   )
 }

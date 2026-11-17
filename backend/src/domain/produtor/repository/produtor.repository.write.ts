@@ -44,6 +44,7 @@ export interface UpdateProdutorData {
   historia?: string;
   logo?: Arquivo | null;
   fotos?: Arquivo[];
+  banner?: Arquivo | null;
   redesSociais?: RedeSocialItem[];
   site?: string | null;
   ativo?: boolean;

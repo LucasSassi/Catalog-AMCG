@@ -7,6 +7,8 @@ interface InscriptionFileInputProps {
   onChange: (files: FileList | null) => void
   emptyLabel?: string
   hint?: string
+  /** Exige um arquivo ao enviar o formulário (ver form-validation). */
+  required?: boolean
 }
 
 export function InscriptionFileInput({
@@ -16,6 +18,7 @@ export function InscriptionFileInput({
   onChange,
   emptyLabel = 'Nenhum anexo inserido',
   hint,
+  required = false,
 }: InscriptionFileInputProps) {
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -23,7 +26,7 @@ export function InscriptionFileInput({
     fileNames.length > 0 ? fileNames.join(', ') : emptyLabel
 
   return (
-    <div className="relative">
+    <div className="relative" data-file-input>
       <button
         type="button"
         className="flex min-h-11 w-full items-center justify-between gap-2 rounded-b-md border border-t-0 border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-500"
@@ -44,6 +47,21 @@ export function InscriptionFileInput({
         className="sr-only"
         onChange={(event) => onChange(event.target.files)}
       />
+      {required ? (
+        // Input oculto só para a validação; fica por último para o <label> do
+        // campo continuar acionando o botão.
+        <input
+          tabIndex={-1}
+          aria-hidden="true"
+          required
+          // Sem readOnly: campos somente leitura ficam fora da validação.
+          onChange={() => {}}
+          value={fileNames.length > 0 ? fileNames.join(',') : ''}
+          data-required-proxy=""
+          data-required-message="anexe o arquivo"
+          className="sr-only"
+        />
+      ) : null}
     </div>
   )
 }

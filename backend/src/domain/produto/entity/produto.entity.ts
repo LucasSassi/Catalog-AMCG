@@ -108,10 +108,15 @@ export interface CatalogoFiltros {
 }
 
 export interface CatalogoSimilaresFiltros {
+  /** Produto da página: os similares usam a categoria dele e excluem o produtor dele. */
+  produtoId: string;
+}
+
+/** Sorteio de similares: mesma categoria, outro produtor, no máximo um por produtor. */
+export interface CatalogoSimilaresSorteioFiltros {
   categoria: CategoriaProduto;
-  excludeId?: string;
-  pageSize?: number;
-  lastItemId?: string;
+  excludeProdutorId: string;
+  size: number;
 }
 
 export interface CatalogoDoProdutorFiltros {
@@ -186,7 +191,7 @@ export interface CatalogoDestaquesProdutos {
   produtos: ProdutoCatalogo[];
 }
 
-export interface CatalogoSimilaresProdutos extends CatalogoCursorMeta {
+export interface CatalogoSimilaresProdutos {
   produtos: ProdutoCatalogo[];
 }
 

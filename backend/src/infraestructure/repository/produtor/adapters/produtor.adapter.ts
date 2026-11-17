@@ -55,6 +55,15 @@ export function toProdutorEntity(document: ProdutorModelDocument): Produtor {
       contentType: foto.contentType,
       nomeOriginal: foto.nomeOriginal,
     })),
+    ...(document.banner
+      ? {
+          banner: {
+            url: document.banner.url,
+            contentType: document.banner.contentType,
+            nomeOriginal: document.banner.nomeOriginal,
+          },
+        }
+      : {}),
     redesSociais: (document.redesSociais ?? []).map((rede) => ({
       tipo: rede.tipo,
       handle: rede.handle,

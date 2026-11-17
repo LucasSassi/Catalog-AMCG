@@ -18,15 +18,11 @@ interface ProducerProfileProps {
   producer: CatalogProducer
 }
 
-const THUMBNAILS_VISIBLE = 3
-
 export function ProducerProfile({ producer }: ProducerProfileProps) {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
-  const [thumbStartIndex, setThumbStartIndex] = useState(0)
 
   useEffect(() => {
     setSelectedPhotoIndex(0)
-    setThumbStartIndex(0)
   }, [producer.id])
 
   const gallery = producer.logo
@@ -37,11 +33,6 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
   const hasMultiplePhotos = gallery.length > 1
   const mainPhoto = gallery[selectedPhotoIndex] ?? gallery[0]
   const isLogoSelected = hasLogo && selectedPhotoIndex === 0
-  const canScrollThumbsDown =
-    hasMultiplePhotos && thumbStartIndex + THUMBNAILS_VISIBLE < gallery.length
-  const visibleThumbs = hasMultiplePhotos
-    ? gallery.slice(thumbStartIndex, thumbStartIndex + THUMBNAILS_VISIBLE)
-    : []
 
   const whatsappUrl = buildWhatsAppUrl({
     telefone: producer.telefone,
@@ -62,20 +53,9 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
       : `${producer.municipio} - PR`,
   )}`
 
-  function handleScrollThumbs() {
-    if (!canScrollThumbsDown) {
-      setThumbStartIndex(0)
-      return
-    }
-
-    setThumbStartIndex((current) =>
-      Math.min(current + 1, gallery.length - THUMBNAILS_VISIBLE),
-    )
-  }
-
   return (
     <div
-      className={`grid gap-8 ${hasGallery ? 'lg:grid-cols-[1fr_1.05fr]' : ''}`}
+      className={`grid gap-8 ${hasGallery ? 'lg:grid-cols-[1fr_1.2fr]' : ''}`}
     >
       <div className="flex min-w-0 flex-col">
         <h3 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -140,10 +120,11 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-primary-darker"
+                aria-label={`Conversar com ${producer.nome} pelo WhatsApp`}
+                title="Conversar pelo WhatsApp"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-white transition hover:bg-primary-darker"
               >
                 <WhatsAppIcon />
-                WhatsApp
               </a>
             </ContactRow>
 
@@ -180,68 +161,50 @@ export function ProducerProfile({ producer }: ProducerProfileProps) {
       </div>
 
       {hasGallery && mainPhoto ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+        <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
           <div
-            className={`flex gap-3 ${hasMultiplePhotos ? 'flex-row' : ''}`}
+            className={`overflow-hidden rounded-2xl bg-slate-100 ${
+              isLogoSelected ? 'p-8' : ''
+            }`}
           >
-            <div
-              className={`min-w-0 flex-1 overflow-hidden rounded-2xl bg-slate-100 ${
-                isLogoSelected ? 'p-6' : ''
+            <img
+              src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
+              alt={
+                isLogoSelected
+                  ? `Logo de ${producer.nome}`
+                  : `Foto de ${producer.nome}`
+              }
+              width={900}
+              height={900}
+              loading="eager"
+              decoding="async"
+              className={`aspect-square w-full ${
+                isLogoSelected ? 'object-contain' : 'object-cover'
               }`}
-            >
-              <img
-                src={buildThumbnailUrl(mainPhoto.url, THUMBNAIL_WIDTH.detail)}
-                alt={
-                  isLogoSelected
-                    ? `Logo de ${producer.nome}`
-                    : `Foto de ${producer.nome}`
-                }
-                width={900}
-                height={900}
-                loading="eager"
-                decoding="async"
-                className={`aspect-square w-full ${
-                  isLogoSelected ? 'object-contain' : 'object-cover'
-                }`}
-              />
-            </div>
-
-            {hasMultiplePhotos ? (
-              <div className="flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24">
-                <div className="flex w-full flex-col gap-2">
-                  {visibleThumbs.map((photo, visibleIndex) => {
-                    const absoluteIndex = thumbStartIndex + visibleIndex
-                    const isLogoThumb = hasLogo && absoluteIndex === 0
-                    return (
-                      <ThumbnailButton
-                        key={`${photo.url}-${absoluteIndex}`}
-                        photo={photo}
-                        selected={absoluteIndex === selectedPhotoIndex}
-                        onSelect={() => setSelectedPhotoIndex(absoluteIndex)}
-                        alt={
-                          isLogoThumb
-                            ? `Logo de ${producer.nome}`
-                            : `Miniatura ${absoluteIndex + 1} de ${producer.nome}`
-                        }
-                        contain={isLogoThumb}
-                      />
-                    )
-                  })}
-                </div>
-
-                {gallery.length > THUMBNAILS_VISIBLE ? (
-                  <button
-                    type="button"
-                    onClick={handleScrollThumbs}
-                    aria-label="Ver mais fotos"
-                    className="grid h-8 w-8 place-items-center rounded-full bg-slate-900 text-white transition hover:bg-slate-700"
-                  >
-                    <ChevronDownIcon />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+            />
           </div>
+
+          {hasMultiplePhotos ? (
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
+              {gallery.map((photo, index) => {
+                const isLogoThumb = hasLogo && index === 0
+                return (
+                  <ThumbnailButton
+                    key={`${photo.url}-${index}`}
+                    photo={photo}
+                    selected={index === selectedPhotoIndex}
+                    onSelect={() => setSelectedPhotoIndex(index)}
+                    alt={
+                      isLogoThumb
+                        ? `Logo de ${producer.nome}`
+                        : `Miniatura ${index + 1} de ${producer.nome}`
+                    }
+                    contain={isLogoThumb}
+                  />
+                )
+              })}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -284,6 +247,7 @@ function ThumbnailButton({
     <button
       type="button"
       onClick={onSelect}
+      aria-pressed={selected}
       className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-slate-100 ${
         selected ? 'border-primary' : 'border-transparent'
       } ${contain ? 'p-1.5' : ''}`}
@@ -291,8 +255,8 @@ function ThumbnailButton({
       <img
         src={buildThumbnailUrl(photo.url, THUMBNAIL_WIDTH.gallery)}
         alt={alt}
-        width={96}
-        height={96}
+        width={160}
+        height={160}
         loading="lazy"
         decoding="async"
         className={`h-full w-full ${contain ? 'object-contain' : 'object-cover'}`}
@@ -322,22 +286,6 @@ function MapPinIcon() {
     >
       <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z" />
       <circle cx="12" cy="11" r="2.2" />
-    </svg>
-  )
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="14"
-      height="14"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      aria-hidden="true"
-    >
-      <path d="m6 9 6 6 6-6" />
     </svg>
   )
 }

@@ -362,6 +362,86 @@ describe("Quando usar o ProdutoService", () => {
     });
   });
 
+  describe("Quando listar produtos similares no catálogo público", () => {
+    async function seedOutroProdutor(indice: number): Promise<string> {
+      const produtor = await produtorService.create(
+        buildProdutorInput({
+          nomeEmpresa: `Fazenda Similar ${indice}`,
+          documento: { tipo: "CNPJ", numero: `1111111100010${indice}` },
+          registros: [{ tipo: "SIM", numero: `REG-SIMILAR-${indice}` }],
+          contato: {
+            telefone: `+554298888000${indice}`,
+            email: `similar${indice}@fazenda.com`,
+          },
+        }),
+      );
+      await produtorService.update(produtor.id, { status: "APROVADO" });
+      return produtor.id;
+    }
+
+    async function seedProdutoAprovado(
+      produtorId: string,
+      nome: string,
+      overrides: Partial<CadastrarProdutoInput> = {},
+    ) {
+      const produto = await service.create(
+        buildInput(produtorId, {
+          nome,
+          registros: [{ tipo: "SELO ARTE", numero: `REG-${nome}` }],
+          ...overrides,
+        }),
+      );
+      await service.update(produto.id, { status: "APROVADO" });
+      return produto;
+    }
+
+    it("Deve retornar até 3 produtos da mesma categoria, de outros produtores e um por produtor", async () => {
+      const atual = await seedProdutoAprovado(produtorAprovadoId, "ATUAL");
+      await seedProdutoAprovado(produtorAprovadoId, "MESMO-PRODUTOR");
+
+      const outrosProdutores = [];
+      for (let indice = 1; indice <= 4; indice += 1) {
+        const produtorId = await seedOutroProdutor(indice);
+        outrosProdutores.push(produtorId);
+        await seedProdutoAprovado(produtorId, `OUTRO-${indice}-A`);
+        await seedProdutoAprovado(produtorId, `OUTRO-${indice}-B`);
+      }
+      await seedProdutoAprovado(outrosProdutores[0], "OUTRA-CATEGORIA", {
+        categoria: "QUEIJOS_E_LACTEOS",
+      });
+
+      const { produtos } = await service.listSimilares({ produtoId: atual.id });
+
+      expect(produtos).toHaveLength(3);
+      expect(
+        produtos.every(
+          (produto) =>
+            produto.categoria === "MEL_E_DERIVADOS" &&
+            produto.produtor.id !== produtorAprovadoId,
+        ),
+      ).toBe(true);
+      expect(new Set(produtos.map((produto) => produto.produtor.id)).size).toBe(3);
+    });
+
+    it("Deve retornar menos de 3 quando não houver produtores suficientes", async () => {
+      const atual = await seedProdutoAprovado(produtorAprovadoId, "ATUAL");
+      const outroId = await seedOutroProdutor(1);
+      await seedProdutoAprovado(outroId, "OUTRO-A");
+      await seedProdutoAprovado(outroId, "OUTRO-B");
+
+      const { produtos } = await service.listSimilares({ produtoId: atual.id });
+
+      expect(produtos).toHaveLength(1);
+      expect(produtos[0]?.produtor.id).toBe(outroId);
+    });
+
+    it("Deve lançar não encontrado quando o produto não existe", async () => {
+      await expect(
+        service.listSimilares({ produtoId: "inexistente" }),
+      ).rejects.toMatchObject({ statusCode: 404 });
+    });
+  });
+
   describe("Quando listar produtos do produtor no catálogo público", () => {
     it("Deve retornar apenas produtos aprovados do produtor, excluir o id informado e paginar de 3", async () => {
       const outrosProdutor = await produtorService.create(

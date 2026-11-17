@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '../../shared/api/client'
 import { removeAuthToken, setAuthToken } from '../../shared/api/auth-token'
@@ -8,10 +8,25 @@ import { InscriptionForm } from '../../features/produtor/components/InscriptionF
 import { login } from '../../features/auth/api/login'
 import { register } from '../../features/auth/api/register'
 import { ImageDropzone } from '../../features/produtor/components/ImageDropzone'
+import { revealFirstInvalidField } from '../../shared/lib/form-validation'
 import type {
   ProducerDocument,
   ProducerFile,
 } from '../../features/produtor/types'
+/** Resposta de /consultar: se achou, um código foi enviado ao e-mail do pré-cadastro. */
+interface LookupResponse {
+  encontrado: boolean
+  verificacaoId?: string
+  emailMascarado?: string
+  reenvioEmSegundos?: number
+}
+interface PendingVerification {
+  verificacaoId: string
+  emailMascarado: string
+  /** Momento (ms) a partir do qual dá para pedir outro código. */
+  reenvioLiberadoEm: number
+}
+/** Dados liberados por /verificar depois do código correto. */
 interface Match {
   encontrado: boolean
   confirmacaoToken?: string
@@ -40,6 +55,10 @@ export function PreRegistrationStep({
     numero: '',
   })
   const [result, setResult] = useState<Match | null>(null)
+  const [verification, setVerification] =
+    useState<PendingVerification | null>(null)
+  const [code, setCode] = useState('')
+  const [now, setNow] = useState(() => Date.now())
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('')
   const [newRegistration, setNewRegistration] = useState(false),
@@ -59,18 +78,46 @@ export function PreRegistrationStep({
   const [photos, setPhotos] = useState<ProducerFile[]>([])
   const submissionLock = useRef(false)
   const navigate = useNavigate()
-  async function lookup(e: FormEvent) {
-    e.preventDefault()
+
+  // Contagem regressiva do botão "Reenviar código".
+  useEffect(() => {
+    if (!verification) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [verification])
+
+  const resendInSeconds = verification
+    ? Math.max(0, Math.ceil((verification.reenvioLiberadoEm - now) / 1000))
+    : 0
+
+  function resetLookup() {
+    setResult(null)
+    setVerification(null)
+    setCode('')
+  }
+
+  async function requestCode() {
     setBusy(true)
     setError('')
-    setResult(null)
     try {
-      setResult(
-        await apiRequest<Match>('/api/minha-conta/pre-cadastro/consultar', {
-          method: 'POST',
-          body: documento,
-        }),
+      const response = await apiRequest<LookupResponse>(
+        '/api/minha-conta/pre-cadastro/consultar',
+        { method: 'POST', body: documento },
       )
+      if (response.encontrado && response.verificacaoId) {
+        setResult(null)
+        setVerification({
+          verificacaoId: response.verificacaoId,
+          emailMascarado: response.emailMascarado ?? 'seu e-mail',
+          reenvioLiberadoEm:
+            Date.now() + (response.reenvioEmSegundos ?? 60) * 1000,
+        })
+        setNow(Date.now())
+        setCode('')
+      } else {
+        setVerification(null)
+        setResult({ encontrado: false })
+      }
     } catch (e) {
       setError(
         e instanceof Error
@@ -81,8 +128,60 @@ export function PreRegistrationStep({
       setBusy(false)
     }
   }
-  async function confirm(e: FormEvent) {
+
+  async function lookup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
+    resetLookup()
+    await requestCode()
+  }
+
+  async function verifyCode(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!verification) return
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const liberado = await apiRequest<Match>(
+        '/api/minha-conta/pre-cadastro/verificar',
+        {
+          method: 'POST',
+          body: { verificacaoId: verification.verificacaoId, codigo: code },
+        },
+      )
+      setVerification(null)
+      setCode('')
+      setResult(liberado)
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'Não foi possível verificar o código'
+      setError(message)
+      // Código expirado ou bloqueado: libera pedir outro na hora.
+      if (/novo código/i.test(message)) {
+        setVerification((current) =>
+          current ? { ...current, reenvioLiberadoEm: 0 } : current,
+        )
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function confirm(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const invalid = revealFirstInvalidField(e.currentTarget)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
     if (submissionLock.current) return
     if (!result?.produtor || !result.confirmacaoToken) return
     if (createAccountMode && password !== passwordConfirmation) {
@@ -191,8 +290,11 @@ export function PreRegistrationStep({
         Já participou de uma edição anterior do catálogo? Informe exatamente o
         mesmo tipo e número de documento utilizado naquela edição.
       </p>
-      <form onSubmit={lookup} className="space-y-4">
-        <fieldset disabled={busy || notice} className="space-y-4">
+      <form noValidate onSubmit={lookup} className="space-y-4">
+        <fieldset
+          disabled={busy || notice || Boolean(verification)}
+          className="space-y-4"
+        >
           <label className="block">
             Tipo de documento
             <select
@@ -203,7 +305,7 @@ export function PreRegistrationStep({
                   tipo: e.target.value as ProducerDocument['tipo'],
                   numero: '',
                 })
-                setResult(null)
+                resetLookup()
               }}
             >
               <option value="CPF">CPF</option>
@@ -229,7 +331,7 @@ export function PreRegistrationStep({
                 value={documento.numero}
                 onChange={(e) => {
                   setDocumento((d) => ({ ...d, numero: e.target.value }))
-                  setResult(null)
+                  resetLookup()
                 }}
               />
             </div>
@@ -239,6 +341,72 @@ export function PreRegistrationStep({
           </Button>
         </fieldset>
       </form>
+      {verification && (
+        <form
+          noValidate
+          onSubmit={(e) => void verifyCode(e)}
+          className="space-y-4 rounded-xl border border-primary/30 bg-secondary-background p-5"
+        >
+          <div>
+            <h3 className="text-lg font-bold text-foreground">
+              Confirme que o cadastro é seu
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-700">
+              Encontramos um pré-cadastro com esse documento. Para proteger os
+              dados, enviamos um código de 6 dígitos para o e-mail cadastrado:{' '}
+              <strong>{verification.emailMascarado}</strong>. O código vale por
+              10 minutos.
+            </p>
+          </div>
+          <label className="block text-sm font-semibold text-foreground">
+            Código de verificação
+            <input
+              required
+              autoFocus
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="\d{6}"
+              maxLength={6}
+              title="Digite os 6 números enviados por e-mail"
+              placeholder="000000"
+              className="mt-1.5 block w-full max-w-[12rem] rounded-xl border border-slate-300 bg-white px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] focus:border-primary focus:outline-none"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" disabled={busy}>
+              {busy ? 'Verificando...' : 'Confirmar código'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy || resendInSeconds > 0}
+              onClick={() => void requestCode()}
+            >
+              {resendInSeconds > 0
+                ? `Reenviar código (${resendInSeconds}s)`
+                : 'Reenviar código'}
+            </Button>
+            <button
+              type="button"
+              disabled={busy}
+              className="text-sm font-semibold text-primary-darker underline"
+              onClick={() => {
+                resetLookup()
+                setError('')
+              }}
+            >
+              Usar outro documento
+            </button>
+          </div>
+          <p className="text-xs leading-5 text-text-muted">
+            Não recebeu? Confira a caixa de spam. Se você não tem mais acesso a
+            esse e-mail, procure a administração da AMCG para atualizar seu
+            cadastro.
+          </p>
+        </form>
+      )}
       {error && <p role="alert">{error}</p>}
       {result?.encontrado && result.produtor && !reviewing && (
         <div className="space-y-4 rounded-lg bg-background p-4">
@@ -284,7 +452,7 @@ export function PreRegistrationStep({
             type="button"
             className="block underline"
             onClick={() => {
-              setResult(null)
+              resetLookup()
               setError(
                 'Confira o documento informado. Se os dados continuarem incorretos, procure a administração para ajustar seu vínculo.',
               )
@@ -295,7 +463,7 @@ export function PreRegistrationStep({
         </div>
       )}
       {reviewing && result?.produtor && (
-        <form onSubmit={(e) => void confirm(e)} className="space-y-4 rounded-lg border p-4">
+        <form noValidate onSubmit={(e) => void confirm(e)} className="space-y-4 rounded-lg border p-4">
           <h3 className="text-lg font-semibold">Revise seu cadastro e crie sua conta</h3>
           <p>Corrija os dados do pré-cadastro e informe um e-mail e uma senha para acessar seu perfil posteriormente. Alterações no perfil passam pela aprovação da administração.</p>
           <label className="block">Nome do produtor<input required className="mt-1 block w-full rounded border p-3" value={producerName} onChange={(e) => setProducerName(e.target.value)} /></label>
