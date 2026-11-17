@@ -57,6 +57,11 @@ export class ProdutorRepositoryWrite implements IProdutorRepositoryWrite {
       delete payload.logo;
     }
 
+    if (data.banner === null) {
+      unsetFields.banner = "";
+      delete payload.banner;
+    }
+
     if (data.site === null) {
       unsetFields.site = "";
       delete payload.site;

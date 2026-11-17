@@ -164,6 +164,7 @@ const atualizarSchema = z
     historia: historiaSchema.optional(),
     logo: arquivoSchema.nullable().optional(),
     fotos: z.array(arquivoSchema).max(MAX_FOTOS).optional(),
+    banner: arquivoSchema.nullable().optional(),
     redesSociais: redesSociaisSchema.optional(),
     site: z
       .union([z.string().trim().url("Site inválido"), z.literal(""), z.null()])
@@ -193,6 +194,7 @@ const atualizarSchema = z
       data.historia !== undefined ||
       data.logo !== undefined ||
       data.fotos !== undefined ||
+      data.banner !== undefined ||
       data.redesSociais !== undefined ||
       data.site !== undefined ||
       data.status !== undefined ||

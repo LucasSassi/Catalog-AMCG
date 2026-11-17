@@ -451,6 +451,24 @@ describe("Quando usar o ProdutorService", () => {
   });
 
   describe("Quando atualizar um produtor", () => {
+    it("Deve salvar, expor no catálogo e remover o banner do produtor", async () => {
+      const banner = {
+        url: "data:image/jpeg;base64,AAAA",
+        contentType: "image/jpeg",
+        nomeOriginal: "banner.jpg",
+      };
+      const criado = await service.create(buildInput());
+      const comBanner = await service.update(criado.id, { banner });
+      expect(comBanner.banner).toEqual(banner);
+      expect(comBanner.camposAlterados).toContain("banner");
+
+      await service.update(criado.id, { status: "APROVADO" });
+      expect((await service.getCatalogById(criado.id)).banner).toEqual(banner);
+
+      const semBanner = await service.update(criado.id, { banner: null });
+      expect(semBanner.banner).toBeUndefined();
+    });
+
     it("Deve separar uma alteração dos novos cadastros", async () => {
       const criado = await service.create(buildInput());
       const atualizado = await service.update(criado.id, {

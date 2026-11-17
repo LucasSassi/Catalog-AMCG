@@ -210,6 +210,7 @@ export class ProdutorService implements IProdutorService {
       input.historia === undefined &&
       input.logo === undefined &&
       input.fotos === undefined &&
+      input.banner === undefined &&
       input.redesSociais === undefined &&
       input.site === undefined &&
       input.status === undefined &&
@@ -235,6 +236,7 @@ export class ProdutorService implements IProdutorService {
       historia?: string;
       logo?: Arquivo | null;
       fotos?: Arquivo[];
+      banner?: Arquivo | null;
       redesSociais?: RedeSocialItem[];
       site?: string | null;
       status?: StatusProdutor;
@@ -299,6 +301,11 @@ export class ProdutorService implements IProdutorService {
       data.fotos = this.normalizeFotos(input.fotos, 0);
     }
 
+    if (input.banner !== undefined) {
+      data.banner =
+        input.banner === null ? null : this.normalizeArquivo(input.banner);
+    }
+
     if (input.redesSociais !== undefined) {
       data.redesSociais = this.normalizeRedesSociais(input.redesSociais);
     }
@@ -321,6 +328,7 @@ export class ProdutorService implements IProdutorService {
       "historia",
       "logo",
       "fotos",
+      "banner",
       "redesSociais",
       "site",
     ] as const;
@@ -432,6 +440,7 @@ export class ProdutorService implements IProdutorService {
       historia: produtor.historia,
       ...(produtor.logo !== undefined ? { logo: produtor.logo } : {}),
       fotos: produtor.fotos,
+      ...(produtor.banner !== undefined ? { banner: produtor.banner } : {}),
       ...(produtor.exibirEndereco
         ? {
             endereco: {

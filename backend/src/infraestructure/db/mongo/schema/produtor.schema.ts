@@ -68,6 +68,7 @@ export interface ProdutorDocument {
   historia: string;
   logo?: ArquivoDocument;
   fotos: ArquivoDocument[];
+  banner?: ArquivoDocument;
   redesSociais: RedeSocialDocument[];
   /** @deprecated legado — ignorado pelo adapter */
   redeSocial?: string;
@@ -152,6 +153,7 @@ export const produtorSchema = new Schema<ProdutorDocument>(
     historia: { type: String, required: true, trim: true, default: "" },
     logo: { type: arquivoSchema },
     fotos: { type: [arquivoSchema], default: [] },
+    banner: { type: arquivoSchema },
     redesSociais: { type: [redeSocialSchema], default: [] },
     redeSocial: { type: String, trim: true },
     site: { type: String, trim: true },

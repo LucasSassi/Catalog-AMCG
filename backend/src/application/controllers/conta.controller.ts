@@ -153,6 +153,7 @@ export function createContaController(
             historia: z.string().optional(),
             logo: file.nullable().optional(),
             fotos: z.array(file).optional(),
+            banner: file.nullable().optional(),
             contato: z
               .object({ telefone: z.string(), email: z.string() })
               .strict()

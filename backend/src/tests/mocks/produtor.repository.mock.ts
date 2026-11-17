@@ -177,6 +177,7 @@ export class InMemoryProdutorRepository
       historia: data.historia ?? atual.historia,
       logo: data.logo ?? atual.logo,
       fotos: data.fotos ?? atual.fotos,
+      banner: data.banner ?? atual.banner,
       redesSociais: data.redesSociais ?? atual.redesSociais,
       ativo: data.ativo ?? atual.ativo,
       status: data.status ?? atual.status,
@@ -185,6 +186,7 @@ export class InMemoryProdutorRepository
     };
 
     if (data.logo === null) delete atualizado.logo;
+    if (data.banner === null) delete atualizado.banner;
 
     if (data.site === null) {
       delete atualizado.site;
